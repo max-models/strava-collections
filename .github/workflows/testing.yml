@@ -52,7 +52,7 @@ jobs:
 
       - name: Check installation
         run: |
-          template-python
+          python checkout_activity.py
 
       - name: Run tests
         run: |
