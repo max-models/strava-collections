@@ -1,8 +1,6 @@
-# template-python
+# Strava collections
 
-Template repository for python projects
 
-Documentation: https://max-models.github.io/template-python/
 
 # Install
 
@@ -20,11 +18,13 @@ Install the code and requirements with pip
 pip install -e .
 ```
 
-Run the code with
+# Get the tokens
 
 ```
-template-python
+python update_strava_tokens.py
 ```
+
+export the tokes as `STRAVA_REFRESH_TOKEN` and `STRAVA_ACCESS_TOKEN`.
 
 # Build docs
 

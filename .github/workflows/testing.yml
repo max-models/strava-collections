@@ -10,6 +10,12 @@ on:
       - main
       - devel
 
+env:
+  STRAVA_CLIENT_ID: ${{ secrets.STRAVA_CLIENT_ID }}
+  STRAVA_CLIENT_SECRET: ${{ secrets.STRAVA_CLIENT_SECRET }}
+  STRAVA_REFRESH_TOKEN: ${{ secrets.STRAVA_REFRESH_TOKEN }}
+
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -46,7 +52,7 @@ jobs:
 
       - name: Check installation
         run: |
-          template-python
+          python checkout_activity.py
 
       - name: Run tests
         run: |
