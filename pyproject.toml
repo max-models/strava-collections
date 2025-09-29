@@ -25,6 +25,8 @@ classifiers = [
 dependencies = [
   "stravalib",
   "numpy",
+  "plotly",
+  "kaleido",
 ]
 
 optional-dependencies.dev = [
