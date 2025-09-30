@@ -27,6 +27,8 @@ dependencies = [
   "numpy",
   "plotly",
   "kaleido",
+  "pandas",
+  "polyline",
 ]
 
 optional-dependencies.dev = [
