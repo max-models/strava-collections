@@ -107,6 +107,16 @@ class StravaCollection:
                     lat=df["lat"],
                     lon=df["lon"],
                     mode="lines",
+                    line=dict(color="white", width=8),
+                    showlegend=False,
+                )
+            )
+
+            fig.add_trace(
+                go.Scattermapbox(
+                    lat=df["lat"],
+                    lon=df["lon"],
+                    mode="lines",
                     line=dict(color=line_color),
                     name=activity.activity.name or f"Activity {activity.activity.id}",
                 )

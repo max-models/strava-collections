@@ -1,4 +1,4 @@
-# Tutorials
+# Collections
 
 Here are a few tutorials to help you get started.
 
