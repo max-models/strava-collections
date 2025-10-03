@@ -66,6 +66,8 @@ jobs:
       - name: Test docs build
         run: |
           pip install ".[docs]"
+          mkdir -p docs/source/_static/plots/bavarian-alps
+          strava-collections 12284003055F 12231765525 11603714471 11487681160 11492585278 9020068072 11518973205 9327605554 9586696097 9961995244 11166740981 11378142289 11368440756 15177143911 15877224330 -o docs/source/_static/plots/bavarian-alps/
           cd docs
           make clean
           make html

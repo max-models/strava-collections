@@ -52,6 +52,7 @@ optional-dependencies.docs = [
   "pre-commit",
   "pyproject-fmt",
   "sphinx",
+  "sphinx-book-theme",
   "sphinx-rtd-theme",
   "sphinx_bootstrap_theme",
 ]

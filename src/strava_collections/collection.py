@@ -70,6 +70,8 @@ class StravaCollection:
             hovermode="x unified",
             showlegend=False,
             xaxis=dict(tickformat=",.0f"),
+            margin=dict(l=0, r=0, t=0, b=0),
+            autosize=True,
         )
         print(f"Total distance travelled: {distance_traveled} km")
 
@@ -107,13 +109,23 @@ class StravaCollection:
                     lat=df["lat"],
                     lon=df["lon"],
                     mode="lines",
+                    line=dict(color="white", width=8),
+                    showlegend=False,
+                )
+            )
+
+            fig.add_trace(
+                go.Scattermapbox(
+                    lat=df["lat"],
+                    lon=df["lon"],
+                    mode="lines",
                     line=dict(color=line_color),
                     name=activity.activity.name or f"Activity {activity.activity.id}",
                 )
             )
             color_index += 1
 
-        zoom, center = zoom_center(maxlon, minlon, maxlat, minlat, width_to_height=5.0)
+        zoom, center = zoom_center(maxlon, minlon, maxlat, minlat, width_to_height=2.0)
         fig.update_layout(
             mapbox_style="open-street-map",
             mapbox_zoom=zoom,
@@ -121,6 +133,8 @@ class StravaCollection:
             height=height,
             dragmode="zoom",
             showlegend=False,
+            margin=dict(l=0, r=0, t=0, b=0),
+            autosize=True,
             # title="Strava Activities",
         )
         return fig

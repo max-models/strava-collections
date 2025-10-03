@@ -12,7 +12,7 @@ def main():
     parser.add_argument(
         "ids",
         nargs="+",
-        type=int,
+        type=str,
         help="Space-separated list of Strava activity IDs, e.g., 123 456 789",
     )
     parser.add_argument(
@@ -24,7 +24,15 @@ def main():
     args = parser.parse_args()
 
     # Parse activity IDs into integers
-    activity_ids = [(id, True) for id in args.ids]
+    activity_ids = []
+    for id in args.ids:
+        if id.lower().endswith("f"):
+            flip = True
+            id = int(id[:-1])
+        else:
+            flip = False
+            id = int(id)
+        activity_ids.append((id, flip))
 
     # Load Strava credentials from environment
     client_id = os.getenv("STRAVA_CLIENT_ID")

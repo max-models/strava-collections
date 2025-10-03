@@ -1,11 +1,7 @@
-# Welcome
-
-Write the documentation of your python package here
+# Welcome to Max's collection of runs and rides
 
 ```{toctree}
 :maxdepth: 2
 :caption: Contents
 
-quickstart.md
-tutorials.md
-api.md
+bavarian_alps.md
