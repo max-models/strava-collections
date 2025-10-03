@@ -1,7 +1,8 @@
-# Welcome to Max's collection of runs and rides
+# Max's collection of runs and rides
 
 ```{toctree}
 :maxdepth: 2
-:caption: Contents
+:caption: Collections
+:glob:
 
-bavarian_alps.md
+collection-*
