@@ -1,14 +1,7 @@
-# Welcome
-
-Write the documentation of your python package here
-
-[View Interactive Strava Plot](_static/plots/map.html)
+# Welcome to Max's collection of runs and rides
 
 ```{toctree}
 :maxdepth: 2
 :caption: Contents
 
-quickstart.md
-tutorials.md
-api.md
-
+bavarian_alps.md

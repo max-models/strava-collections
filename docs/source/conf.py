@@ -10,19 +10,17 @@ import shutil
 import sphinx_bootstrap_theme
 
 
-def copy_tutorials(app):
-    src = os.path.abspath("../tutorials")
-    dst = os.path.abspath("source/tutorials")
-
-    # Remove existing target directory if it exists
-    if os.path.exists(dst):
-        shutil.rmtree(dst)
-
-    shutil.copytree(src, dst)
+# def copy_tutorials(app):
+#     src = os.path.abspath("../tutorials")
+#     dst = os.path.abspath("source/tutorials")
+#     # Remove existing target directory if it exists
+#     if os.path.exists(dst):
+#         shutil.rmtree(dst)
+#     shutil.copytree(src, dst)
 
 
 def setup(app):
-    app.connect("builder-inited", copy_tutorials)
+    # app.connect("builder-inited", copy_tutorials)
     # app.add_stylesheet("my-styles.css")
     app.add_css_file("custom.css")
 
