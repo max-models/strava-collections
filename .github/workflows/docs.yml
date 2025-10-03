@@ -35,10 +35,18 @@ jobs:
           python -m pip install --upgrade pip
           pip install ".[docs]"
 
+      - name: Test tutorials
+        run: |
+          jupyter nbconvert --to notebook --execute tutorials/*.ipynb --output-dir=/tmp --ExecutePreprocessor.timeout=300
+
       - name: Build Sphinx docs
         run: |
+          pip install ".[docs]"
           cd docs
+          make clean
           make html
+          cd ..
+          ls docs/build/html/index.html
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
