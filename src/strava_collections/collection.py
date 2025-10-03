@@ -16,7 +16,7 @@ class StravaCollection:
             StravaActivity(client, *(activity_id)) for activity_id in activity_ids
         ]
 
-    def plot_elevation(self, height=600):
+    def plot_elevation(self, height=200):
         """Plot elevation profile of all activities with filled translucent area."""
         fig = go.Figure()
 
@@ -125,7 +125,7 @@ class StravaCollection:
             )
             color_index += 1
 
-        zoom, center = zoom_center(maxlon, minlon, maxlat, minlat, width_to_height=2.0)
+        zoom, center = zoom_center(maxlon, minlon, maxlat, minlat, width_to_height=3.0)
         fig.update_layout(
             mapbox_style="open-street-map",
             mapbox_zoom=zoom,

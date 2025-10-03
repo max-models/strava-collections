@@ -21,7 +21,17 @@ def main():
         default="./",
         help="Output directory (default: ./)",
     )
+
+    parser.add_argument(
+        "-c",
+        "--collection",
+        default="Example collection",
+        help="Collection name, default: Example collection",
+    )
+
     args = parser.parse_args()
+
+    collection_filename = "collection-" + args.collection.lower().replace(" ", "-")
 
     # Parse activity IDs into integers
     activity_ids = []
@@ -55,13 +65,34 @@ def main():
     fig_elev = collection.plot_elevation()
 
     # Save HTML
-    map_path = os.path.join(args.output, "map.html")
+    mapfig_name = f"{collection_filename}-map.html"
+    map_path = os.path.join(args.output, mapfig_name)
     fig_map.write_html(map_path, include_plotlyjs="cdn", full_html=True)
     print(f"Saved map plot to {map_path}")
 
-    elev_path = os.path.join(args.output, "elev.html")
+    elevfig_name = f"{collection_filename}-elev.html"
+    elev_path = os.path.join(args.output, elevfig_name)
     fig_elev.write_html(elev_path, include_plotlyjs="cdn", full_html=True)
     print(f"Saved elevation plot to {elev_path}")
+
+    path_collection_md = os.path.join(args.output, f"{collection_filename}.md")
+    with open(path_collection_md, "w") as f:
+        f.write(f"# {args.collection}\n")
+        f.write(
+            f"""
+<div style="position: relative; width: 100%; height: 650px;">
+  <iframe src="_static/{mapfig_name}" style="width:100%; height:100%; border:none;"></iframe>
+</div>
+\n\n"""
+        )
+        f.write(
+            f"""
+<div style="position: relative; width: 100%; height: 250;">
+  <iframe src="_static/{elevfig_name}" style="width:100%; height:100%; border:none;"></iframe>
+</div>\n\n"""
+        )
+
+    print(f"Saved markdown page to {path_collection_md}")
 
 
 if __name__ == "__main__":
