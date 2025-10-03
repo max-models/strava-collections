@@ -42,24 +42,6 @@ def main():
         refresh_token=refresh_token,
     )
     client.access_token = token_response["access_token"]
-    bavarian_alps = [
-        (12284003055, True),
-        (12231765525, False),
-        (11603714471, True),
-        # 11487681160,
-        # 11492585278,
-        # 9020068072,
-        # 11518973205,
-        # 9327605554,
-        # 9586696097,
-        # 9961995244,
-        # 11166740981,
-        # 11378142289,
-        # 11368440756,
-        # 15177143911,
-        # 15877224330
-    ]
-    activity_ids = bavarian_alps
 
     # Create collection and plot
     collection = StravaCollection(client, activity_ids=activity_ids)
@@ -74,7 +56,6 @@ def main():
     elev_path = os.path.join(args.output, "elev.html")
     fig_elev.write_html(elev_path, include_plotlyjs="cdn", full_html=True)
     print(f"Saved elevation plot to {elev_path}")
-
 
 if __name__ == "__main__":
     main()
