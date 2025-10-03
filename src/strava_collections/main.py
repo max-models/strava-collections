@@ -26,7 +26,7 @@ def main():
     # Parse activity IDs into integers
     activity_ids = []
     for id in args.ids:
-        if id.lower().endswith('f'):
+        if id.lower().endswith("f"):
             flip = True
             id = int(id[:-1])
         else:
