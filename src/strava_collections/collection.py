@@ -1,18 +1,79 @@
 import numpy as np
+import plotly.colors as pc
 import plotly.graph_objects as go
 from stravalib import Client
 
 from strava_collections.activity import StravaActivity
 
+palette = pc.qualitative.Plotly  # default Plotly categorical colors
+
 
 class StravaCollection:
-    def __init__(self, client: Client, activity_ids: list[int]) -> None:
+    def __init__(self, client: Client, activity_ids: list[tuple]) -> None:
         self._client = client
         self._activity_ids = activity_ids
         self._activities = [
-            StravaActivity(client.get_activity(activity_id))
-            for activity_id in activity_ids
+            StravaActivity(client, *(activity_id)) for activity_id in activity_ids
         ]
+
+    def plot_elevation(self, height=600):
+        """Plot elevation profile of all activities with filled translucent area."""
+        fig = go.Figure()
+
+        distance_traveled = 0.0
+        color_index = 0
+
+        for activity in self.activities:
+            if activity.flip:
+                dmax = activity.activity_stream["distance"].data[-1]
+                distance = (
+                    np.array(
+                        [
+                            dmax - dist
+                            for dist in activity.activity_stream["distance"].data
+                        ]
+                    )[::-1]
+                    * 1e-3
+                )
+                elev = np.array(activity.activity_stream["altitude"].data)[::-1]
+            else:
+                distance = np.array(activity.activity_stream["distance"].data) * 1e-3
+                elev = np.array(activity.activity_stream["altitude"].data)
+
+            # pick a line color from palette
+            line_color = palette[color_index % len(palette)]
+            # convert to rgba with alpha=0.3
+            rgba_color = pc.hex_to_rgb(line_color)
+            fillcolor = f"rgba({rgba_color[0]},{rgba_color[1]},{rgba_color[2]},0.3)"
+
+            fig.add_trace(
+                go.Scatter(
+                    x=distance + distance_traveled,
+                    y=elev,
+                    mode="lines",
+                    name=activity.activity.name or f"Activity {activity.activity.id}",
+                    line=dict(color=line_color),
+                    fill="tozeroy",
+                    fillcolor=fillcolor,
+                    hovertemplate="Distance: %{x:.1f} m<br>Elevation: %{y:.1f} m<extra></extra>",
+                )
+            )
+
+            distance_traveled += activity.activity_stream["distance"].data[-1] * 1e-3
+            color_index += 1
+
+        fig.update_layout(
+            # title="Elevation Profiles",
+            xaxis_title="Distance (km)",
+            yaxis_title="Elevation (m)",
+            height=height,
+            hovermode="x unified",
+            showlegend=False,
+            xaxis=dict(tickformat=",.0f"),
+        )
+        print(f"Total distance travelled: {distance_traveled} km")
+
+        return fig
 
     def plot_map(self, zoom=12, height=600):
         """Plot all activities together as lon/lat lines."""
@@ -20,6 +81,8 @@ class StravaCollection:
 
         maxlon, minlon = -9999, 9999
         maxlat, minlat = -9999, 9999
+
+        color_index = 0
 
         for activity in self.activities:
             df = activity.to_dataframe()
@@ -33,14 +96,22 @@ class StravaCollection:
 
             if df.empty:
                 continue
+
+            # pick a line color from palette
+            line_color = palette[color_index % len(palette)]
+            # # convert to rgba with alpha=0.3
+            # rgba_color = pc.hex_to_rgb(line_color)
+
             fig.add_trace(
                 go.Scattermapbox(
                     lat=df["lat"],
                     lon=df["lon"],
                     mode="lines",
+                    line=dict(color=line_color),
                     name=activity.activity.name or f"Activity {activity.activity.id}",
                 )
             )
+            color_index += 1
 
         zoom, center = zoom_center(maxlon, minlon, maxlat, minlat, width_to_height=5.0)
         fig.update_layout(
@@ -48,7 +119,9 @@ class StravaCollection:
             mapbox_zoom=zoom,
             mapbox_center=center,
             height=height,
-            title="Strava Activities (Map View)",
+            dragmode="zoom",
+            showlegend=False,
+            # title="Strava Activities",
         )
         return fig
 
