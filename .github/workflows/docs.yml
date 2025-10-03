@@ -2,7 +2,7 @@ name: Deploy docs to GitHub Pages
 
 on:
   push:
-    branches: ["devel", "main"] # TODO: Set to main only after release
+    branches: ["devel", "main"]
   workflow_dispatch:
 
 permissions:
@@ -13,6 +13,11 @@ permissions:
 concurrency:
   group: "pages"
   cancel-in-progress: false
+
+env:
+  STRAVA_CLIENT_ID: ${{ secrets.STRAVA_CLIENT_ID }}
+  STRAVA_CLIENT_SECRET: ${{ secrets.STRAVA_CLIENT_SECRET }}
+  STRAVA_REFRESH_TOKEN: ${{ secrets.STRAVA_REFRESH_TOKEN }}
 
 jobs:
   build-and-deploy:
