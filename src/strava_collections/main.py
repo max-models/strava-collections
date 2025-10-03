@@ -1,8 +1,6 @@
 import argparse
 import os
 
-import plotly.express as px
-from matplotlib.pyplot import bar
 from stravalib import Client
 
 from strava_collections.collection import StravaCollection
@@ -56,6 +54,7 @@ def main():
     elev_path = os.path.join(args.output, "elev.html")
     fig_elev.write_html(elev_path, include_plotlyjs="cdn", full_html=True)
     print(f"Saved elevation plot to {elev_path}")
+
 
 if __name__ == "__main__":
     main()
