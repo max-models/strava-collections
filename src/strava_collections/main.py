@@ -87,7 +87,7 @@ def main():
         )
         f.write(
             f"""
-<div style="position: relative; width: 100%; height: 250;">
+<div style="position: relative; width: 100%; height: 350;">
   <iframe src="_static/{elevfig_name}" style="width:100%; height:100%; border:none;"></iframe>
 </div>\n\n"""
         )
