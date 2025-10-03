@@ -1,5 +1,6 @@
-from stravalib import Client
 import os
+
+from stravalib import Client
 
 client_id = os.getenv("STRAVA_CLIENT_ID")
 client_secret = os.getenv("STRAVA_CLIENT_SECRET")
@@ -16,7 +17,9 @@ print(url)
 code = input("Paste the code here: ")
 
 token_response = client.exchange_code_for_token(
-    client_id=client_id, client_secret=client_secret, code=code,
+    client_id=client_id,
+    client_secret=client_secret,
+    code=code,
 )
 # The token response above contains both an access_token and a refresh token.
 access_token = token_response["access_token"]

@@ -52,7 +52,8 @@ jobs:
 
       - name: Check installation
         run: |
-          python checkout_activity.py
+          strava-collections -h
+          strava-collections 7575170664
 
       - name: Run tests
         run: |

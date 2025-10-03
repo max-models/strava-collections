@@ -2,7 +2,6 @@ def test_import_app():
     from strava_collections.main import main
 
     print("app imported")
-    main()
 
 
 if __name__ == "__main__":

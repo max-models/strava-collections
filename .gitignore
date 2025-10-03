@@ -172,3 +172,11 @@ cython_debug/
 
 # Unit test output
 junit/
+
+# Output
+*.html
+*.pn
+
+# Output
+*.html
+*.png
