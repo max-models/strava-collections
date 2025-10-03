@@ -1,15 +1,20 @@
+from pydoc import cli
+
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import polyline
+from stravalib import Client
 from stravalib.model import DetailedActivity
 
 
 class StravaActivity:
     """Wrapper around stravalib's DetailedActivity with convenience methods."""
 
-    def __init__(self, activity: DetailedActivity):
-        self.activity = activity
+    def __init__(self, client: Client, activity_id: int, flip: bool = True):
+        self._activity_stream = client.get_activity_streams(activity_id=activity_id)
+        self._activity = client.get_activity(activity_id=activity_id)
+        self._flip = flip
 
     def get_coords(self):
         """Decode the map polyline into a list of (lat, lon) tuples."""
@@ -36,6 +41,18 @@ class StravaActivity:
                 name=self.activity.name or f"Activity {self.activity.id}",
             )
         )
+
+    @property
+    def activity(self):
+        return self._activity
+
+    @property
+    def activity_stream(self):
+        return self._activity_stream
+
+    @property
+    def flip(self):
+        return self._flip
 
     def __getattr__(self, name):
         """Delegate attribute access to the underlying DetailedActivity."""
