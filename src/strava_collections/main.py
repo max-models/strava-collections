@@ -24,7 +24,7 @@ def main():
     args = parser.parse_args()
 
     # Parse activity IDs into integers
-    activity_ids = args.ids
+    activity_ids = [(id, True) for id in args.ids]
 
     # Load Strava credentials from environment
     client_id = os.getenv("STRAVA_CLIENT_ID")

@@ -7,7 +7,7 @@ from stravalib import Client
 class StravaActivity:
     """Wrapper around stravalib's DetailedActivity with convenience methods."""
 
-    def __init__(self, client: Client, activity_id: int, flip: bool = True):
+    def __init__(self, client: Client, activity_id: int, flip: bool = False):
         self._activity_stream = client.get_activity_streams(activity_id=activity_id)
         self._activity = client.get_activity(activity_id=activity_id)
         self._flip = flip

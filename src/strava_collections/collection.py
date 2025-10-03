@@ -13,7 +13,7 @@ class StravaCollection:
         self._client = client
         self._activity_ids = activity_ids
         self._activities = [
-            StravaActivity(client, *activity_id) for activity_id in activity_ids
+            StravaActivity(client, *(activity_id)) for activity_id in activity_ids
         ]
 
     def plot_elevation(self, height=600):
