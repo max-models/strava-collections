@@ -64,8 +64,8 @@ jobs:
             11368440756F \
             15177143911 \
             15877224330 \
-            NEW_ID2 \
-            -o docs/source/ \
+            16029679520 \
+            -o docsh/source/ \
             -c 'Bavarian alps traverse'
           cd docs
           make clean
