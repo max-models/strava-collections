@@ -1,12 +1,14 @@
 import os
 import pickle
+from datetime import timedelta
 
 import pandas as pd
 import plotly.graph_objects as go
 import polyline
-from stravalib import Client
-
+import requests
 import strava_collections
+from stravalib import Client
+from stravalib.model import DetailedActivity
 
 LIBPATH = strava_collections.__path__[0]
 
@@ -14,19 +16,33 @@ LIBPATH = strava_collections.__path__[0]
 class StravaActivity:
     """Wrapper around stravalib's DetailedActivity with convenience methods."""
 
-    def __init__(self, client: Client, activity_id: int, flip: bool = False):
+    def __init__(
+        self,
+        client: Client,
+        activity_id: int,
+        flip: bool = False,
+        force_update=False,
+        photos_size=640,
+    ):
+
+        self._client = client
         self._activity_id = activity_id
 
         pickle_path = f"{LIBPATH}/{self.activity_id}.pkl"
-        if os.path.exists(pickle_path):
-            # Load
+        if os.path.exists(pickle_path) and force_update is False:
+            print
             with open(pickle_path, "rb") as f:
                 data = pickle.load(f)
             self._activity = data["activity"]
             self._activity_stream = data["activity_stream"]
+            self._photos = data["photos"]
         else:
+            print(f"Downloading activity {self.activity_id}")
             self._activity_stream = client.get_activity_streams(activity_id=activity_id)
             self._activity = client.get_activity(activity_id=activity_id)
+            self._photos = get_activity_photos_from_web(
+                self.activity_id, self.client.access_token, size=photos_size
+            )
             self.dump(filepath=pickle_path)
         self._flip = flip
 
@@ -63,16 +79,70 @@ class StravaActivity:
                 {
                     "activity": self._activity,
                     "activity_stream": self._activity_stream,
+                    "photos": self._photos,
                 },
                 f,
             )
+
+    def generate_markdown_summary(self):
+        out_str = ""
+        out_str += """<div style="
+    # background-color: #dbf9e1; 
+    background-color: #ffffff; 
+    border-radius: 10px; 
+    padding: 15px;
+    border: 1px solid #ccc;
+    max-width: 100%;
+">\n"""
+
+        # Heading
+        out_str += f"<h2>{self.name}</h2>\n"
+
+        # Icon row
+        out_str += get_icon_link(
+            "https://media.istockphoto.com/id/1442152045/vector/path-route-icon-distance-symbol.jpg?s=612x612&w=0&k=20&c=2ilIa1pWHJp550B31t__1NPc0CHpouutgdxt7QO4EJg="
+        )
+        out_str += f"{round(self.activity.distance*1e-3)} km "
+        out_str += get_icon_link(
+            "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS_EkMEkMAdgDcE0W6nELzmmMrqHToRcoS8eA&s"
+        )
+        out_str += f"{round(self.activity.total_elevation_gain)} m "
+        out_str += get_icon_link(
+            "https://cdn-icons-png.freepik.com/512/13063/13063145.png"
+        )
+        out_str += f"{timedelta(seconds=self.activity.elapsed_time)} "
+        out_str += get_icon_link(
+            "https://cdn.worldvectorlogo.com/logos/strava-2.svg",
+            href=self.link,
+            width=10,
+            height=10,
+        )
+        out_str += f"\n<br><br>"
+
+        # Elevation profile
+
+        # Photos
+        # TODO: Get photos from the DetailedActivity (currently seems broken?)
+        # print(self.activity.full_photos)
+        # for photo in self.activity.full_photos:
+        #     print(photo.urls)
+        #     # out_str += f"![{photo.urls['1800']}]({photo.urls['1800']})\n"
+        #     # out_str += f'<img src="{photo.urls['1800']}" width="50" height="50">'
+        additional_photos_html = ""
+        gallery_part = ""
+        for photo in self.photos:
+            size = list(photo["urls"].keys())[0]
+            url = photo["urls"][str(size)]
+            out_str += f'<img src="{url}" height="200">'
+        out_str += "</div>\n\n\n"
+        return out_str
 
     @property
     def activity_id(self):
         return self._activity_id
 
     @property
-    def activity(self):
+    def activity(self) -> DetailedActivity:
         return self._activity
 
     @property
@@ -80,9 +150,49 @@ class StravaActivity:
         return self._activity_stream
 
     @property
+    def client(self):
+        return self._client
+
+    @property
     def flip(self):
         return self._flip
+
+    @property
+    def link(self):
+        return f"https://www.strava.com/activities/{self.activity_id}"
+
+    @property
+    def photos(self):
+        return self._photos
 
     def __getattr__(self, name):
         """Delegate attribute access to the underlying DetailedActivity."""
         return getattr(self.activity, name)
+
+
+def get_icon_link(src, href=None, width=20, height=20):
+
+    if href:
+        html = f'<a href="{href}"><img src="{src}" width="30" height="30"></a>'
+    else:
+        html = f'<img src="{src}" width="{width}" height="{height}">'
+    return html
+
+
+def get_activity_photos_from_web(activity_id, access_token, size=5000):
+    # https://communityhub.strava.com/t5/developer-discussions/download-all-photos-of-my-own-activities/m-p/11262
+    # Construct the URL manually
+    url = f"https://www.strava.com/api/v3/activities/{activity_id}/photos?size={size}"
+
+    # Headers including the OAuth token for authentication
+    headers = {"Authorization": f"Bearer {access_token}"}
+
+    # Making the GET request to Strava API
+    response = requests.get(url, headers=headers)
+
+    # Check if the request was successful
+    if response.status_code == 200:
+        photos = response.json()  # The photos data in JSON format
+        return photos
+    else:
+        print("Error:", response.status_code, response.text)

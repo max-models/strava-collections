@@ -1,9 +1,9 @@
 import argparse
 import os
-
-from stravalib import Client
+from pydoc import cli
 
 from strava_collections.collection import StravaCollection
+from stravalib import Client
 
 
 def main():
@@ -60,34 +60,31 @@ def main():
     client.access_token = token_response["access_token"]
 
     # Create collection and plot
-    collection = StravaCollection(client, activity_ids=activity_ids)
+    collection = StravaCollection(
+        name=args.collection,
+        client=client,
+        activity_ids=activity_ids,
+    )
 
+    # Set filenames
     mapfig_name = f"{collection_filename}-map.html"
     map_path = os.path.join(args.output, mapfig_name)
+
     elevfig_name = f"{collection_filename}-elev.html"
     elev_path = os.path.join(args.output, elevfig_name)
 
+    path_collection_md = os.path.join(args.output, f"{collection_filename}.md")
+
+    # Plot figures
     collection.plot_map(filepath=map_path)
     collection.plot_elevation(filepath=elev_path)
 
-    path_collection_md = os.path.join(args.output, f"{collection_filename}.md")
-    with open(path_collection_md, "w") as f:
-        f.write(f"# {args.collection}\n")
-        f.write(
-            f"""
-<div style="position: relative; width: 100%; height: 650px;">
-  <iframe src="_static/{mapfig_name}" style="width:100%; height:100%; border:none;"></iframe>
-</div>
-\n\n"""
-        )
-        f.write(
-            f"""
-<div style="position: relative; width: 100%; height: 350;">
-  <iframe src="_static/{elevfig_name}" style="width:100%; height:100%; border:none;"></iframe>
-</div>\n\n"""
-        )
-
-    print(f"Saved markdown page to {path_collection_md}")
+    # Create markdown for hte collection
+    collection.generate_markdown(
+        filepath=path_collection_md,
+        mapfig_name=mapfig_name,
+        elevfig_name=elevfig_name,
+    )
 
 
 if __name__ == "__main__":
