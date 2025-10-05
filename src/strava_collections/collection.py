@@ -1,9 +1,8 @@
 import numpy as np
 import plotly.colors as pc
 import plotly.graph_objects as go
-from stravalib import Client
-
 from strava_collections.activity import StravaActivity
+from stravalib import Client
 
 palette = pc.qualitative.Plotly  # default Plotly categorical colors
 
@@ -15,8 +14,20 @@ class StravaCollection:
         self._activities = [
             StravaActivity(client, *(activity_id)) for activity_id in activity_ids
         ]
+        tot_elevation_gaion = 0.0
+        for activity in self.activities:
+            tot_elevation_gaion += activity.activity.total_elevation_gain
+            print(
+                f"Activity: {activity.activity.name}, elevation gain: {activity.activity.total_elevation_gain}"
+            )
+        print(f"{tot_elevation_gaion = }")
 
-    def plot_elevation(self, height=200):
+    def plot_elevation(
+        self,
+        filepath=None,
+        height=200,
+        config={"staticPlot": True, "displayModeBar": False},
+    ):
         """Plot elevation profile of all activities with filled translucent area."""
         fig = go.Figure()
 
@@ -74,10 +85,12 @@ class StravaCollection:
             autosize=True,
         )
         print(f"Total distance travelled: {distance_traveled} km")
-
+        if isinstance(filepath, str):
+            export_plotly_fig(fig=fig, filepath=filepath, config=config)
+            print(f"Saved elevation plot to: {filepath}")
         return fig
 
-    def plot_map(self, zoom=12, height=600):
+    def plot_map(self, zoom=12, filepath=None, config={}, height=600):
         """Plot all activities together as lon/lat lines."""
         fig = go.Figure()
 
@@ -137,6 +150,9 @@ class StravaCollection:
             autosize=True,
             # title="Strava Activities",
         )
+        if isinstance(filepath, str):
+            export_plotly_fig(fig=fig, filepath=filepath, config=config)
+            print(f"Saved elevation plot to: {filepath}")
         return fig
 
     @property
@@ -150,6 +166,22 @@ class StravaCollection:
     @property
     def activity_ids(self):
         return self._activity_ids
+
+
+def export_plotly_fig(fig, filepath, config):
+    ext = filepath.lower().split(".")[-1]
+
+    if ext == "html":
+        fig.write_html(
+            filepath,
+            include_plotlyjs="cdn",
+            full_html=True,
+            config=config,
+        )
+    elif ext in {"png", "jpg", "jpeg", "pdf", "svg", "webp"}:
+        fig.write_image(filepath)
+    else:
+        raise ValueError(f"Unsupported file extension '.{ext}'")
 
 
 def zoom_center(
