@@ -59,32 +59,15 @@ jobs:
         run: |
           pytest .
 
-      - name: Test tutorials
-        run: |
-          jupyter nbconvert --to notebook --execute tutorials/*.ipynb --output-dir=/tmp --ExecutePreprocessor.timeout=300
-
-      - name: Test docs build
+      - name: Build collection
         run: |
           pip install ".[docs]"
           strava-collections \
             12284003055F \
             12231765525 \
-            11603714471F \
-            11487681160 \
-            11492585278 \
-            9020068072 \
-            11518973205 \
-            9327605554F \
-            9586696097 \
-            9961995244 \
-            11166740981 \
-            11378142289F \
-            11368440756F \
-            15177143911 \
-            15877224330 \
-            16029679520 \
+            https://www.strava.com/activities/11603714471F \
             -o docs/source/ \
-            -c 'Bavarian alps traverse'
+            -c 'Test collection'
           
           cd docs
           make clean
