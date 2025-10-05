@@ -20,8 +20,87 @@ env:
   STRAVA_REFRESH_TOKEN: ${{ secrets.STRAVA_REFRESH_TOKEN }}
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    strategy:
+      matrix:
+        collection:
+          - name: bavarian-alps
+            ids: "12284003055F 12231765525 11603714471F 11487681160 11492585278 9020068072 11518973205 9327605554F 9586696097 9961995244 11166740981 11378142289F 11368440756F 15177143911 15877224330 16029679520"
+            title: "Bavarian alps traverse"
+
+          - name: singapore-kl
+            ids: "836894407 838026669 838748059 840195182"
+            title: "Singapore to Kuala Lumpur"
+
+          - name: ibiza
+            ids: "10184212131 10188508424 10201453185 10209283997 10210461413 10215286376 10220935820 10223047971 10232455929 10239392263 10240530649 10244023732"
+            title: "Ibiza sailing trip"
+
+          - name: hikes-with-perla
+            ids: "8007161343 8043989941 9327605554 9678185334 10125733640 12054116496 12104083372 12137627404 10434800412 12171664770 15310176156 14225130448 14644040549 14963779916 14976342477"
+            title: "Hikes with Perla"
+
+          - name: japan
+            ids: "2663962144 2666207046 2669210977 2672807915 2675591839 2678504583 2681678397 2685785353 11702826079 2687395619"
+            title: "Japan"
+
+          - name: vietnam
+            ids: "813611974 814667984 815722126 816416782 817458392 818317407 818351252 820642128 821757676"
+            title: "Vietnam"
+
+          - name: taiwan
+            ids: "1324271479 1325123423 1326744150 1327962669 1328949546 1330086898 1331713983 1332641515 1333971033 1336237609"
+            title: "Taiwan"
+
+          - name: berlin-to-tarifa
+            ids: "1131819135 1133646946 7787652169 7791850673 8730837773 8736885309 8741391139 8766382217 10143696942 10148790717 10154431803 10159084440 10171756726 10177904347 10253094711 10258438586 10263187008 10268437202 10274894269 10281645686 10284899004"
+            title: "Berlin to Tarifa"
+
+          - name: bergen-to-istanbul
+            ids: "1131819135 1133646946 5715851214 5721348134 14992147210 5726139628 5727831041 5733598831 5738696741 5745332772 5745320059 5750059027 7067014667 7073100394 7078529322 7328018729 7352360345 7565316218 7575170664 7588727912 7591809739 7603766442 7609035405 7787652169 7791850673 8114329845 8118520965 8122936063 8127253146 8132462476 8136340589"
+            title: "Bergen to Istanbul"
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Restore Strava cache
+        uses: actions/cache/restore@v3
+        with:
+          path: cache/
+          key: strava-cache-v1
+          restore-keys: |
+            strava-cache-
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install strava-collections
+        run: |
+          pip install --upgrade pip
+          pip install ".[dev,docs]"
+
+      - name: Build Strava collection
+        run: |
+          strava-collections ${{ matrix.collection.ids }} \
+            -o docs/source/ \
+            -c "${{ matrix.collection.title }}"
+
+      - name: Save Strava cache
+        if: always()
+        uses: actions/cache/save@v3
+        with:
+          path: cache/
+          key: strava-cache-v1
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -49,171 +128,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install ".[docs]"
 
-      - name: Build Sphinx docs
-        run: |
-          strava-collections \
-            12284003055F \
-            12231765525 \
-            11603714471F \
-            11487681160 \
-            11492585278 \
-            9020068072 \
-            11518973205 \
-            9327605554F \
-            9586696097 \
-            9961995244 \
-            11166740981 \
-            11378142289F \
-            11368440756F \
-            15177143911 \
-            15877224330 \
-            16029679520 \
-            -o docs/source/ \
-            -c 'Bavarian alps traverse'
-          strava-collections \
-            836894407 \
-            838026669 \
-            838748059 \
-            840195182 \
-            -o docs/source/ \
-            -c 'Singapore to Kuala Lumpur'
-          strava-collections \
-            10184212131 \
-            10188508424 \
-            10201453185 \
-            10209283997 \
-            10210461413 \
-            10215286376 \
-            10220935820 \
-            10223047971 \
-            10232455929 \
-            10239392263 \
-            10240530649 \
-            10244023732 \
-            -o docs/source/ \
-            -c 'Ibiza sailing trip'
-          strava-collections \
-            8007161343 \
-            8043989941 \
-            9327605554 \
-            9678185334 \
-            10125733640 \
-            12054116496 \
-            12104083372 \
-            12137627404 \
-            10434800412 \
-            12171664770 \
-            15310176156 \
-            14225130448 \
-            14644040549 \
-            14963779916 \
-            14976342477 \
-            -o docs/source/ \
-            -c 'Hikes with Perla'
-          strava-collections \
-            2663962144 \
-            2666207046 \
-            2669210977 \
-            2672807915 \
-            2675591839 \
-            2678504583 \
-            2681678397 \
-            2685785353 \
-            11702826079 \
-            2687395619 \
-            -o docs/source/ \
-            -c 'Japan'
-          strava-collections \
-            813611974 \
-            814667984 \
-            815722126 \
-            816416782 \
-            817458392 \
-            818317407 \
-            818351252 \
-            820642128 \
-            821757676 \
-            -o docs/source/ \
-            -c 'Vietnam'
-          strava-collections \
-            1324271479 \
-            1325123423 \
-            1326744150 \
-            1327962669 \
-            1328949546 \
-            1330086898 \
-            1331713983 \
-            1332641515 \
-            1333971033 \
-            1336237609 \
-            -o docs/source/ \
-            -c 'Taiwan'
-          
-          strava-collections \
-            1131819135 \
-            1133646946 \
-            7787652169 \
-            7791850673 \
-            8730837773 \
-            8736885309 \
-            8741391139 \
-            8766382217 \
-            10143696942 \
-            10148790717 \
-            10154431803 \
-            10159084440 \
-            10171756726 \
-            10177904347 \
-            10253094711 \
-            10258438586 \
-            10263187008 \
-            10268437202 \
-            10274894269 \
-            10281645686 \
-            10284899004 \
-            -o docs/source/ \
-            -c 'Berlin to Tarifa'
-
-          strava-collections \
-            1131819135 \
-            1133646946 \
-            5715851214 \
-            5721348134 \
-            14992147210 \
-            5726139628 \
-            5727831041 \
-            5733598831 \
-            5738696741 \
-            5745332772 \
-            5745320059 \
-            5750059027 \
-            7067014667 \
-            7073100394 \
-            7078529322 \
-            7328018729 \
-            7352360345 \
-            7565316218 \
-            7575170664 \
-            7588727912 \
-            7591809739 \
-            7603766442 \
-            7609035405 \
-            7787652169 \
-            7791850673 \
-            8114329845 \
-            8118520965 \
-            8122936063 \
-            8127253146 \
-            8132462476 \
-            8136340589 \
-            -o docs/source/ \
-            -c 'Bergen to Istanbul'
-          
-          cd docs
-          make clean
-          make html
-          cd ..
-          ls docs/build/html/index.html
+      
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
