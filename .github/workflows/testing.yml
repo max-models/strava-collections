@@ -39,6 +39,15 @@ jobs:
           key: ${{ runner.os }}-pip-${{ hashFiles('**/pyproject.toml') }}
           restore-keys: |
             ${{ runner.os }}-pip-
+      
+      # Cache Strava activity pickles
+      - name: Cache Strava activity pickles
+        uses: actions/cache@v3
+        with:
+          path: cache/
+          key: strava-cache-v1
+          restore-keys: |
+            strava-cache-
 
       - name: Install dependencies
         run: |

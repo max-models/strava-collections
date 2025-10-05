@@ -11,8 +11,8 @@ from stravalib.model import DetailedActivity
 
 import strava_collections
 
-LIBPATH = strava_collections.__path__[0]
-
+# CACHE_PATH = strava_collections.__path__[0]
+CACHE_PATH = "cache"
 
 class StravaActivity:
     """Wrapper around stravalib's DetailedActivity with convenience methods."""
@@ -25,13 +25,12 @@ class StravaActivity:
         force_update=False,
         photos_size=640,
     ):
-
         self._client = client
         self._activity_id = activity_id
-
-        pickle_path = f"{LIBPATH}/{self.activity_id}.pkl"
+        os.makedirs(name=CACHE_PATH, exist_ok=True)
+        pickle_path = f"{CACHE_PATH}/{self.activity_id}.pkl"
         if os.path.exists(pickle_path) and force_update is False:
-            print
+            print(f"Loading cached activity {self.activity_id}")
             with open(pickle_path, "rb") as f:
                 data = pickle.load(f)
             self._activity = data["activity"]
