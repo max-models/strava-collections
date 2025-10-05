@@ -1,15 +1,18 @@
+from typing import List
+
 import numpy as np
+import pandas as pd
 import plotly.colors as pc
 import plotly.graph_objects as go
-from stravalib import Client
-
 from strava_collections.activity import StravaActivity
+from stravalib import Client
 
 palette = pc.qualitative.Plotly  # default Plotly categorical colors
 
 
 class StravaCollection:
-    def __init__(self, client: Client, activity_ids: list[tuple]) -> None:
+    def __init__(self, name: str, client: Client, activity_ids: list[tuple]) -> None:
+        self._name = name
         self._client = client
         self._activity_ids = activity_ids
         self._activities = [
@@ -19,7 +22,7 @@ class StravaCollection:
         for activity in self.activities:
             tot_elevation_gaion += activity.activity.total_elevation_gain
             print(
-                f"Activity: {activity.activity.name}, elevation gain: {activity.activity.total_elevation_gain}"
+                f"{activity.activity.name}, distance: {round(activity.activity.distance * 1e-3, 1)} km, elevation gain: {round(activity.activity.total_elevation_gain)} m"
             )
         print(f"{tot_elevation_gaion = }")
 
@@ -156,8 +159,60 @@ class StravaCollection:
             print(f"Saved elevation plot to: {filepath}")
         return fig
 
+    def generate_markdown(
+        self,
+        filepath: str,
+        mapfig_name,
+        elevfig_name,
+        sort_by_date=True,
+    ):
+        with open(filepath, "w", encoding="utf-8") as f:
+            f.write(f"# {self.name}\n")
+            f.write(
+                f"""
+    <div style="position: relative; width: 100%; height: 650px;">
+    <iframe src="_static/{mapfig_name}" style="width:100%; height:100%; border:none;"></iframe>
+    </div>
+    \n\n"""
+            )
+            f.write(
+                f"""
+    <div style="position: relative; width: 100%; height: 350;">
+    <iframe src="_static/{elevfig_name}" style="width:100%; height:100%; border:none;"></iframe>
+    </div>\n\n"""
+            )
+
+            data = []
+            for activity in self.activities:
+                name_link = f"[{activity.activity.name}]({activity.link})"
+                data.append(
+                    {
+                        "Activity": name_link,
+                        "Date": activity.activity.start_date_local.date(),
+                        "Distance (km)": round(
+                            float(activity.activity.distance) * 1e-3, 1
+                        ),
+                        "Elevation Gain (m)": round(
+                            float(activity.activity.total_elevation_gain)
+                        ),
+                    }
+                )
+
+            df = pd.DataFrame(data)
+            if sort_by_date:
+                df = df.sort_values(by="Date", ascending=True)
+
+            # Convert DataFrame to Markdown table
+            md_table = df.to_markdown(index=False)
+
+            # Save to file
+            # with open("activities.md", "w", encoding="utf-8") as f:
+            f.write(md_table)
+
+        print(f"Saved markdown page to {filepath}")
+
     @property
-    def activities(self):
+    def activities(self) -> List[StravaActivity]:
         return self._activities
 
     @property
@@ -167,6 +222,10 @@ class StravaCollection:
     @property
     def activity_ids(self):
         return self._activity_ids
+
+    @property
+    def name(self):
+        return self._name
 
 
 def export_plotly_fig(fig, filepath, config):

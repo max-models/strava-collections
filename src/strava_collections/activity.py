@@ -4,9 +4,9 @@ import pickle
 import pandas as pd
 import plotly.graph_objects as go
 import polyline
-from stravalib import Client
-
 import strava_collections
+from stravalib import Client
+from stravalib.model import DetailedActivity
 
 LIBPATH = strava_collections.__path__[0]
 
@@ -72,7 +72,7 @@ class StravaActivity:
         return self._activity_id
 
     @property
-    def activity(self):
+    def activity(self) -> DetailedActivity:
         return self._activity
 
     @property
@@ -82,6 +82,10 @@ class StravaActivity:
     @property
     def flip(self):
         return self._flip
+
+    @property
+    def link(self):
+        return f"https://www.strava.com/activities/{self.activity_id}"
 
     def __getattr__(self, name):
         """Delegate attribute access to the underlying DetailedActivity."""
