@@ -1,4 +1,3 @@
-import os
 from typing import List
 
 import numpy as np
@@ -167,9 +166,10 @@ class StravaCollection:
     def generate_markdown(
         self,
         filepath: str,
-        mapfig_name,
-        elevfig_name,
-        sort_by_date=False,
+        mapfig_name: str,
+        elevfig_name: str,
+        sort_by_date: bool = False,
+        include_table: bool = False,
     ):
         with open(filepath, "w", encoding="utf-8") as f:
             f.write(f"# {self.name}\n")
@@ -210,7 +210,8 @@ class StravaCollection:
             # Convert DataFrame to Markdown table
             md_table = df.to_markdown(index=False)
 
-            f.write(md_table)
+            if include_table:
+                f.write(md_table)
 
             f.write("\n\n")
             # Add blocks with each individual activities

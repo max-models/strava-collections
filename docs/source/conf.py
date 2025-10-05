@@ -3,6 +3,7 @@
 # For the full list of built-in configuration values, see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
+import glob
 import os
 import shutil
 
@@ -11,8 +12,15 @@ def copy_html_files(app):
     src = os.path.abspath("source/")
     dst = os.path.abspath("source/_static")
     for fname in os.listdir(src):
-        if fname.endswith(".html"):
+        if fname.endswith(".html") or fname.endswith(".png"):
             shutil.copy(os.path.join(src, fname), dst)
+
+
+html_context = {
+    "collections": sorted(
+        [os.path.basename(f) for f in glob.glob("source/collection-*.html")]
+    )
+}
 
 
 def setup(app):
@@ -37,6 +45,9 @@ extensions = [
     "sphinx.ext.autodoc",
     "myst_parser",  # enable Markdown support
 ]
+
+myst_enable_extensions = ["html_image", "colon_fence"]
+
 
 exclude_patterns = []
 

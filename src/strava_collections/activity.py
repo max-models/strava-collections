@@ -9,8 +9,6 @@ import requests
 from stravalib import Client
 from stravalib.model import DetailedActivity
 
-import strava_collections
-
 # CACHE_PATH = strava_collections.__path__[0]
 CACHE_PATH = "cache"
 
@@ -25,7 +23,6 @@ class StravaActivity:
         force_update=False,
         photos_size=640,
     ):
-
         self._activity_id = activity_id
         os.makedirs(name=CACHE_PATH, exist_ok=True)
         pickle_path = f"{CACHE_PATH}/{self.activity_id}.pkl"
@@ -102,23 +99,23 @@ class StravaActivity:
 
     def generate_markdown_summary(self):
         out_str = ""
-        out_str += """<div style="
-    # background-color: #dbf9e1; 
-    background-color: #ffffff; 
-    border-radius: 10px; 
-    padding: 15px;
-    border: 1px solid #ccc;
-    max-width: 100%;
-">\n"""
+        #         out_str += """<div style="
+        #     # background-color: #dbf9e1;
+        #     background-color: #ffffff;
+        #     border-radius: 10px;
+        #     padding: 15px;
+        #     border: 1px solid #ccc;
+        #     max-width: 100%;
+        # ">\n"""
 
         # Heading
-        out_str += f"<h2>{self.name}</h2>\n"
+        out_str += f"## {self.name}\n\n"
 
         # Icon row
         out_str += get_icon_link(
             "https://media.istockphoto.com/id/1442152045/vector/path-route-icon-distance-symbol.jpg?s=612x612&w=0&k=20&c=2ilIa1pWHJp550B31t__1NPc0CHpouutgdxt7QO4EJg="
         )
-        out_str += f"{round(self.activity.distance*1e-3)} km "
+        out_str += f"{round(self.activity.distance * 1e-3)} km "
         out_str += get_icon_link(
             "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS_EkMEkMAdgDcE0W6nELzmmMrqHToRcoS8eA&s"
         )
@@ -152,7 +149,8 @@ class StravaActivity:
                     size = list(photo["urls"].keys())[0]
                     url = photo["urls"][str(size)]
                     out_str += f'<img src="{url}" height="200">'
-        out_str += "</div>\n\n\n"
+        # out_str += "</div>"
+        out_str += "\n\n\n"
         return out_str
 
     @property
@@ -185,7 +183,6 @@ class StravaActivity:
 
 
 def get_icon_link(src, href=None, width=20, height=20):
-
     if href:
         html = f'<a href="{href}"><img src="{src}" width="30" height="30"></a>'
     else:
