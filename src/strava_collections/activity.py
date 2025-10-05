@@ -6,9 +6,10 @@ import pandas as pd
 import plotly.graph_objects as go
 import polyline
 import requests
-import strava_collections
 from stravalib import Client
 from stravalib.model import DetailedActivity
+
+import strava_collections
 
 # CACHE_PATH = strava_collections.__path__[0]
 CACHE_PATH = "cache"
@@ -19,13 +20,12 @@ class StravaActivity:
 
     def __init__(
         self,
-        client: Client,
         activity_id: int,
         flip: bool = False,
         force_update=False,
         photos_size=640,
     ):
-        self._client = client
+
         self._activity_id = activity_id
         os.makedirs(name=CACHE_PATH, exist_ok=True)
         pickle_path = f"{CACHE_PATH}/{self.activity_id}.pkl"
@@ -38,10 +38,26 @@ class StravaActivity:
             self._photos = data["photos"]
         else:
             print(f"Downloading activity {self.activity_id}")
+
+            # Load Strava credentials from environment
+            client_id = os.getenv("STRAVA_CLIENT_ID")
+            client_secret = os.getenv("STRAVA_CLIENT_SECRET")
+            refresh_token = os.getenv("STRAVA_REFRESH_TOKEN")
+
+            client = Client()
+
+            # Refresh access token
+            token_response = client.refresh_access_token(
+                client_id=client_id,
+                client_secret=client_secret,
+                refresh_token=refresh_token,
+            )
+            client.access_token = token_response["access_token"]
+
             self._activity_stream = client.get_activity_streams(activity_id=activity_id)
             self._activity = client.get_activity(activity_id=activity_id)
             self._photos = get_activity_photos_from_web(
-                self.activity_id, self.client.access_token, size=photos_size
+                self.activity_id, client.access_token, size=photos_size
             )
             self.dump(filepath=pickle_path)
         self._flip = flip
@@ -149,10 +165,6 @@ class StravaActivity:
     @property
     def activity_stream(self):
         return self._activity_stream
-
-    @property
-    def client(self):
-        return self._client
 
     @property
     def flip(self):
