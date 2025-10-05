@@ -67,12 +67,8 @@ def main():
     elevfig_name = f"{collection_filename}-elev.html"
     elev_path = os.path.join(args.output, elevfig_name)
 
-    fig_map = collection.plot_map(filepath=map_path)
-    fig_elev = collection.plot_elevation(filepath=elev_path)
-
-    # Save HTML
-    # fig_map.write_html(map_path, include_plotlyjs="cdn", full_html=True)
-    # print(f"Saved map plot to {map_path}")
+    collection.plot_map(filepath=map_path)
+    collection.plot_elevation(filepath=elev_path)
 
     path_collection_md = os.path.join(args.output, f"{collection_filename}.md")
     with open(path_collection_md, "w") as f:
