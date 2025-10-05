@@ -76,14 +76,33 @@ jobs:
       - name: Copy cache files
         run: |
           mkdir -p cache
-          ls 
+          echo "Listing current folder:"
+          ls
+          echo "Listing cache folder before copy:"
           ls cache/
           echo "-------------"
-          cp strava-cache-${{ matrix.collection.name }}/*.pkl cache/
+
+          # Copy per-job strava cache if it exists
+          SRC="strava-cache-${{ matrix.collection.name }}"
+          if [ -d "$SRC" ]; then
+            echo "Copying $SRC into cache/"
+            cp -r "$SRC"/* cache/ || true
+          else
+            echo "Warning: $SRC does not exist"
+          fi
+
+          # Copy temp-strava-cache repo contents if it exists
+          if [ -d "temp-strava-cache" ]; then
+            echo "Copying temp-strava-cache into cache/"
+            cp -r temp-strava-cache/* cache/ || true
+          else
+            echo "Warning: temp-strava-cache folder does not exist"
+          fi
+
+          echo "Listing cache folder after copy:"
           ls cache/
           echo "-------------"
-          cp -r temp-strava-cache/* cache/
-          ls cache/
+
 
       - name: Set up Python
         uses: actions/setup-python@v4
