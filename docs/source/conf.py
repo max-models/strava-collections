@@ -10,10 +10,9 @@ import shutil
 def copy_html_files(app):
     src = os.path.abspath("source/")
     dst = os.path.abspath("source/_static")
-    if os.path.exists(src):
-        for fname in os.listdir(src):
-            if fname.endswith(".html"):
-                shutil.copy(os.path.join(src, fname), dst)
+    for fname in os.listdir(src):
+        if fname.endswith(".html"):
+            shutil.copy(os.path.join(src, fname), dst)
 
 
 def setup(app):

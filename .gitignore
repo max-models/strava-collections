@@ -181,6 +181,5 @@ junit/
 *.html
 *.png
 old_scripts/
-_static/
 collection-*.md
 *.pkl
