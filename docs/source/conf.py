@@ -27,6 +27,7 @@ def setup(app):
     app.connect("builder-inited", copy_html_files)
     # app.add_stylesheet("my-styles.css")
     app.add_css_file("custom.css")
+    # app.add_js_file("gallery.js")
 
 
 # -- Project information -----------------------------------------------------

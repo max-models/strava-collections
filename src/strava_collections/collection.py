@@ -217,7 +217,26 @@ class StravaCollection:
             # Add blocks with each individual activities
             for activity in self.activities:
                 f.write(activity.generate_markdown_summary())
-                # f.write('\nhello\n')
+            f.write("""
+<div id="lightbox" class="lightbox">
+  <img id="lightbox-img" src="" alt="Full Image">
+</div>""")
+            f.write("""
+<script>
+document.querySelectorAll('.gallery img').forEach(img => {
+  img.addEventListener('click', event => {
+    event.preventDefault();  // stop the default link behavior
+    const lightbox = document.getElementById('lightbox');
+    const lightboxImg = document.getElementById('lightbox-img');
+    lightboxImg.src = img.src;
+    lightbox.classList.add('show');
+  });
+});
+
+document.getElementById('lightbox').addEventListener('click', () => {
+  document.getElementById('lightbox').classList.remove('show');
+});
+</script>""")
 
         print(f"Saved markdown page to {filepath}")
 
