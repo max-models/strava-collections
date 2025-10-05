@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import plotly.colors as pc
 import plotly.graph_objects as go
+
 from strava_collections.activity import StravaActivity
 
 palette = pc.qualitative.Plotly  # default Plotly categorical colors
@@ -165,9 +166,10 @@ class StravaCollection:
     def generate_markdown(
         self,
         filepath: str,
-        mapfig_name,
-        elevfig_name,
-        sort_by_date=False,
+        mapfig_name: str,
+        elevfig_name: str,
+        sort_by_date: bool = False,
+        include_table: bool = False,
     ):
         with open(filepath, "w", encoding="utf-8") as f:
             f.write(f"# {self.name}\n")
@@ -208,7 +210,8 @@ class StravaCollection:
             # Convert DataFrame to Markdown table
             md_table = df.to_markdown(index=False)
 
-            f.write(md_table)
+            if include_table:
+                f.write(md_table)
 
             f.write("\n\n")
             # Add blocks with each individual activities

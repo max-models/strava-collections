@@ -1,5 +1,4 @@
 def test_import_app():
-
     print("app imported")
 
 

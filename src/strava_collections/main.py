@@ -34,7 +34,6 @@ def main():
     # Parse activity IDs into integers
     activity_ids = []
     for id in args.ids:
-
         id = id.replace("https://www.strava.com/activities/", "")
 
         if id.lower().endswith("f"):

@@ -1,16 +1,16 @@
 .button-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 16px;
   justify-items: center;
-  padding: 20px 0;
+  padding: 0px 0;
 }
 
 .button-card {
   position: relative;
   display: block;
-  width: 280px;
-  height: 180px;
+  width: 200px;
+  height: 200px;
   overflow: hidden;
   border-radius: 12px;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
