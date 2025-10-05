@@ -36,6 +36,20 @@ jobs:
           key: strava-cache-v1
           restore-keys: |
             strava-cache-
+      - name: Clone private Strava cache repo
+        uses: actions/checkout@v4
+        with:
+          repository: max-models/temporary-strava-activities
+          token: ${{ secrets.GITHUB_TOKEN }}
+          path: temp-strava-cache
+
+      - name: Copy cache files
+        run: |
+          mkdir -p cache
+          ls cache/
+          echo "-------------"
+          cp -r temp-strava-cache/* cache/
+          ls cache/
 
       - name: Set up Python
         uses: actions/setup-python@v5
