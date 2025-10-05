@@ -6,13 +6,13 @@ import pandas as pd
 import plotly.graph_objects as go
 import polyline
 import requests
+import strava_collections
 from stravalib import Client
 from stravalib.model import DetailedActivity
 
-import strava_collections
-
 # CACHE_PATH = strava_collections.__path__[0]
 CACHE_PATH = "cache"
+
 
 class StravaActivity:
     """Wrapper around stravalib's DetailedActivity with convenience methods."""
@@ -118,6 +118,8 @@ class StravaActivity:
             height=10,
         )
         out_str += "\n<br><br>"
+
+        out_str += f"{self.activity.description.replace('\n','<br>')}\n<br>"
 
         # Elevation profile
 

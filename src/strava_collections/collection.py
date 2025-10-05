@@ -4,9 +4,8 @@ import numpy as np
 import pandas as pd
 import plotly.colors as pc
 import plotly.graph_objects as go
-from stravalib import Client
-
 from strava_collections.activity import StravaActivity
+from stravalib import Client
 
 palette = pc.qualitative.Plotly  # default Plotly categorical colors
 
