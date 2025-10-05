@@ -164,7 +164,7 @@ class StravaCollection:
         filepath: str,
         mapfig_name,
         elevfig_name,
-        sort_by_date=True,
+        sort_by_date=False,
     ):
         with open(filepath, "w", encoding="utf-8") as f:
             f.write(f"# {self.name}\n")
