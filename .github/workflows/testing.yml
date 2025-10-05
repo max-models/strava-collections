@@ -76,6 +76,7 @@ jobs:
       - name: Copy cache files
         run: |
           mkdir -p cache
+          ls cache/
           cp -r temp-strava-cache/* cache/
           ls cache/
 
