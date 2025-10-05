@@ -121,6 +121,7 @@ jobs:
           strava-collections ${{ matrix.collection.ids }} \
             -o docs/source/ \
             -c "${{ matrix.collection.title }}"
+          mkdir -p strava-cache-${{ matrix.collection.name }}/
           cp cache/*.pkl strava-cache-${{ matrix.collection.name }}/
 
       - name: Save Strava cache
@@ -136,40 +137,40 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      # - name: Restore Strava cache
-      #   uses: actions/cache/restore@v3
-      #   with:
-      #     path: cache/
-      #     key: strava-cache-v1
-      #     restore-keys: |
-      #       strava-cache-
+      - name: Restore Strava cache
+        uses: actions/cache/restore@v3
+        with:
+          path: cache/
+          key: strava-cache-v1
+          restore-keys: |
+            strava-cache-
       
-      # - name: Clone private Strava cache repo
-      #   uses: actions/checkout@v4
-      #   with:
-      #     repository: max-models/temporary-strava-activities
-      #     token: ${{ secrets.GITHUB_TOKEN }}
-      #     path: temp-strava-cache
+      - name: Clone private Strava cache repo
+        uses: actions/checkout@v4
+        with:
+          repository: max-models/temporary-strava-activities
+          token: ${{ secrets.GITHUB_TOKEN }}
+          path: temp-strava-cache
 
-      # - name: Copy cache files
-      #   run: |
-      #     mkdir -p cache
-      #     ls cache/
-      #     echo "-------------"
-      #     cp -r temp-strava-cache/* cache/
-      #     ls cache/
-      
-      # TODO: Only use the cached files
-      - name: Gather all Strava caches
+      - name: Copy cache files
         run: |
           mkdir -p cache
-          # Look for all cache directories matching strava-cache-*
-          for dir in $HOME/actions/cache/strava-cache-*; do
-            if [ -d "$dir" ]; then
-              echo "Copying cache from $dir"
-              cp -r "$dir"/* cache/ || true
-            fi
-          done
+          ls cache/
+          echo "-------------"
+          cp -r temp-strava-cache/* cache/
+          ls cache/
+      
+      # TODO: Only use the cached files
+      # - name: Gather all Strava caches
+      #   run: |
+      #     mkdir -p cache
+      #     # Look for all cache directories matching strava-cache-*
+      #     for dir in $HOME/actions/cache/strava-cache-*; do
+      #       if [ -d "$dir" ]; then
+      #         echo "Copying cache from $dir"
+      #         cp -r "$dir"/* cache/ || true
+      #       fi
+      #     done
 
       - name: Set up Python
         uses: actions/setup-python@v4
