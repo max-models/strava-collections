@@ -205,9 +205,13 @@ class StravaCollection:
             # Convert DataFrame to Markdown table
             md_table = df.to_markdown(index=False)
 
-            # Save to file
-            # with open("activities.md", "w", encoding="utf-8") as f:
             f.write(md_table)
+
+            f.write("\n\n")
+            # Add blocks with each individual activities
+            for activity in self.activities:
+                f.write(activity.generate_markdown_summary())
+                # f.write('\nhello\n')
 
         print(f"Saved markdown page to {filepath}")
 
