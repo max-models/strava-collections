@@ -51,7 +51,6 @@ jobs:
 
       - name: Build Sphinx docs
         run: |
-          pip install ".[docs]"
           strava-collections \
             12284003055F \
             12231765525 \
