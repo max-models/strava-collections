@@ -205,9 +205,8 @@ jobs:
           cd docs
           make clean
           make html
-          cd ..
-          ls docs
-          ls docs/build/
-          ls docs/source/
-          ls docs/source/_static/
-          ls docs/build/html/index.html
+          ls
+          ls build/
+          ls source/
+          ls source/_static/
+          ls build/html/index.html
