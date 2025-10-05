@@ -71,6 +71,8 @@ jobs:
 
       - name: Build HTML docs
         run: |
+          sudo apt-get update
+          sudo apt-get install -y pandoc
           cd docs
           make clean
           make html
