@@ -9,8 +9,6 @@ import requests
 from stravalib import Client
 from stravalib.model import DetailedActivity
 
-import strava_collections
-
 # CACHE_PATH = strava_collections.__path__[0]
 CACHE_PATH = "cache"
 

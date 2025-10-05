@@ -62,7 +62,7 @@ def main():
 
     # Plot figures
     collection.plot_map(filepath=map_path)
-    collection.plot_map(filepath=map_path.replace('.html','.png'))
+    collection.plot_map(filepath=map_path.replace(".html", ".png"))
     collection.plot_elevation(filepath=elev_path)
 
     # Create markdown for hte collection
