@@ -49,6 +49,7 @@ jobs:
 
       - name: Build Strava collections
         run: |
+          ls cache/ || true
           set -e
           # Each strava-collections call generates one collection
           strava-collections 12284003055F 12231765525 11603714471F 11487681160 11492585278 9020068072 11518973205 9327605554F 9586696097 9961995244 11166740981 11378142289F 11368440756F 15177143911 15877224330 16029679520 -o docs/source/ -c "Bavarian alps traverse"

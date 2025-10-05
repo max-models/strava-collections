@@ -78,6 +78,7 @@ jobs:
 
       - name: Build Strava collection
         run: |
+          ls cache/ || true
           strava-collections ${{ matrix.collection.ids }} \
             -o docs/source/ \
             -c "${{ matrix.collection.title }}"
