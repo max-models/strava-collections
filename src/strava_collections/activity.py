@@ -134,8 +134,8 @@ class StravaActivity:
             height=10,
         )
         out_str += "\n<br><br>"
-
-        out_str += f"{self.activity.description.replace('\n','<br>')}\\n<br>"
+        description = self.activity.description.replace("\n", "<br>\n")
+        out_str += f"{description}<br>"
 
         # Elevation profile
 
