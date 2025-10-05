@@ -6,9 +6,10 @@ import pandas as pd
 import plotly.graph_objects as go
 import polyline
 import requests
-import strava_collections
 from stravalib import Client
 from stravalib.model import DetailedActivity
+
+import strava_collections
 
 LIBPATH = strava_collections.__path__[0]
 
@@ -117,7 +118,7 @@ class StravaActivity:
             width=10,
             height=10,
         )
-        out_str += f"\n<br><br>"
+        out_str += "\n<br><br>"
 
         # Elevation profile
 
@@ -128,8 +129,7 @@ class StravaActivity:
         #     print(photo.urls)
         #     # out_str += f"![{photo.urls['1800']}]({photo.urls['1800']})\n"
         #     # out_str += f'<img src="{photo.urls['1800']}" width="50" height="50">'
-        additional_photos_html = ""
-        gallery_part = ""
+
         for photo in self.photos:
             size = list(photo["urls"].keys())[0]
             url = photo["urls"][str(size)]
