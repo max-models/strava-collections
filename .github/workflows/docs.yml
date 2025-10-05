@@ -47,7 +47,6 @@ jobs:
       - name: Build Sphinx docs
         run: |
           pip install ".[docs]"
-          mkdir -p docs/source/_static/plots/bavarian-alps
           strava-collections \
             12284003055F \
             12231765525 \

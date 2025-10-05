@@ -66,7 +66,6 @@ jobs:
       - name: Test docs build
         run: |
           pip install ".[docs]"
-          mkdir -p docs/source/_static/plots/bavarian-alps
           strava-collections \
             12284003055F \
             12231765525 \
@@ -86,6 +85,7 @@ jobs:
             16029679520 \
             -o docs/source/ \
             -c 'Bavarian alps traverse'
+          
           cd docs
           make clean
           make html
