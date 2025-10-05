@@ -77,6 +77,7 @@ jobs:
         run: |
           mkdir -p cache
           cp -r temp-strava-cache/* cache/
+          ls cache/
 
       - name: Set up Python
         uses: actions/setup-python@v4
