@@ -76,6 +76,7 @@ jobs:
       - name: Copy cache files
         run: |
           mkdir -p cache
+          ls 
           ls cache/
           echo "-------------"
           cp strava-cache-${{ matrix.collection.name }}/*.pkl cache/
