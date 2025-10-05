@@ -11,7 +11,7 @@ def copy_html_files(app):
     src = os.path.abspath("source/")
     dst = os.path.abspath("source/_static")
     for fname in os.listdir(src):
-        if fname.endswith(".html"):
+        if fname.endswith(".html") or fname.endswith(".png"):
             shutil.copy(os.path.join(src, fname), dst)
 
 
