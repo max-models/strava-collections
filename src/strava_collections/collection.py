@@ -182,8 +182,8 @@ class StravaCollection:
             )
             f.write(
                 f"""
-<div style="position: relative; width: 100%; height: 350;">
-<iframe src="_static/{elevfig_name}" style="width:100%; height:100%; border:none;"></iframe>
+<div style="position: relative; width: 100%; padding-bottom: 250px; height: 0;">
+<iframe src="_static/{elevfig_name}" style="position:absolute; top:0; left:0; width:100%; height:100%; border:none;"></iframe>
 </div>\n\n"""
             )
 
