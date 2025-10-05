@@ -11,7 +11,8 @@ from stravalib.model import DetailedActivity
 
 import strava_collections
 
-LIBPATH = strava_collections.__path__[0]
+# CACHE_PATH = strava_collections.__path__[0]
+CACHE_PATH = "cache"
 
 
 class StravaActivity:
@@ -19,19 +20,17 @@ class StravaActivity:
 
     def __init__(
         self,
-        client: Client,
         activity_id: int,
         flip: bool = False,
         force_update=False,
         photos_size=640,
     ):
 
-        self._client = client
         self._activity_id = activity_id
-
-        pickle_path = f"{LIBPATH}/{self.activity_id}.pkl"
+        os.makedirs(name=CACHE_PATH, exist_ok=True)
+        pickle_path = f"{CACHE_PATH}/{self.activity_id}.pkl"
         if os.path.exists(pickle_path) and force_update is False:
-            print
+            print(f"Loading cached activity {self.activity_id}")
             with open(pickle_path, "rb") as f:
                 data = pickle.load(f)
             self._activity = data["activity"]
@@ -39,10 +38,26 @@ class StravaActivity:
             self._photos = data["photos"]
         else:
             print(f"Downloading activity {self.activity_id}")
+
+            # Load Strava credentials from environment
+            client_id = os.getenv("STRAVA_CLIENT_ID")
+            client_secret = os.getenv("STRAVA_CLIENT_SECRET")
+            refresh_token = os.getenv("STRAVA_REFRESH_TOKEN")
+
+            client = Client()
+
+            # Refresh access token
+            token_response = client.refresh_access_token(
+                client_id=client_id,
+                client_secret=client_secret,
+                refresh_token=refresh_token,
+            )
+            client.access_token = token_response["access_token"]
+
             self._activity_stream = client.get_activity_streams(activity_id=activity_id)
             self._activity = client.get_activity(activity_id=activity_id)
             self._photos = get_activity_photos_from_web(
-                self.activity_id, self.client.access_token, size=photos_size
+                self.activity_id, client.access_token, size=photos_size
             )
             self.dump(filepath=pickle_path)
         self._flip = flip
@@ -119,6 +134,8 @@ class StravaActivity:
             height=10,
         )
         out_str += "\n<br><br>"
+        description = self.activity.description.replace("\n", "<br>\n")
+        out_str += f"{description}<br>"
 
         # Elevation profile
 
@@ -129,11 +146,12 @@ class StravaActivity:
         #     print(photo.urls)
         #     # out_str += f"![{photo.urls['1800']}]({photo.urls['1800']})\n"
         #     # out_str += f'<img src="{photo.urls['1800']}" width="50" height="50">'
-
-        for photo in self.photos:
-            size = list(photo["urls"].keys())[0]
-            url = photo["urls"][str(size)]
-            out_str += f'<img src="{url}" height="200">'
+        if self.photos:
+            if len(self.photos) > 0:
+                for photo in self.photos:
+                    size = list(photo["urls"].keys())[0]
+                    url = photo["urls"][str(size)]
+                    out_str += f'<img src="{url}" height="200">'
         out_str += "</div>\n\n\n"
         return out_str
 
@@ -148,10 +166,6 @@ class StravaActivity:
     @property
     def activity_stream(self):
         return self._activity_stream
-
-    @property
-    def client(self):
-        return self._client
 
     @property
     def flip(self):

@@ -1,8 +1,6 @@
 import argparse
 import os
 
-from stravalib import Client
-
 from strava_collections.collection import StravaCollection
 
 
@@ -47,25 +45,9 @@ def main():
             id = int(id)
         activity_ids.append((id, flip))
 
-    # Load Strava credentials from environment
-    client_id = os.getenv("STRAVA_CLIENT_ID")
-    client_secret = os.getenv("STRAVA_CLIENT_SECRET")
-    refresh_token = os.getenv("STRAVA_REFRESH_TOKEN")
-
-    client = Client()
-
-    # Refresh access token
-    token_response = client.refresh_access_token(
-        client_id=client_id,
-        client_secret=client_secret,
-        refresh_token=refresh_token,
-    )
-    client.access_token = token_response["access_token"]
-
     # Create collection and plot
     collection = StravaCollection(
         name=args.collection,
-        client=client,
         activity_ids=activity_ids,
     )
 

@@ -1,10 +1,10 @@
+import os
 from typing import List
 
 import numpy as np
 import pandas as pd
 import plotly.colors as pc
 import plotly.graph_objects as go
-from stravalib import Client
 
 from strava_collections.activity import StravaActivity
 
@@ -12,12 +12,16 @@ palette = pc.qualitative.Plotly  # default Plotly categorical colors
 
 
 class StravaCollection:
-    def __init__(self, name: str, client: Client, activity_ids: list[tuple]) -> None:
+    def __init__(
+        self,
+        name: str,
+        activity_ids: list[tuple],
+    ) -> None:
         self._name = name
-        self._client = client
+
         self._activity_ids = activity_ids
         self._activities = [
-            StravaActivity(client, *(activity_id)) for activity_id in activity_ids
+            StravaActivity(*(activity_id)) for activity_id in activity_ids
         ]
         tot_elevation_gaion = 0.0
         for activity in self.activities:
@@ -178,8 +182,8 @@ class StravaCollection:
             )
             f.write(
                 f"""
-<div style="position: relative; width: 100%; height: 350;">
-<iframe src="_static/{elevfig_name}" style="width:100%; height:100%; border:none;"></iframe>
+<div style="position: relative; width: 100%; padding-bottom: 250px; height: 0;">
+<iframe src="_static/{elevfig_name}" style="position:absolute; top:0; left:0; width:100%; height:100%; border:none;"></iframe>
 </div>\n\n"""
             )
 
