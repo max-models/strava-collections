@@ -149,8 +149,10 @@ class StravaActivity:
                 for photo in self.photos:
                     size = list(photo["urls"].keys())[0]
                     url = photo["urls"][str(size)]
-                    out_str += f'<img src="{url}" height="200" class="lightbox-trigger">'
-                out_str += '</div>'
+                    out_str += (
+                        f'<img src="{url}" height="200" class="lightbox-trigger">'
+                    )
+                out_str += "</div>"
         # out_str += "</div>"
         out_str += "\n\n\n"
         return out_str

@@ -217,11 +217,14 @@ class StravaCollection:
             # Add blocks with each individual activities
             for activity in self.activities:
                 f.write(activity.generate_markdown_summary())
-            f.write("""
+            f.write(
+                """
 <div id="lightbox" class="lightbox">
   <img id="lightbox-img" src="" alt="Full Image">
-</div>""")
-            f.write("""
+</div>"""
+            )
+            f.write(
+                """
 <script>
 document.querySelectorAll('.gallery img').forEach(img => {
   img.addEventListener('click', event => {
@@ -236,7 +239,8 @@ document.querySelectorAll('.gallery img').forEach(img => {
 document.getElementById('lightbox').addEventListener('click', () => {
   document.getElementById('lightbox').classList.remove('show');
 });
-</script>""")
+</script>"""
+            )
 
         print(f"Saved markdown page to {filepath}")
 
