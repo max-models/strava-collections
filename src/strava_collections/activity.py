@@ -146,11 +146,12 @@ class StravaActivity:
         #     print(photo.urls)
         #     # out_str += f"![{photo.urls['1800']}]({photo.urls['1800']})\n"
         #     # out_str += f'<img src="{photo.urls['1800']}" width="50" height="50">'
-
-        for photo in self.photos:
-            size = list(photo["urls"].keys())[0]
-            url = photo["urls"][str(size)]
-            out_str += f'<img src="{url}" height="200">'
+        if self.photos:
+            if len(self.photos) > 0:
+                for photo in self.photos:
+                    size = list(photo["urls"].keys())[0]
+                    url = photo["urls"][str(size)]
+                    out_str += f'<img src="{url}" height="200">'
         out_str += "</div>\n\n\n"
         return out_str
 
