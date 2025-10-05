@@ -1,8 +1,9 @@
 import argparse
 import os
 
-from strava_collections.collection import StravaCollection
 from stravalib import Client
+
+from strava_collections.collection import StravaCollection
 
 
 def main():

@@ -4,8 +4,9 @@ import pickle
 import pandas as pd
 import plotly.graph_objects as go
 import polyline
-import strava_collections
 from stravalib import Client
+
+import strava_collections
 
 LIBPATH = strava_collections.__path__[0]
 
