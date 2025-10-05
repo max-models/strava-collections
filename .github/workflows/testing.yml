@@ -69,7 +69,7 @@ jobs:
           mkdir -p docs/source/_static/plots/bavarian-alps
           strava-collections \
             12284003055F \
-            12231765525F \
+            12231765525 \
             11603714471F \
             11487681160 \
             11492585278 \

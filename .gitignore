@@ -183,3 +183,4 @@ junit/
 old_scripts/
 _static/
 collection-*.md
+*.pkl

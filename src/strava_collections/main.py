@@ -61,19 +61,14 @@ def main():
 
     # Create collection and plot
     collection = StravaCollection(client, activity_ids=activity_ids)
-    fig_map = collection.plot_map()
-    fig_elev = collection.plot_elevation()
 
-    # Save HTML
     mapfig_name = f"{collection_filename}-map.html"
     map_path = os.path.join(args.output, mapfig_name)
-    fig_map.write_html(map_path, include_plotlyjs="cdn", full_html=True)
-    print(f"Saved map plot to {map_path}")
-
     elevfig_name = f"{collection_filename}-elev.html"
     elev_path = os.path.join(args.output, elevfig_name)
-    fig_elev.write_html(elev_path, include_plotlyjs="cdn", full_html=True)
-    print(f"Saved elevation plot to {elev_path}")
+
+    collection.plot_map(filepath=map_path)
+    collection.plot_elevation(filepath=elev_path)
 
     path_collection_md = os.path.join(args.output, f"{collection_filename}.md")
     with open(path_collection_md, "w") as f:
