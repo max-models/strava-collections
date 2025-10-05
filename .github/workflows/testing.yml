@@ -61,7 +61,7 @@ jobs:
       - name: Restore Strava cache
         uses: actions/cache/restore@v3
         with:
-          path: cache/
+          path: strava-cache-${{ matrix.collection.name }}
           key: strava-cache-${{ matrix.collection.name }}
           restore-keys: |
             strava-cache-
@@ -76,6 +76,9 @@ jobs:
       - name: Copy cache files
         run: |
           mkdir -p cache
+          ls cache/
+          echo "-------------"
+          cp strava-cache-${{ matrix.collection.name }}/*.pkl cache/
           ls cache/
           echo "-------------"
           cp -r temp-strava-cache/* cache/
@@ -98,12 +101,13 @@ jobs:
           strava-collections ${{ matrix.collection.ids }} \
             -o docs/source/ \
             -c "${{ matrix.collection.title }}"
+          cp cache/*.pkl strava-cache-${{ matrix.collection.name }}/
 
       - name: Save Strava cache
         if: always()
         uses: actions/cache/save@v3
         with:
-          path: cache/
+          path: strava-cache-${{ matrix.collection.name }}
           key: strava-cache-${{ matrix.collection.name }}
 
   docs:
@@ -134,7 +138,8 @@ jobs:
       #     echo "-------------"
       #     cp -r temp-strava-cache/* cache/
       #     ls cache/
-
+      
+      # TODO: Only use the cached files
       - name: Gather all Strava caches
         run: |
           mkdir -p cache

@@ -36,6 +36,7 @@ jobs:
           key: strava-cache-v1
           restore-keys: |
             strava-cache-
+
       - name: Clone private Strava cache repo
         uses: actions/checkout@v4
         with:
