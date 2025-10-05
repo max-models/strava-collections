@@ -170,16 +170,16 @@ class StravaCollection:
             f.write(f"# {self.name}\n")
             f.write(
                 f"""
-    <div style="position: relative; width: 100%; height: 650px;">
-    <iframe src="_static/{mapfig_name}" style="width:100%; height:100%; border:none;"></iframe>
-    </div>
-    \n\n"""
+<div style="position: relative; width: 100%; height: 650px;">
+<iframe src="_static/{mapfig_name}" style="width:100%; height:100%; border:none;"></iframe>
+</div>
+\n\n"""
             )
             f.write(
                 f"""
-    <div style="position: relative; width: 100%; height: 350;">
-    <iframe src="_static/{elevfig_name}" style="width:100%; height:100%; border:none;"></iframe>
-    </div>\n\n"""
+<div style="position: relative; width: 100%; height: 350;">
+<iframe src="_static/{elevfig_name}" style="width:100%; height:100%; border:none;"></iframe>
+</div>\n\n"""
             )
 
             data = []
