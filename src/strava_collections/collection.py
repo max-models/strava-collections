@@ -98,7 +98,7 @@ class StravaCollection:
             print(f"Saved elevation plot to: {filepath}")
         return fig
 
-    def plot_map(self, zoom=12, filepath=None, config={}, height=600):
+    def plot_map(self, filepath=None, config={}, height=300):
         """Plot all activities together as lon/lat lines."""
         fig = go.Figure()
 
@@ -146,7 +146,7 @@ class StravaCollection:
             )
             color_index += 1
 
-        zoom, center = zoom_center(maxlon, minlon, maxlat, minlat, width_to_height=3.0)
+        zoom, center = zoom_center(maxlon, minlon, maxlat, minlat, width_to_height=5.0)
         fig.update_layout(
             mapbox_style="open-street-map",
             mapbox_zoom=zoom,
@@ -175,7 +175,7 @@ class StravaCollection:
             f.write(f"# {self.name}\n")
             f.write(
                 f"""
-<div style="position: relative; width: 100%; height: 650px;">
+<div style="position: relative; width: 100%; height: 350px;">
 <iframe src="_static/{mapfig_name}" style="width:100%; height:100%; border:none;"></iframe>
 </div>
 \n\n"""
