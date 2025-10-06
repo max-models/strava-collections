@@ -123,12 +123,11 @@ class StravaActivity:
         out_str += get_icon_link(
             "https://cdn-icons-png.freepik.com/512/13063/13063145.png"
         )
-        out_str += f"{timedelta(seconds=self.activity.elapsed_time)} "
+        out_str += f"<span>{timedelta(seconds=self.activity.elapsed_time)}</span>\n "
+        out_str += "       "
         out_str += get_icon_link(
             "https://cdn.worldvectorlogo.com/logos/strava-2.svg",
             href=self.link,
-            width=10,
-            height=10,
         )
         out_str += "\n\n<br>\n\n"
         description = self.activity.description.replace("\n", "<br>\n")
@@ -187,11 +186,21 @@ class StravaActivity:
 
 
 def get_icon_link(src, href=None, width=20, height=20):
+    """Return an HTML <img> tag, optionally wrapped in a link."""
+
     if href:
-        html = f'<a href="{href}"><img src="{src}" width="30" height="30"></a>'
+        img_tag = f'<img src="{src}" class="icon">'
+        return (
+            f'<a href="{href}" class="icon-link" target="_blank" rel="noopener">'
+            + f"{img_tag}"
+            + "</a>"
+        )
     else:
-        html = f'<img src="{src}" width="{width}" height="{height}">'
-    return html
+        return f'<img src="{src}" class="static-icon">'
+
+    # <a href="https://www.strava.com/activities/9327605554" class="icon-link" target="_blank" rel="noopener">
+    # <img src="https://cdn.worldvectorlogo.com/logos/strava-2.svg" class="icon">
+    # </a>
 
 
 def get_activity_photos_from_web(activity_id, access_token, size=5000):
