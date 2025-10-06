@@ -27,6 +27,13 @@ def main():
         help="Collection name, default: Example collection",
     )
 
+    parser.add_argument(
+        "-f",
+        "--force-update",
+        action="store_true",
+        help="Force update strava activities",
+    )
+
     args = parser.parse_args()
 
     collection_filename = "collection-" + args.collection.lower().replace(" ", "-")
@@ -48,6 +55,7 @@ def main():
     collection = StravaCollection(
         name=args.collection,
         activity_ids=activity_ids,
+        force_update=args.force_update,
     )
 
     # Set filenames

@@ -15,12 +15,17 @@ class StravaCollection:
         self,
         name: str,
         activity_ids: list[tuple],
+        force_update: bool = False,
     ) -> None:
         self._name = name
 
         self._activity_ids = activity_ids
         self._activities = [
-            StravaActivity(*(activity_id)) for activity_id in activity_ids
+            StravaActivity(
+                *(activity_id),
+                force_update=force_update,
+            )
+            for activity_id in activity_ids
         ]
         tot_elevation_gaion = 0.0
         for activity in self.activities:

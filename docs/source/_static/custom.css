@@ -108,3 +108,39 @@
 .lightbox-trigger:hover {
   transform: scale(1.05);
 }
+
+
+
+
+
+.static-icon {
+  width: 20px;           /* default size */
+  height: 20px;
+  vertical-align: middle; /* aligns with text */
+  margin-right: 4px;     /* spacing between icons */
+  display: inline-block;
+}
+
+.icon {
+  width: 20px;           /* default size */
+  height: 20px;
+  vertical-align: middle; /* aligns with text */
+  margin-right: 4px;     /* spacing between icons */
+  display: inline-block;
+  cursor: default;       /* pointer only if clickable */
+  transition: transform 0.2s ease;
+}
+
+.icon:hover {
+  transform: scale(1.1); /* subtle hover effect */
+}
+
+.icon-link {
+  display: inline-block; /* wrap clickable icons */
+  cursor: pointer;
+  text-decoration: none; /* remove underline if <a> */
+}
+
+.icon-link img.icon {
+  cursor: pointer;       /* show pointer on hover */
+}
