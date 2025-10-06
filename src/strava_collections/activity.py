@@ -185,7 +185,10 @@ class StravaActivity:
         return getattr(self.activity, name)
 
 
-def get_icon_link(src, href=None, width=20, height=20):
+def get_icon_link(
+    src,
+    href=None,
+):
     """Return an HTML <img> tag, optionally wrapped in a link."""
 
     if href:
