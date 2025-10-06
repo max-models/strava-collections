@@ -51,11 +51,12 @@ def main():
     )
 
     # Set filenames
+    path_static = os.path.join(args.output, "_static")
     mapfig_name = f"{collection_filename}-map.html"
-    map_path = os.path.join(args.output, mapfig_name)
+    map_path = os.path.join(path_static, mapfig_name)
 
     elevfig_name = f"{collection_filename}-elev.html"
-    elev_path = os.path.join(args.output, elevfig_name)
+    elev_path = os.path.join(path_static, elevfig_name)
 
     path_collection_md = os.path.join(args.output, f"{collection_filename}.md")
 
