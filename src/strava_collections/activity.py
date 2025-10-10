@@ -109,8 +109,11 @@ class StravaActivity:
         # ">\n"""
 
         # Heading
-        out_str += f"## {self.name}\n\n"
+        # out_str += f"## {self.name}\n\n"
+        out_str += '<div class="description-box">\n'
+        out_str += f'<div class="description-title">{self.name}</div>\n'
 
+        out_str += "<div>\n"
         # Icon row
         out_str += get_icon_link(
             "https://media.istockphoto.com/id/1442152045/vector/path-route-icon-distance-symbol.jpg?s=612x612&w=0&k=20&c=2ilIa1pWHJp550B31t__1NPc0CHpouutgdxt7QO4EJg="
@@ -129,9 +132,12 @@ class StravaActivity:
             "https://cdn.worldvectorlogo.com/logos/strava-2.svg",
             href=self.link,
         )
-        out_str += "\n\n<br>\n\n"
-        description = self.activity.description.replace("\n", "<br>\n")
-        out_str += f"{description}<br>\n\n"
+        out_str += "</div>\n\n<br>\n\n"
+        description = self.activity.description
+        if len(description) > 0:
+            out_str += f'<div class="description-text">'
+            out_str += description
+            out_str += "</div>\n"
 
         # Elevation profile
 
@@ -153,7 +159,7 @@ class StravaActivity:
                     )
                 out_str += "</div>"
         # out_str += "</div>"
-        out_str += "\n\n\n"
+        out_str += "</div>\n\n\n"
         return out_str
 
     @property
