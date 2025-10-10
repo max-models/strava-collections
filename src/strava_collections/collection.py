@@ -1,3 +1,6 @@
+import subprocess
+import tempfile
+from pathlib import Path
 from typing import List
 
 import numpy as np
@@ -175,61 +178,54 @@ class StravaCollection:
         elevfig_name: str,
         sort_by_date: bool = False,
         include_table: bool = False,
+        prettify: bool = False,
     ):
-        with open(filepath, "w", encoding="utf-8") as f:
-            f.write(f"# {self.name}\n")
-            f.write(
-                f"""
+        md_str = ""
+        md_str += f"<h1>{self.name}</h1>\n"
+        md_str += f"""
 <div style="position: relative; width: 100%; height: 350px;">
 <iframe src="_static/{mapfig_name}" style="width:100%; height:100%; border:none;"></iframe>
 </div>
 \n\n"""
-            )
-            f.write(
-                f"""
+
+        md_str += f"""
 <div style="position: relative; width: 100%; padding-bottom: 250px; height: 0;">
 <iframe src="_static/{elevfig_name}" style="position:absolute; top:0; left:0; width:100%; height:100%; border:none;"></iframe>
 </div>\n\n"""
+
+        data = []
+        for activity in self.activities:
+            name_link = f"[{activity.activity.name}]({activity.link})"
+            data.append(
+                {
+                    "Activity": name_link,
+                    "Date": activity.activity.start_date_local.date(),
+                    "Distance (km)": round(float(activity.activity.distance) * 1e-3, 1),
+                    "Elevation Gain (m)": round(
+                        float(activity.activity.total_elevation_gain)
+                    ),
+                }
             )
 
-            data = []
-            for activity in self.activities:
-                name_link = f"[{activity.activity.name}]({activity.link})"
-                data.append(
-                    {
-                        "Activity": name_link,
-                        "Date": activity.activity.start_date_local.date(),
-                        "Distance (km)": round(
-                            float(activity.activity.distance) * 1e-3, 1
-                        ),
-                        "Elevation Gain (m)": round(
-                            float(activity.activity.total_elevation_gain)
-                        ),
-                    }
-                )
+        df = pd.DataFrame(data)
+        if sort_by_date:
+            df = df.sort_values(by="Date", ascending=True)
 
-            df = pd.DataFrame(data)
-            if sort_by_date:
-                df = df.sort_values(by="Date", ascending=True)
+        # Convert DataFrame to Markdown table
+        md_table = df.to_markdown(index=False)
 
-            # Convert DataFrame to Markdown table
-            md_table = df.to_markdown(index=False)
+        if include_table:
+            md_str += md_table
 
-            if include_table:
-                f.write(md_table)
-
-            f.write("\n\n")
-            # Add blocks with each individual activities
-            for activity in self.activities:
-                f.write(activity.generate_markdown_summary())
-            f.write(
-                """
+        md_str += "\n\n"
+        # Add blocks with each individual activities
+        for activity in self.activities:
+            md_str += activity.generate_markdown_summary()
+        md_str += """
 <div id="lightbox" class="lightbox">
   <img id="lightbox-img" src="" alt="Full Image">
 </div>"""
-            )
-            f.write(
-                """
+        md_str += """
 <script>
 document.querySelectorAll('.gallery img').forEach(img => {
   img.addEventListener('click', event => {
@@ -245,8 +241,25 @@ document.getElementById('lightbox').addEventListener('click', () => {
   document.getElementById('lightbox').classList.remove('show');
 });
 </script>"""
+
+        if prettify:
+            with tempfile.NamedTemporaryFile(
+                "w+", suffix=".html", delete=False, encoding="utf-8"
+            ) as tmp_file:
+                tmp_file.write(md_str)
+                tmp_file.flush()
+                tmp_path = Path(tmp_file.name)
+                tmp_folder = tmp_path.parent
+            print(f"{tmp_path = }")
+            subprocess.run(
+                ["prettier", "--write", str(tmp_path)], check=True, cwd=tmp_folder
             )
 
+            with open(tmp_path, "r", encoding="utf-8") as f:
+                md_str2 = f.read()
+                print(f"{md_str2}")
+        with open(filepath, "w", encoding="utf-8") as f:
+            f.write(md_str2)
         print(f"Saved markdown page to {filepath}")
 
     @property

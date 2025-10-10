@@ -34,6 +34,13 @@ def main():
         help="Force update strava activities",
     )
 
+    parser.add_argument(
+        "-p",
+        "--prettify",
+        action="store_true",
+        help="Prettify generated collection files",
+    )
+
     args = parser.parse_args()
 
     collection_filename = "collection-" + args.collection.lower().replace(" ", "-")
@@ -78,6 +85,7 @@ def main():
         filepath=path_collection_md,
         mapfig_name=mapfig_name,
         elevfig_name=elevfig_name,
+        prettify=args.prettify,
     )
 
 

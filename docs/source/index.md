@@ -57,3 +57,4 @@
 :glob:
 
 collection-*
+```
