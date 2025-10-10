@@ -144,3 +144,35 @@
 .icon-link img.icon {
   cursor: pointer;       /* show pointer on hover */
 }
+
+/* Description box */
+
+.description-box {
+  background: #ffffff;
+  padding: 24px 28px;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.description-title {
+  font-weight: 700;
+  font-size: 2.0rem;
+  color: #0f172a;
+  margin-bottom: 12px;
+  letter-spacing: 0.3px;
+  position: relative;
+  padding-bottom: 6px;
+}
+
+.description-text {
+  font-size: 0.95rem;
+  color: #374151;
+  line-height: 1.6;
+  background: #f9fafb;
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+  white-space: pre-wrap;
+}
