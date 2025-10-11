@@ -1,0 +1,11 @@
+name: "Singapore to Kuala Lumpur Collection"
+description: "Wrapper action for Singapore to Kuala Lumpur"
+runs:
+  using: "composite"
+  steps:
+    - name: Build collection
+      uses: ./.github/actions/build-collection
+      with:
+        activity_ids: "836894407 838026669 838748059 840195182"
+        output_dir: "docs/source/"
+        collection_name: "Singapore to Kuala Lumpur"

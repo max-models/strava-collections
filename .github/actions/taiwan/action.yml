@@ -1,0 +1,11 @@
+name: "Taiwan Collection"
+description: "Wrapper action for Taiwan"
+runs:
+  using: "composite"
+  steps:
+    - name: Build collection
+      uses: ./.github/actions/build-collection
+      with:
+        activity_ids: "1324271479 1325123423 1326744150 1327962669 1328949546 1330086898 1331713983 1332641515 1333971033 1336237609"
+        output_dir: "docs/source/"
+        collection_name: "Taiwan"

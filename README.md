@@ -1,7 +1,5 @@
 # Strava collections
 
-
-
 # Install
 
 Create and activate python environment
@@ -27,7 +25,6 @@ python update_strava_tokens.py
 export the tokes as `STRAVA_REFRESH_TOKEN` and `STRAVA_ACCESS_TOKEN`.
 
 # Build docs
-
 
 ```
 make html

@@ -1,0 +1,11 @@
+name: "Bavarian Alps Traverse Collection"
+description: "Wrapper action for Bavarian Alps Traverse"
+runs:
+  using: "composite"
+  steps:
+    - name: Build collection
+      uses: ./.github/actions/build-collection
+      with:
+        activity_ids: "12284003055F 12231765525 11603714471F 11487681160 11492585278 9020068072 11518973205 9327605554F 9586696097 9961995244 11166740981 11378142289F 11368440756F 15177143911 15877224330 16029679520"
+        output_dir: "docs/source/"
+        collection_name: "Bavarian alps traverse"
