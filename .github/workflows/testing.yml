@@ -101,7 +101,14 @@ jobs:
 
       - name: Bergen to Istanbul
         uses: ./.github/actions/bergen-to-istanbul
-      
+
+      - name: Save Strava cache
+        if: always()
+        uses: actions/cache/save@v3
+        with:
+          path: cache/
+          key: strava-cache-v1
+
       - name: Build docs
         run: |
           sudo apt-get update
