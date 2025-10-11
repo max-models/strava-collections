@@ -4,7 +4,7 @@ runs:
   using: "composite"
   steps:
     - name: Build collection
-      uses: ../build-strava-collection
+      uses: ./.github/actions/build-collection
       with:
         activity_ids: "836894407 838026669 838748059 840195182"
         output_dir: "docs/source/"
