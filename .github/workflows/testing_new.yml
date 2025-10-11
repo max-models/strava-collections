@@ -81,23 +81,23 @@ jobs:
       - name: Singapore to Kuala Lumpur
         uses: ./.github/actions/singapore-to-kl
 
-    #   - name: Ibiza Sailing Trip
-    #     uses: ./.github/actions/ibiza-sailing
+      - name: Ibiza Sailing Trip
+        uses: ./.github/actions/ibiza-sailing
 
-    #   - name: Hikes with Perla
-    #     uses: ./.github/actions/hikes-with-perla
+      - name: Hikes with Perla
+        uses: ./.github/actions/hikes-with-perla
 
-    #   - name: Japan
-    #     uses: ./.github/actions/japan
+      - name: Japan
+        uses: ./.github/actions/japan
 
-    #   - name: Vietnam
-    #     uses: ./.github/actions/vietnam
+      - name: Vietnam
+        uses: ./.github/actions/vietnam
 
-    #   - name: Taiwan
-    #     uses: ./.github/actions/taiwan
+      - name: Taiwan
+        uses: ./.github/actions/taiwan
 
-    #   - name: Berlin to Tarifa
-    #     uses: ./.github/actions/berlin-to-tarifa
+      - name: Berlin to Tarifa
+        uses: ./.github/actions/berlin-to-tarifa
 
-    #   - name: Bergen to Istanbul
-    #     uses: ./.github/actions/bergen-to-istanbul
+      - name: Bergen to Istanbul
+        uses: ./.github/actions/bergen-to-istanbul

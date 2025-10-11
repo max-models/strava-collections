@@ -1,0 +1,11 @@
+name: "Berlin to Tarifa Collection"
+description: "Wrapper action for Berlin to Tarifa"
+runs:
+  using: "composite"
+  steps:
+    - name: Build collection
+      uses: ./.github/actions/build-collection
+      with:
+        activity_ids: "8766382217F 8741391139F 8736885309F 8730837773F 7791850673 7787652169 1131819135 1133646946 10143696942 10148790717 10154431803 10159084440 10171756726 10177904347 10253094711 10258438586 10263187008 10268437202 10274894269 10281645686 10284899004"
+        output_dir: "docs/source/"
+        collection_name: "Berlin to Tarifa"

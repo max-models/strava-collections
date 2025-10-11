@@ -1,0 +1,12 @@
+name: "Japan Collection"
+description: "Wrapper action for Japan"
+runs:
+  using: "composite"
+  steps:
+    - name: Build collection
+      uses: ./.github/actions/build-collection
+      with:
+        activity_ids: "2663962144 2666207046 2669210977 2672807915 2675591839 2678504583 2681678397 2685785353 11702826079 2687395619"
+        output_dir: "docs/source/"
+        collection_name: "Japan"
+

@@ -1,0 +1,11 @@
+name: "Ibiza sailing trip Collection"
+description: "Wrapper action for Ibiza sailing trip"
+runs:
+  using: "composite"
+  steps:
+    - name: Build collection
+      uses: ./.github/actions/build-collection
+      with:
+        activity_ids: "10184212131 10188508424 10201453185 10209283997 10210461413 10215286376 10220935820 10223047971 10232455929 10239392263 10240530649 10244023732"
+        output_dir: "docs/source/"
+        collection_name: "Ibiza sailing trip"

@@ -1,0 +1,11 @@
+name: "Vietnam Collection"
+description: "Wrapper action for Vietnam"
+runs:
+  using: "composite"
+  steps:
+    - name: Build collection
+      uses: ./.github/actions/build-collection
+      with:
+        activity_ids: "813611974 814667984 815722126 816416782 817458392 818317407 818351252 820642128 821757676"
+        output_dir: "docs/source/"
+        collection_name: "Vietnam"
