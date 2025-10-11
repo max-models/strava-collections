@@ -256,10 +256,9 @@ document.getElementById('lightbox').addEventListener('click', () => {
             )
 
             with open(tmp_path, "r", encoding="utf-8") as f:
-                md_str2 = f.read()
-                print(f"{md_str2}")
+                md_str = f.read()
         with open(filepath, "w", encoding="utf-8") as f:
-            f.write(md_str2)
+            f.write(md_str)
         print(f"Saved markdown page to {filepath}")
 
     @property
