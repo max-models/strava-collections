@@ -1,7 +1,10 @@
 name: Generate Strava Collections
 
 on:
-  workflow_dispatch:
+  push:
+    branches: [main, devel]
+  pull_request:
+    branches: [main, devel]
 
 env:
   STRAVA_CLIENT_ID: ${{ secrets.STRAVA_CLIENT_ID }}
