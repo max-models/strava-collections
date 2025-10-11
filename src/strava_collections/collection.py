@@ -14,10 +14,10 @@ from strava_collections.activity import StravaActivity
 palette = pc.qualitative.Plotly  # default Plotly categorical colors
 mapbox_token = os.getenv("MAPBOX_TOKEN")
 
-import plotly.io as pio
+# import plotly.io as pio
 
-pio.templates.default = "plotly"  # optional, ensures consistent styling
-pio.renderers.default = "browser"  # or "notebook", "png", etc.
+# pio.templates.default = "plotly"  # optional, ensures consistent styling
+# pio.renderers.default = "browser"  # or "notebook", "png", etc.
 
 
 class StravaCollection:
