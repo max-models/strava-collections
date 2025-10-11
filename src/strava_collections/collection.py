@@ -169,19 +169,22 @@ class StravaCollection:
         zoom, center = zoom_center(
             maxlon, minlon, maxlat, minlat, width_to_height=width_to_height
         )
-        print(f"{zoom = }")
+        # print(f"{zoom = }")
         fig.update_layout(
             mapbox_style="open-street-map",
             mapbox_zoom=zoom,
             mapbox_center=center,
             height=height,
-            width=width_to_height * height,  # width_to_height = width / height
+            # width=width_to_height * height,  # width_to_height = width / height
             dragmode="zoom",
             showlegend=False,
             margin=dict(l=0, r=0, t=0, b=0),
-            autosize=False,
             # title="Strava Activities",
         )
+        if ".html" in filepath:
+            fig.update_layout(autosize=True)
+        else:
+            fig.update_layout(autosize=False)
         if isinstance(filepath, str):
             export_plotly_fig(
                 fig=fig,
@@ -275,7 +278,7 @@ document.getElementById('lightbox').addEventListener('click', () => {
                 tmp_file.flush()
                 tmp_path = Path(tmp_file.name)
                 tmp_folder = tmp_path.parent
-            print(f"{tmp_path = }")
+            # print(f"{tmp_path = }")
             subprocess.run(
                 ["prettier", "--write", str(tmp_path)], check=True, cwd=tmp_folder
             )
@@ -404,9 +407,9 @@ def zoom_center(
             360.0,
         ]
     )
-    print(
-        f"{width_to_height = } for mercator, {maxlat = } {minlat = } {maxlon = } {minlon = }"
-    )
+    # print(
+    #     f"{width_to_height = } for mercator, {maxlat = } {minlat = } {maxlon = } {minlon = }"
+    # )
     if projection == "mercator":
         # margin = 1.2
         # height = (maxlat - minlat) * margin * width_to_height
@@ -415,7 +418,7 @@ def zoom_center(
         # lat_zoom = np.interp(height, lon_zoom_range, range(20, 0, -1))
         # zoom = round(min(lon_zoom, lat_zoom), 2)
 
-        margin = 1.2
+        margin = 1.7
 
         # Determine raw aspect ratio of the bounding box
         bbox_width = maxlon - minlon
