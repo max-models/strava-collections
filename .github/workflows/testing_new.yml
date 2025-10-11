@@ -75,8 +75,8 @@ jobs:
       - name: Bavarian Alps Traverse
         uses: ./.github/actions/bavarian-alps-traverse
 
-    #   - name: Singapore to Kuala Lumpur
-    #     uses: ./.github/actions/singapore-to-kl
+      - name: Singapore to Kuala Lumpur
+        uses: ./.github/actions/singapore-to-kl
 
     #   - name: Ibiza Sailing Trip
     #     uses: ./.github/actions/ibiza-sailing
