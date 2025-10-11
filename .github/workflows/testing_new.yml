@@ -1,0 +1,100 @@
+name: Generate Strava Collections
+
+on:
+  workflow_dispatch:
+
+env:
+  STRAVA_CLIENT_ID: ${{ secrets.STRAVA_CLIENT_ID }}
+  STRAVA_CLIENT_SECRET: ${{ secrets.STRAVA_CLIENT_SECRET }}
+  STRAVA_REFRESH_TOKEN: ${{ secrets.STRAVA_REFRESH_TOKEN }}
+  MAPBOX_TOKEN: ${{ secrets.MAPBOX_TOKEN }}
+
+jobs:
+  build-collections:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Restore Strava cache
+        uses: actions/cache/restore@v3
+        with:
+          path: strava-cache-${{ matrix.collection.name }}
+          key: strava-cache-${{ matrix.collection.name }}
+          restore-keys: |
+            strava-cache-
+      
+      - name: Clone private Strava cache repo
+        uses: actions/checkout@v4
+        with:
+          repository: max-models/temporary-strava-activities
+          token: ${{ secrets.GITHUB_TOKEN }}
+          path: temp-strava-cache
+
+      - name: Copy cache files
+        run: |
+          mkdir -p cache
+          echo "Listing current folder:"
+          ls
+          echo "Listing cache folder before copy:"
+          ls cache/
+          echo "-------------"
+
+          # Copy per-job strava cache if it exists
+          SRC="strava-cache-${{ matrix.collection.name }}"
+          if [ -d "$SRC" ]; then
+            echo "Copying $SRC into cache/"
+            cp -r "$SRC"/* cache/ || true
+          else
+            echo "Warning: $SRC does not exist"
+          fi
+
+          # Copy temp-strava-cache repo contents if it exists
+          if [ -d "temp-strava-cache" ]; then
+            echo "Copying temp-strava-cache into cache/"
+            cp -r temp-strava-cache/* cache/ || true
+          else
+            echo "Warning: temp-strava-cache folder does not exist"
+          fi
+
+          echo "Listing cache folder after copy:"
+          ls cache/
+          echo "-------------"
+
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+      
+
+      - name: Install strava-collections
+        run: |
+          pip install --upgrade pip
+          pip install ".[dev,docs]"
+
+      - name: Bavarian Alps Traverse
+        uses: ./.github/actions/bavarian-alps-traverse
+
+    #   - name: Singapore to Kuala Lumpur
+    #     uses: ./.github/actions/singapore-to-kl
+
+    #   - name: Ibiza Sailing Trip
+    #     uses: ./.github/actions/ibiza-sailing
+
+    #   - name: Hikes with Perla
+    #     uses: ./.github/actions/hikes-with-perla
+
+    #   - name: Japan
+    #     uses: ./.github/actions/japan
+
+    #   - name: Vietnam
+    #     uses: ./.github/actions/vietnam
+
+    #   - name: Taiwan
+    #     uses: ./.github/actions/taiwan
+
+    #   - name: Berlin to Tarifa
+    #     uses: ./.github/actions/berlin-to-tarifa
+
+    #   - name: Bergen to Istanbul
+    #     uses: ./.github/actions/bergen-to-istanbul
