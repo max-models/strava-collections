@@ -1,20 +1,8 @@
 # Strava collections
 
-# Install
+This repo builds a webpage some collections of runs and rides from strava.
 
-Create and activate python environment
-
-```
-python -m venv env
-source env/bin/activate
-pip install --upgrade pip
-```
-
-Install the code and requirements with pip
-
-```
-pip install -e .
-```
+Link to the published webpage: https://max-models.github.io/strava-collections/
 
 # Get the tokens
 
@@ -29,5 +17,5 @@ export the tokes as `STRAVA_REFRESH_TOKEN` and `STRAVA_ACCESS_TOKEN`.
 ```
 make html
 cd ../
-open docs/_build/html/index.html
+open docs/build/html/index.html
 ```
