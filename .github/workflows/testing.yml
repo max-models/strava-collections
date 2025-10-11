@@ -74,31 +74,31 @@ jobs:
           pip install ".[dev,docs]"
 
       - name: Bavarian Alps Traverse
-        uses: ./.github/actions/bavarian-alps-traverse
+        uses: ./.github/actions/collections/bavarian-alps-traverse
 
       - name: Singapore to Kuala Lumpur
-        uses: ./.github/actions/singapore-to-kl
+        uses: ./.github/actions/collections/singapore-to-kl
 
       - name: Ibiza Sailing Trip
-        uses: ./.github/actions/ibiza-sailing
+        uses: ./.github/actions/collections/ibiza-sailing
 
       - name: Hikes with Perla
-        uses: ./.github/actions/hikes-with-perla
+        uses: ./.github/actions/collections/hikes-with-perla
 
       - name: Japan
-        uses: ./.github/actions/japan
+        uses: ./.github/actions/collections/japan
 
       - name: Vietnam
-        uses: ./.github/actions/vietnam
+        uses: ./.github/actions/collections/vietnam
 
       - name: Taiwan
-        uses: ./.github/actions/taiwan
+        uses: ./.github/actions/collections/taiwan
 
       - name: Berlin to Tarifa
-        uses: ./.github/actions/berlin-to-tarifa
+        uses: ./.github/actions/collections/berlin-to-tarifa
 
       - name: Bergen to Istanbul
-        uses: ./.github/actions/bergen-to-istanbul
+        uses: ./.github/actions/collections/bergen-to-istanbul
 
       - name: Save Strava cache
         if: always()
