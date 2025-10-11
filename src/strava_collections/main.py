@@ -1,5 +1,8 @@
 import argparse
 import os
+from ast import arg
+
+import yaml
 
 from strava_collections.collection import StravaCollection
 
@@ -9,10 +12,18 @@ def main():
     parser = argparse.ArgumentParser(description="Plot Strava activities.")
     parser.add_argument(
         "ids",
-        nargs="+",
+        nargs="*",
         type=str,
         help="Space-separated list of Strava activity IDs, e.g., 123 456 789",
     )
+
+    parser.add_argument(
+        "-i",
+        "--input",
+        default=None,
+        help="Path to unput yaml file (default: None)",
+    )
+
     parser.add_argument(
         "-o",
         "--output",
@@ -43,11 +54,23 @@ def main():
 
     args = parser.parse_args()
 
-    collection_filename = "collection-" + args.collection.lower().replace(" ", "-")
+    if args.input:
+        with open(args.input, "r", encoding="utf-8") as f:
+            data = yaml.safe_load(f)
+            print(data["runs"]["steps"][0]["with"]["activity_ids"])
+            activity_ids = data["runs"]["steps"][0]["with"]["activity_ids"].split(" ")
+            output = data["runs"]["steps"][0]["with"]["output_dir"]
+            collection_name = data["runs"]["steps"][0]["with"]["collection_name"]
+    else:
+        activity_ids = args.ids
+        output = args.output
+        collection_name = args.collection
+
+    collection_filename = "collection-" + collection_name.lower().replace(" ", "-")
 
     # Parse activity IDs into integers
-    activity_ids = []
-    for id in args.ids:
+    activity_ids_flip = []
+    for id in activity_ids:
         id = id.replace("https://www.strava.com/activities/", "")
 
         if id.lower().endswith("f"):
@@ -56,24 +79,24 @@ def main():
         else:
             flip = False
             id = int(id)
-        activity_ids.append((id, flip))
+        activity_ids_flip.append((id, flip))
 
     # Create collection and plot
     collection = StravaCollection(
-        name=args.collection,
-        activity_ids=activity_ids,
+        name=collection_name,
+        activity_ids=activity_ids_flip,
         force_update=args.force_update,
     )
 
     # Set filenames
-    path_static = os.path.join(args.output, "_static")
+    path_static = os.path.join(output, "_static")
     mapfig_name = f"{collection_filename}-map.html"
     map_path = os.path.join(path_static, mapfig_name)
 
     elevfig_name = f"{collection_filename}-elev.html"
     elev_path = os.path.join(path_static, elevfig_name)
 
-    path_collection_md = os.path.join(args.output, f"{collection_filename}.md")
+    path_collection_md = os.path.join(output, f"{collection_filename}.md")
 
     # Plot figures
     collection.plot_map(
