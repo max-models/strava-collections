@@ -1,3 +1,4 @@
+import os
 import subprocess
 import tempfile
 from pathlib import Path
@@ -11,6 +12,12 @@ import plotly.graph_objects as go
 from strava_collections.activity import StravaActivity
 
 palette = pc.qualitative.Plotly  # default Plotly categorical colors
+mapbox_token = os.getenv("MAPBOX_TOKEN")
+
+import plotly.io as pio
+
+pio.templates.default = "plotly"  # optional, ensures consistent styling
+pio.renderers.default = "browser"  # or "notebook", "png", etc.
 
 
 class StravaCollection:
@@ -109,7 +116,7 @@ class StravaCollection:
     def plot_map(
         self,
         filepath: str | None = None,
-        config: dict = {},
+        config: dict = {"scrollZoom": True},
         height: int = 300,
         linewidths: list = [8, 1],
         width_to_height=5.0,
@@ -169,22 +176,53 @@ class StravaCollection:
         zoom, center = zoom_center(
             maxlon, minlon, maxlat, minlat, width_to_height=width_to_height
         )
-        # print(f"{zoom = }")
+
+        styles = [
+            "outdoors",
+            "streets",
+            "light",
+            "dark",
+            "satellite",
+            "satellite-streets",
+            # "navigation-day",
+            # "navigation-night"
+        ]
+        # Create buttons for each style
+        buttons = [
+            dict(
+                label=style.capitalize().replace("-", " "),
+                method="relayout",
+                args=["mapbox.style", style],
+            )
+            for style in styles
+        ]
+
         fig.update_layout(
-            mapbox_style="open-street-map",
-            mapbox_zoom=zoom,
-            mapbox_center=center,
             height=height,
-            # width=width_to_height * height,  # width_to_height = width / height
             dragmode="zoom",
             showlegend=False,
             margin=dict(l=0, r=0, t=0, b=0),
             # title="Strava Activities",
+            mapbox={
+                "accesstoken": mapbox_token,
+                "style": "outdoors",
+                # "style": "satellite",
+                "center": center,
+                "zoom": zoom,
+            },
+            updatemenus=[
+                dict(
+                    type="dropdown",
+                    x=0.0,
+                    y=1.0,
+                    buttons=buttons,
+                    showactive=True,
+                    xanchor="left",
+                    yanchor="top",
+                )
+            ],
         )
-        if ".html" in filepath:
-            fig.update_layout(autosize=True)
-        else:
-            fig.update_layout(autosize=False)
+
         if isinstance(filepath, str):
             export_plotly_fig(
                 fig=fig,
@@ -193,7 +231,7 @@ class StravaCollection:
                 height=height,
                 width_to_height=width_to_height,
             )
-            print(f"Saved elevation plot to: {filepath}")
+            print(f"Saved map plot to: {filepath}")
         return fig
 
     def generate_markdown(
