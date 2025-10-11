@@ -135,7 +135,7 @@ class StravaActivity:
         out_str += "</div>\n\n<br>\n\n"
         description = self.activity.description
         if len(description) > 0:
-            out_str += f'<div class="description-text">'
+            out_str += '<div class="description-text">'
             out_str += description
             out_str += "</div>\n"
 

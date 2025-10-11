@@ -34,6 +34,13 @@ def main():
         help="Force update strava activities",
     )
 
+    parser.add_argument(
+        "-p",
+        "--prettify",
+        action="store_true",
+        help="Prettify generated collection files",
+    )
+
     args = parser.parse_args()
 
     collection_filename = "collection-" + args.collection.lower().replace(" ", "-")
@@ -69,8 +76,24 @@ def main():
     path_collection_md = os.path.join(args.output, f"{collection_filename}.md")
 
     # Plot figures
-    collection.plot_map(filepath=map_path)
-    collection.plot_map(filepath=map_path.replace(".html", ".png"))
+    collection.plot_map(
+        filepath=map_path,
+        # height=1000,
+        linewidths=[8, 2],
+        width_to_height=3.0,
+    )
+    collection.plot_map(
+        filepath=map_path.replace(".html", ".png"),
+        linewidths=[16, 8],
+        height=500,
+        width_to_height=1.0,
+    )
+    collection.plot_map(
+        filepath=map_path.replace(".html", "-thick.png"),
+        linewidths=[32, 16],
+        height=500,
+        width_to_height=1.0,
+    )
     collection.plot_elevation(filepath=elev_path)
 
     # Create markdown for hte collection
@@ -78,6 +101,7 @@ def main():
         filepath=path_collection_md,
         mapfig_name=mapfig_name,
         elevfig_name=elevfig_name,
+        prettify=args.prettify,
     )
 
 
