@@ -106,7 +106,14 @@ class StravaCollection:
             print(f"Saved elevation plot to: {filepath}")
         return fig
 
-    def plot_map(self, filepath=None, config={}, height=300):
+    def plot_map(
+        self,
+        filepath: str | None = None,
+        config: dict = {},
+        height: int = 300,
+        linewidths: list = [8, 1],
+        width_to_height=5.0,
+    ):
         """Plot all activities together as lon/lat lines."""
         fig = go.Figure()
 
@@ -133,41 +140,56 @@ class StravaCollection:
             # # convert to rgba with alpha=0.3
             # rgba_color = pc.hex_to_rgb(line_color)
 
-            fig.add_trace(
-                go.Scattermapbox(
-                    lat=df["lat"],
-                    lon=df["lon"],
-                    mode="lines",
-                    line=dict(color="white", width=8),
-                    showlegend=False,
-                )
-            )
+            for linestyle in [
+                dict(color="white", width=linewidths[0]),
+                dict(color=line_color, width=linewidths[1]),
+            ]:
 
-            fig.add_trace(
-                go.Scattermapbox(
-                    lat=df["lat"],
-                    lon=df["lon"],
-                    mode="lines",
-                    line=dict(color=line_color),
-                    name=activity.activity.name or f"Activity {activity.activity.id}",
+                fig.add_trace(
+                    go.Scattermapbox(
+                        lat=df["lat"],
+                        lon=df["lon"],
+                        mode="lines",
+                        line=linestyle,
+                        showlegend=False,
+                    )
                 )
-            )
+
+            # fig.add_trace(
+            #     go.Scattermapbox(
+            #         lat=df["lat"],
+            #         lon=df["lon"],
+            #         mode="lines",
+            #         line=dict(color=line_color, width=8),
+            #         name=activity.activity.name or f"Activity {activity.activity.id}",
+            #     )
+            # )
             color_index += 1
 
-        zoom, center = zoom_center(maxlon, minlon, maxlat, minlat, width_to_height=5.0)
+        zoom, center = zoom_center(
+            maxlon, minlon, maxlat, minlat, width_to_height=width_to_height
+        )
+        print(f"{zoom = }")
         fig.update_layout(
             mapbox_style="open-street-map",
             mapbox_zoom=zoom,
             mapbox_center=center,
             height=height,
+            width=width_to_height * height,  # width_to_height = width / height
             dragmode="zoom",
             showlegend=False,
             margin=dict(l=0, r=0, t=0, b=0),
-            autosize=True,
+            autosize=False,
             # title="Strava Activities",
         )
         if isinstance(filepath, str):
-            export_plotly_fig(fig=fig, filepath=filepath, config=config)
+            export_plotly_fig(
+                fig=fig,
+                filepath=filepath,
+                config=config,
+                height=height,
+                width_to_height=width_to_height,
+            )
             print(f"Saved elevation plot to: {filepath}")
         return fig
 
@@ -180,52 +202,55 @@ class StravaCollection:
         include_table: bool = False,
         prettify: bool = False,
     ):
-        md_str = ""
-        md_str += f"<h1>{self.name}</h1>\n"
-        md_str += f"""
+
+        # This string will contain the the html for the images and activities,
+        # and may be prettified before added to the markdown
+        html_str = ""
+        html_str += f"""
 <div style="position: relative; width: 100%; height: 350px;">
 <iframe src="_static/{mapfig_name}" style="width:100%; height:100%; border:none;"></iframe>
 </div>
 \n\n"""
 
-        md_str += f"""
+        html_str += f"""
 <div style="position: relative; width: 100%; padding-bottom: 250px; height: 0;">
 <iframe src="_static/{elevfig_name}" style="position:absolute; top:0; left:0; width:100%; height:100%; border:none;"></iframe>
 </div>\n\n"""
 
-        data = []
-        for activity in self.activities:
-            name_link = f"[{activity.activity.name}]({activity.link})"
-            data.append(
-                {
-                    "Activity": name_link,
-                    "Date": activity.activity.start_date_local.date(),
-                    "Distance (km)": round(float(activity.activity.distance) * 1e-3, 1),
-                    "Elevation Gain (m)": round(
-                        float(activity.activity.total_elevation_gain)
-                    ),
-                }
-            )
-
-        df = pd.DataFrame(data)
-        if sort_by_date:
-            df = df.sort_values(by="Date", ascending=True)
-
-        # Convert DataFrame to Markdown table
-        md_table = df.to_markdown(index=False)
-
+        collection_table_md = ""
         if include_table:
-            md_str += md_table
+            data = []
+            for activity in self.activities:
+                name_link = f"[{activity.activity.name}]({activity.link})"
+                data.append(
+                    {
+                        "Activity": name_link,
+                        "Date": activity.activity.start_date_local.date(),
+                        "Distance (km)": round(
+                            float(activity.activity.distance) * 1e-3, 1
+                        ),
+                        "Elevation Gain (m)": round(
+                            float(activity.activity.total_elevation_gain)
+                        ),
+                    }
+                )
 
-        md_str += "\n\n"
+            df = pd.DataFrame(data)
+            if sort_by_date:
+                df = df.sort_values(by="Date", ascending=True)
+
+            # Convert DataFrame to Markdown table
+            collection_table_md = df.to_markdown(index=False)
+
+        html_str += "\n\n"
         # Add blocks with each individual activities
         for activity in self.activities:
-            md_str += activity.generate_markdown_summary()
-        md_str += """
+            html_str += activity.generate_markdown_summary()
+        html_str += """
 <div id="lightbox" class="lightbox">
   <img id="lightbox-img" src="" alt="Full Image">
 </div>"""
-        md_str += """
+        html_str += """
 <script>
 document.querySelectorAll('.gallery img').forEach(img => {
   img.addEventListener('click', event => {
@@ -246,7 +271,7 @@ document.getElementById('lightbox').addEventListener('click', () => {
             with tempfile.NamedTemporaryFile(
                 "w+", suffix=".html", delete=False, encoding="utf-8"
             ) as tmp_file:
-                tmp_file.write(md_str)
+                tmp_file.write(html_str)
                 tmp_file.flush()
                 tmp_path = Path(tmp_file.name)
                 tmp_folder = tmp_path.parent
@@ -256,9 +281,15 @@ document.getElementById('lightbox').addEventListener('click', () => {
             )
 
             with open(tmp_path, "r", encoding="utf-8") as f:
-                md_str = f.read()
+                html_str = f.read()
+
+        # Add markdown title
+        collection_title_md = f"# {self.name}\n"
+
+        collection_full_md = collection_title_md + html_str + collection_table_md
+
         with open(filepath, "w", encoding="utf-8") as f:
-            f.write(md_str)
+            f.write(collection_full_md)
         print(f"Saved markdown page to {filepath}")
 
     @property
@@ -278,7 +309,7 @@ document.getElementById('lightbox').addEventListener('click', () => {
         return self._name
 
 
-def export_plotly_fig(fig, filepath, config):
+def export_plotly_fig(fig, filepath, config, height=200, width_to_height=2.0):
     ext = filepath.lower().split(".")[-1]
 
     if ext == "html":
@@ -289,7 +320,9 @@ def export_plotly_fig(fig, filepath, config):
             config=config,
         )
     elif ext in {"png", "jpg", "jpeg", "pdf", "svg", "webp"}:
-        fig.write_image(filepath)
+        fig.write_image(
+            filepath, width=width_to_height * height, height=height, scale=1
+        )
     else:
         raise ValueError(f"Unsupported file extension '.{ext}'")
 
@@ -299,10 +332,10 @@ def zoom_center(
     minlon,
     maxlat,
     minlat,
-    lons: tuple = None,
-    lats: tuple = None,
-    lonlats: tuple = None,
-    format: str = "lonlat",
+    # lons: tuple = None,
+    # lats: tuple = None,
+    # lonlats: tuple = None,
+    # format: str = "lonlat",
     projection: str = "mercator",
     width_to_height: float = 2.0,
 ) -> (float, dict):
@@ -371,15 +404,47 @@ def zoom_center(
             360.0,
         ]
     )
-
+    print(
+        f"{width_to_height = } for mercator, {maxlat = } {minlat = } {maxlon = } {minlon = }"
+    )
     if projection == "mercator":
+        # margin = 1.2
+        # height = (maxlat - minlat) * margin * width_to_height
+        # width = (maxlon - minlon) * margin
+        # lon_zoom = np.interp(width, lon_zoom_range, range(20, 0, -1))
+        # lat_zoom = np.interp(height, lon_zoom_range, range(20, 0, -1))
+        # zoom = round(min(lon_zoom, lat_zoom), 2)
+
         margin = 1.2
-        height = (maxlat - minlat) * margin * width_to_height
-        width = (maxlon - minlon) * margin
+
+        # Determine raw aspect ratio of the bounding box
+        bbox_width = maxlon - minlon
+        bbox_height = maxlat - minlat
+
+        # Apply margin
+        bbox_width *= margin
+        bbox_height *= margin
+
+        # Adjust dimensions so that the final figure has the desired width/height ratio
+        target_ratio = width_to_height
+        current_ratio = bbox_width / bbox_height
+        # print(f"{current_ratio = } {target_ratio = }")
+
+        if current_ratio > target_ratio:
+            # Too wide — increase height
+            # width_to_height = width / height <-> height = width / width_to_height
+            width = bbox_width
+            height = bbox_width / width_to_height
+        else:
+            # Too tall — increase width
+            # width_to_height = width / height <-> width = height * width_to_height
+            height = bbox_height
+            width = bbox_height * width_to_height
+        # print(width, height)
         lon_zoom = np.interp(width, lon_zoom_range, range(20, 0, -1))
         lat_zoom = np.interp(height, lon_zoom_range, range(20, 0, -1))
         zoom = round(min(lon_zoom, lat_zoom), 2)
     else:
         raise NotImplementedError(f"{projection} projection is not implemented")
-
+    # print(f"{zoom = }"); exit()
     return zoom, center
