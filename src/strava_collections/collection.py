@@ -148,7 +148,7 @@ class StravaCollection:
             ]:
 
                 fig.add_trace(
-                    go.Scattermapbox(
+                    go.Scattermap(
                         lat=df["lat"],
                         lon=df["lon"],
                         mode="lines",
@@ -158,7 +158,7 @@ class StravaCollection:
                 )
 
             # fig.add_trace(
-            #     go.Scattermapbox(
+            #     go.Scattermap(
             #         lat=df["lat"],
             #         lon=df["lon"],
             #         mode="lines",
