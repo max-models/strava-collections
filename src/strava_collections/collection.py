@@ -4,6 +4,7 @@ import tempfile
 from pathlib import Path
 from typing import List
 
+import fastrdp
 import numpy as np
 import pandas as pd
 import plotly.colors as pc
@@ -118,6 +119,10 @@ class StravaCollection:
             # # convert to rgba with alpha=0.3
             # rgba_color = pc.hex_to_rgb(line_color)
 
+            x = np.array(df["lat"])
+            y = np.array(df["lon"])
+            x_new, y_new = fastrdp.rdp(x, y, 0.001)
+
             for linestyle in [
                 dict(color="white", width=linewidths[0]),
                 dict(color=line_color, width=linewidths[1]),
@@ -125,8 +130,8 @@ class StravaCollection:
 
                 fig.add_trace(
                     go.Scattermapbox(
-                        lat=df["lat"],
-                        lon=df["lon"],
+                        lat=x_new,
+                        lon=y_new,
                         mode="lines",
                         line=linestyle,
                         showlegend=False,
@@ -201,6 +206,7 @@ class StravaCollection:
                 config=config,
                 height=height,
                 width_to_height=width_to_height,
+                full_html=True,
             )
             print(f"Saved map plot to: {filepath}")
         return fig

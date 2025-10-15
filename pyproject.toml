@@ -30,6 +30,7 @@ dependencies = [
   "pandas",
   "polyline",
   "tabulate",
+  "fastrdp",
 ]
 
 optional-dependencies.dev = [

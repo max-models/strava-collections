@@ -2,6 +2,7 @@ import os
 import pickle
 from datetime import timedelta
 
+import fastrdp
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
@@ -76,16 +77,13 @@ class StravaActivity:
             distance = np.array(self.activity_stream["distance"].data) * 1e-3
             elev = np.array(self.activity_stream["altitude"].data)
 
-            # pick a line color from palette
-            # line_color = palette[color_index % len(palette)]
-            # convert to rgba with alpha=0.3
-            # rgba_color = pc.hex_to_rgb(line_color)
-            # fillcolor = f"rgba({rgba_color[0]},{rgba_color[1]},{rgba_color[2]},0.3)"
-
+        x = distance + distance_traveled
+        y = elev
+        x_new, y_new = fastrdp.rdp(x, y, 0.1)
         fig.add_trace(
             go.Scatter(
-                x=distance + distance_traveled,
-                y=elev,
+                x=x_new,
+                y=y_new,
                 mode="lines",
                 name=self.activity.name or f"Activity {self.activity.id}",
                 line=dict(color=color),

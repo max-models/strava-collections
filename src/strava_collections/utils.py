@@ -1,11 +1,22 @@
-def export_plotly_fig(fig, filepath, config, height=200, width_to_height=2.0):
+from plotly.graph_objects import Figure
+
+
+def export_plotly_fig(
+    fig: Figure,
+    filepath: str,
+    config: dict,
+    height: int = 200,
+    width_to_height: float = 2.0,
+    include_plotlyjs="cdn",
+    full_html=False,
+):
     ext = filepath.lower().split(".")[-1]
 
     if ext == "html":
         fig.write_html(
             filepath,
-            include_plotlyjs="cdn",
-            full_html=True,
+            include_plotlyjs=include_plotlyjs,
+            full_html=full_html,
             config=config,
         )
     elif ext in {"png", "jpg", "jpeg", "pdf", "svg", "webp"}:
