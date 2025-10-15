@@ -2,12 +2,15 @@ import os
 import pickle
 from datetime import timedelta
 
+import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import polyline
 import requests
 from stravalib import Client
 from stravalib.model import DetailedActivity
+
+from strava_collections.utils import export_plotly_fig
 
 # CACHE_PATH = strava_collections.__path__[0]
 CACHE_PATH = "cache"
@@ -58,6 +61,68 @@ class StravaActivity:
             )
             self.dump(filepath=pickle_path)
         self._flip = flip
+
+    def add_elevation_to_fig(self, fig, distance_traveled=0.0, color="black"):
+        if self.flip:
+            dmax = self.activity_stream["distance"].data[-1]
+            distance = (
+                np.array(
+                    [dmax - dist for dist in self.activity_stream["distance"].data]
+                )[::-1]
+                * 1e-3
+            )
+            elev = np.array(self.activity_stream["altitude"].data)[::-1]
+        else:
+            distance = np.array(self.activity_stream["distance"].data) * 1e-3
+            elev = np.array(self.activity_stream["altitude"].data)
+
+            # pick a line color from palette
+            # line_color = palette[color_index % len(palette)]
+            # convert to rgba with alpha=0.3
+            # rgba_color = pc.hex_to_rgb(line_color)
+            # fillcolor = f"rgba({rgba_color[0]},{rgba_color[1]},{rgba_color[2]},0.3)"
+
+            fig.add_trace(
+                go.Scatter(
+                    x=distance + distance_traveled,
+                    y=elev,
+                    mode="lines",
+                    name=self.activity.name or f"Activity {self.activity.id}",
+                    line=dict(color=color),
+                    fill="tozeroy",
+                    # fillcolor=fillcolor,
+                    hovertemplate="Distance: %{x:.1f} m<br>Elevation: %{y:.1f} m<extra></extra>",
+                )
+            )
+
+    def plot_elevation(
+        self,
+        filepath=None,
+        height=200,
+        config={"staticPlot": True, "displayModeBar": False},
+    ):
+        """Plot elevation profile of all activities with filled translucent area."""
+        fig = go.Figure()
+        self.add_elevation_to_fig(fig, distance_traveled=0.0, color="black")
+
+        fig.update_layout(
+            # title="Elevation Profiles",
+            xaxis_title="Distance (km)",
+            yaxis_title="Elevation (m)",
+            height=height,
+            hovermode="x unified",
+            showlegend=False,
+            xaxis=dict(tickformat=",.0f"),
+            margin=dict(l=0, r=0, t=0, b=0),
+            autosize=True,
+            plot_bgcolor="white",
+            paper_bgcolor="white",
+        )
+
+        if isinstance(filepath, str):
+            export_plotly_fig(fig=fig, filepath=filepath, config=config)
+        print(f"Saved elevation plot to: {filepath}")
+        return fig
 
     def get_coords(self):
         """Decode the map polyline into a list of (lat, lon) tuples."""
@@ -114,6 +179,9 @@ class StravaActivity:
         out_str += f'<div class="description-title">{self.name}</div>\n'
 
         out_str += "<div>\n"
+
+        # Date
+        out_str += f"{self.activity.start_date_local.date()} "
         # Icon row
         out_str += get_icon_link(
             "https://media.istockphoto.com/id/1442152045/vector/path-route-icon-distance-symbol.jpg?s=612x612&w=0&k=20&c=2ilIa1pWHJp550B31t__1NPc0CHpouutgdxt7QO4EJg="
@@ -140,6 +208,11 @@ class StravaActivity:
             out_str += "</div>\n"
 
         # Elevation profile
+
+        out_str += f"""
+<div style="position: relative; width: 100%; padding-bottom: 250px; height: 0;">
+<iframe src="_static/{self.activity_id}.html" style="position:absolute; top:0; left:0; width:100%; height:100%; border:none;"></iframe>
+</div>\n\n"""
 
         # Photos
         # TODO: Get photos from the DetailedActivity (currently seems broken?)
