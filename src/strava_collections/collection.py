@@ -51,46 +51,19 @@ class StravaCollection:
         fig = go.Figure()
 
         distance_traveled = 0.0
-        color_index = 0
 
-        for activity in self.activities:
-            if activity.flip:
-                dmax = activity.activity_stream["distance"].data[-1]
-                distance = (
-                    np.array(
-                        [
-                            dmax - dist
-                            for dist in activity.activity_stream["distance"].data
-                        ]
-                    )[::-1]
-                    * 1e-3
-                )
-                elev = np.array(activity.activity_stream["altitude"].data)[::-1]
-            else:
-                distance = np.array(activity.activity_stream["distance"].data) * 1e-3
-                elev = np.array(activity.activity_stream["altitude"].data)
+        for color_index, activity in enumerate(self.activities):
 
             # pick a line color from palette
             line_color = palette[color_index % len(palette)]
-            # convert to rgba with alpha=0.3
-            rgba_color = pc.hex_to_rgb(line_color)
-            fillcolor = f"rgba({rgba_color[0]},{rgba_color[1]},{rgba_color[2]},0.3)"
 
-            fig.add_trace(
-                go.Scatter(
-                    x=distance + distance_traveled,
-                    y=elev,
-                    mode="lines",
-                    name=activity.activity.name or f"Activity {activity.activity.id}",
-                    line=dict(color=line_color),
-                    fill="tozeroy",
-                    fillcolor=fillcolor,
-                    hovertemplate="Distance: %{x:.1f} m<br>Elevation: %{y:.1f} m<extra></extra>",
-                )
+            activity.add_elevation_to_fig(
+                fig=fig,
+                distance_traveled=distance_traveled,
+                color=line_color,
             )
 
             distance_traveled += activity.activity_stream["distance"].data[-1] * 1e-3
-            color_index += 1
 
         fig.update_layout(
             # title="Elevation Profiles",
