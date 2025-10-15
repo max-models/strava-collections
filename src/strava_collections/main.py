@@ -98,6 +98,11 @@ def main():
 
     path_collection_md = os.path.join(output, f"{collection_filename}.md")
 
+    for activity in collection.activities:
+        activity.plot_elevation(
+            filepath=os.path.join(path_static, f"{activity.activity_id}.html"),
+        )
+
     # Plot figures
     collection.plot_map(
         filepath=map_path,

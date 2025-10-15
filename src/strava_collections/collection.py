@@ -10,6 +10,7 @@ import plotly.colors as pc
 import plotly.graph_objects as go
 
 from strava_collections.activity import StravaActivity
+from strava_collections.utils import export_plotly_fig
 
 palette = pc.qualitative.Plotly  # default Plotly categorical colors
 mapbox_token = os.getenv("MAPBOX_TOKEN")
@@ -101,6 +102,8 @@ class StravaCollection:
             xaxis=dict(tickformat=",.0f"),
             margin=dict(l=0, r=0, t=0, b=0),
             autosize=True,
+            plot_bgcolor="white",
+            paper_bgcolor="white",
         )
         print(f"Total distance travelled: {distance_traveled} km")
         if isinstance(filepath, str):
@@ -343,24 +346,6 @@ document.getElementById('lightbox').addEventListener('click', () => {
     @property
     def name(self):
         return self._name
-
-
-def export_plotly_fig(fig, filepath, config, height=200, width_to_height=2.0):
-    ext = filepath.lower().split(".")[-1]
-
-    if ext == "html":
-        fig.write_html(
-            filepath,
-            include_plotlyjs="cdn",
-            full_html=True,
-            config=config,
-        )
-    elif ext in {"png", "jpg", "jpeg", "pdf", "svg", "webp"}:
-        fig.write_image(
-            filepath, width=width_to_height * height, height=height, scale=1
-        )
-    else:
-        raise ValueError(f"Unsupported file extension '.{ext}'")
 
 
 def zoom_center(
