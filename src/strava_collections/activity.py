@@ -81,7 +81,7 @@ class StravaActivity:
             # convert to rgba with alpha=0.3
             # rgba_color = pc.hex_to_rgb(line_color)
             # fillcolor = f"rgba({rgba_color[0]},{rgba_color[1]},{rgba_color[2]},0.3)"
-        
+
         fig.add_trace(
             go.Scatter(
                 x=distance + distance_traveled,
