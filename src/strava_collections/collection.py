@@ -122,7 +122,6 @@ class StravaCollection:
             x = np.array(df["lat"])
             y = np.array(df["lon"])
             x_new, y_new = fastrdp.rdp(x, y, 0.001)
-            print(f"{len(x) = } {len(x_new) = }")
 
             for linestyle in [
                 dict(color="white", width=linewidths[0]),
