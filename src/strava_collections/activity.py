@@ -82,18 +82,17 @@ class StravaActivity:
             # rgba_color = pc.hex_to_rgb(line_color)
             # fillcolor = f"rgba({rgba_color[0]},{rgba_color[1]},{rgba_color[2]},0.3)"
 
-            fig.add_trace(
-                go.Scatter(
-                    x=distance + distance_traveled,
-                    y=elev,
-                    mode="lines",
-                    name=self.activity.name or f"Activity {self.activity.id}",
-                    line=dict(color=color),
-                    fill="tozeroy",
-                    # fillcolor=fillcolor,
-                    hovertemplate="Distance: %{x:.1f} m<br>Elevation: %{y:.1f} m<extra></extra>",
-                )
+        fig.add_trace(
+            go.Scatter(
+                x=distance + distance_traveled,
+                y=elev,
+                mode="lines",
+                name=self.activity.name or f"Activity {self.activity.id}",
+                line=dict(color=color),
+                fill="tozeroy",
+                hovertemplate="Distance: %{x:.1f} m<br>Elevation: %{y:.1f} m<extra></extra>",
             )
+        )
 
     def plot_elevation(
         self,
@@ -211,7 +210,7 @@ class StravaActivity:
 
         out_str += f"""
 <div style="position: relative; width: 100%; padding-bottom: 250px; height: 0;">
-<iframe src="_static/{self.activity_id}.html" style="position:absolute; top:0; left:0; width:100%; height:100%; border:none;"></iframe>
+<iframe src="_static/activity-{self.activity_id}.html" style="position:absolute; top:0; left:0; width:100%; height:100%; border:none;"></iframe>
 </div>\n\n"""
 
         # Photos
