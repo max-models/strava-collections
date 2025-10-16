@@ -64,26 +64,23 @@ class StravaActivity:
         self._flip = flip
 
     def add_elevation_to_fig(self, fig, distance_traveled=0.0, color="black"):
+
+        distance = np.array(self.activity_stream["distance"].data) * 1e-3
+        elev = np.array(self.activity_stream["altitude"].data)
+        distance, elev = fastrdp.rdp(distance, elev, epsilon=0.1)
+
         if self.flip:
             dmax = self.activity_stream["distance"].data[-1]
-            distance = (
-                np.array(
-                    [dmax - dist for dist in self.activity_stream["distance"].data]
-                )[::-1]
-                * 1e-3
-            )
-            elev = np.array(self.activity_stream["altitude"].data)[::-1]
+            distance = np.array([dmax - dist for dist in distance])[::-1]
+            elev = elev[::-1]
         else:
             distance = np.array(self.activity_stream["distance"].data) * 1e-3
             elev = np.array(self.activity_stream["altitude"].data)
 
-        x = distance + distance_traveled
-        y = elev
-        x_new, y_new = fastrdp.rdp(x, y, 0.1)
         fig.add_trace(
             go.Scatter(
-                x=x_new,
-                y=y_new,
+                x=distance,
+                y=elev,
                 mode="lines",
                 name=self.activity.name or f"Activity {self.activity.id}",
                 line=dict(color=color),
