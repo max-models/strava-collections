@@ -70,7 +70,7 @@ class StravaActivity:
         distance, elev = fastrdp.rdp(distance, elev, epsilon=0.1)
 
         if self.flip:
-            dmax = self.activity_stream["distance"].data[-1]
+            dmax = distance[-1]
             distance = np.array([dmax - dist for dist in distance])[::-1]
             elev = elev[::-1]
         else:
@@ -79,7 +79,7 @@ class StravaActivity:
 
         fig.add_trace(
             go.Scatter(
-                x=distance,
+                x=distance + distance_traveled,
                 y=elev,
                 mode="lines",
                 name=self.activity.name or f"Activity {self.activity.id}",
