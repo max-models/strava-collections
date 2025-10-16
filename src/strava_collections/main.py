@@ -104,25 +104,29 @@ def main():
         )
 
     # Plot figures
-    collection.plot_map(
-        filepath=map_path,
-        # height=1000,
-        linewidths=[8, 2],
-        width_to_height=3.0,
-    )
-    collection.plot_map(
-        filepath=map_path.replace(".html", ".png"),
-        linewidths=[16, 8],
-        height=500,
-        width_to_height=1.0,
-    )
-    collection.plot_map(
-        filepath=map_path.replace(".html", "-thick.png"),
-        linewidths=[32, 16],
-        height=500,
-        width_to_height=1.0,
-    )
-    collection.plot_elevation(filepath=elev_path)
+    plot_map = True
+    if plot_map:
+        collection.plot_map(
+            filepath=map_path,
+            # height=1000,
+            linewidths=[8, 2],
+            width_to_height=3.0,
+        )
+        collection.plot_map(
+            filepath=map_path.replace(".html", ".png"),
+            linewidths=[16, 8],
+            height=500,
+            width_to_height=1.0,
+        )
+        collection.plot_map(
+            filepath=map_path.replace(".html", "-thick.png"),
+            linewidths=[32, 16],
+            height=500,
+            width_to_height=1.0,
+        )
+    plot_elevation = True
+    if plot_elevation:
+        collection.plot_elevation(filepath=elev_path)
 
     # Create markdown for hte collection
     collection.generate_markdown(
