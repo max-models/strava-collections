@@ -3,29 +3,6 @@ description: "Wrapper action for building all collections"
 runs:
   using: "composite"
   steps:
-    - name: Bavarian Alps Traverse
-      uses: ./.github/actions/collections/bavarian-alps-traverse
-
-    - name: Singapore to Kuala Lumpur
-      uses: ./.github/actions/collections/singapore-to-kl
-
-    - name: Ibiza Sailing Trip
-      uses: ./.github/actions/collections/ibiza-sailing
-
-    - name: Hikes with Perla
-      uses: ./.github/actions/collections/hikes-with-perla
-
-    - name: Japan
-      uses: ./.github/actions/collections/japan
-
-    - name: Vietnam
-      uses: ./.github/actions/collections/vietnam
-
-    - name: Taiwan
-      uses: ./.github/actions/collections/taiwan
-
-    - name: Berlin to Tarifa
-      uses: ./.github/actions/collections/berlin-to-tarifa
-
-    - name: Bergen to Istanbul
-      uses: ./.github/actions/collections/bergen-to-istanbul
+    - name: Loop over all collections and build
+      shell: bash
+      run: for file in examples/*.yml; do echo $file; strava-collections -i $file; done

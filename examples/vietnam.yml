@@ -1,0 +1,12 @@
+collection_name: "Vietnam"
+output_dir: "docs/source/"
+activity_ids:
+  - "813611974" # Hue - Da Nang 🚴🏯🇻🇳
+  - "814667984" # Da nang - Quang ngai 🚴🏯🇻🇳
+  - "815722126" # Quang Ngai - Quy Nhon 🚴🏯🇻🇳
+  - "816416782" # Qui Nhon - Tuy Hoa 🚴🏯🇻🇳
+  - "817458392" # Quy Hua - Nha Trang 🇻🇳
+  - "818317407" # Nha Trang - Dalat 🚴🏯🇻🇳
+  - "818351252" # Last bit to Dalat 🚴🏯🇻🇳
+  - "820642128" # Dalat - Cat Tien National Park 🚴🏯🇻🇳
+  - "821757676" # Cat Tien National Park - Ho Chi Minh City 🚴🏯🇻🇳

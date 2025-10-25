@@ -1,0 +1,13 @@
+collection_name: "Taiwan"
+output_dir: "docs/source/"
+activity_ids:
+  - "1324271479" # Day 1: Taipei - Yilan 🚴🏯🇹🇼
+  - "1325123423" # Day 2: Yilan - Nanshan 🚴🏯🇹🇼
+  - "1326744150" # Day 3: Nanshan - Qingjing 🚴🏯🇹🇼
+  - "1327962669" # Day 4: Qingjing - Douliu 🚴🏯🇹🇼
+  - "1328949546" # Day 5: Douliu - Gangshan District 🚴🏯🇹🇼
+  - "1330086898" # Day 6: Ganzan District - South end of Taiwan 🚴🏯🇹🇼
+  - "1331713983" # Day 7: Southernmost point - Taitung 🚴🏯🇹🇼
+  - "1332641515" # Day 8: Taitung - Ruisui 🚴🏯🇹🇼
+  - "1333971033" # Day 9: Ruisui - Hualien 🚴🏯🇹🇼
+  - "1336237609" # Day 10: Hualien - Taipei 🚴🏯🇹🇼

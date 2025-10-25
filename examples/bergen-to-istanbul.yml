@@ -1,0 +1,35 @@
+collection_name: "Bergen to Istanbul"
+output_dir: "docs/source/"
+activity_ids:
+  - "7603766442F" # Røldal to Bergen 🚴🇪🇺🇳🇴
+  - "7591809739F" # To Røldal 🚴🇪🇺🇳🇴
+  - "7588727912F" # Moss to Totak 🚴🇪🇺🇳🇴
+  - "7609035405" # Oslo to Strömstad 🚴🇪🇺🇳🇴🇸🇪
+  - "7575170664F" # Sightseeing in Denmark 🚴🇪🇺🇩🇪🇩🇰
+  - "7565316218F" # Short warmup ride (escaping Hamburg) 🚴🇪🇺🇩🇪
+  - "7067014667" # 1. Hamburg - Oldenburg 🚴🇪🇺🇩🇪
+  - "7073100394" # 2. Oldenburg - Brussels 🚴🇪🇺🇩🇪🇳🇱🇧🇪
+  - "7078529322" # 3. Brussels - Paris 🚴🇪🇺🇧🇪🇫🇷
+  - "7352360345" # Connecting the trips 🚴🇪🇺🇫🇷
+  - "7328018729" # 24h Paris to Geneva 🚴🇪🇺🇫🇷🇨🇭
+  - "1133646946F" # Col de Sanetsch to CERN 🚴🇪🇺🇨🇭
+  - "1131819135F" # Sion to Col de Sanetsch (2133m elevation gain) 🚴🇪🇺🇨🇭
+  - "7787652169" # 1. From Switzerland, over Furkapass to Lichtenstein-Austria 🚴🇪🇺🇨🇭🇦🇹🇱🇮
+  - "7791850673" # 2. Rainy ride home (Bodensee to Munich) 🚴🇪🇺🇦🇹🇩🇪
+  - "7706802222" # Morning Run
+  - "5715851214" # Day 1 - BBQ by Tegernsee 🚴🇪🇺🇩🇪
+  - "5721348134" # Day 2: Tegensee to Fusch 🚴🇪🇺🇩🇪🇦🇹
+  - "5726139628" # Day 3.1 - Grossglockner 🚴🇪🇺🇦🇹
+  - "14992147210" # Filling in a gap from 2021
+  - "5727831041" # Day 3.2 🚴🇪🇺🇦🇹
+  - "5733598831" # Day 4 - Italy 🚴🇪🇺🇦🇹🇮🇹
+  - "5738696741" # Day 5 - Trieste - Slovenia - Cres 🚴🇪🇺🇮🇹🇸🇮🇭🇷
+  - "5745332772" # Ferry - Mali Losinj - Zadar
+  - "5745320059" # Day 6.1 - Cres - Mali Losinj 🚴🇪🇺🇭🇷
+  - "5750059027" # Day 7 - Zadar - Dubrovnik 🚴🇪🇺🇭🇷
+  - "8114329845" # Dubrovnik to Podgorica 🚴🇪🇺🇭🇷🇲🇪
+  - "8118520965" # Podgorica to Pristina 🚴🇪🇺🇲🇪🇦🇱🇽🇰
+  - "8122936063" # Pristina to Dojran Lake 🚴🇪🇺🇽🇰🇲🇰
+  - "8127253146" # Dorian Lake to Kavala 🚴🇪🇺🇲🇰🇬🇷
+  - "8132462476" # Kavala to Keşan 🚴🇪🇺🇬🇷🇹🇷
+  - "8136340589" # Keşan to Istanbul 🚴🇪🇺🇹🇷

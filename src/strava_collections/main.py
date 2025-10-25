@@ -1,6 +1,7 @@
 import argparse
 import os
 from ast import arg
+from fileinput import filename
 
 import yaml
 
@@ -57,10 +58,10 @@ def main():
     if args.input:
         with open(args.input, "r", encoding="utf-8") as f:
             data = yaml.safe_load(f)
-            print(data["runs"]["steps"][0]["with"]["activity_ids"])
-            activity_ids = data["runs"]["steps"][0]["with"]["activity_ids"].split(" ")
-            output = data["runs"]["steps"][0]["with"]["output_dir"]
-            collection_name = data["runs"]["steps"][0]["with"]["collection_name"]
+            print(data)
+            activity_ids = data["activity_ids"]
+            output = data["output_dir"]
+            collection_name = data["collection_name"]
     else:
         activity_ids = args.ids
         output = args.output
@@ -87,6 +88,13 @@ def main():
         activity_ids=activity_ids_flip,
         force_update=args.force_update,
     )
+
+    # print(
+    #     collection.to_yaml(
+    #         output_dir=output,
+    #         # filename=args.input,
+    #     )
+    # )
 
     # Set filenames
     path_static = os.path.join(output, "_static")

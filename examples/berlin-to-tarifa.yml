@@ -1,0 +1,24 @@
+collection_name: "Berlin to Tarifa"
+output_dir: "docs/source/"
+activity_ids:
+  - "8766382217F" # Dresden to Berlin 🚴🇪🇺🇩🇪
+  - "8741391139F" # To Dresden 🚴🇪🇺🇨🇿🇩🇪
+  - "8736885309F" # Hilly ride to Karlovy Vary 🚴🇪🇺🇩🇪🇨🇿
+  - "8730837773F" # Munich to ~Schwandorf 🚴🇪🇺🇩🇪
+  - "7791850673" # 2. Rainy ride home (Bodensee to Munich) 🚴🇪🇺🇦🇹🇩🇪
+  - "7787652169" # 1. From Switzerland, over Furkapass to Lichtenstein-Austria 🚴🇪🇺🇨🇭🇦🇹🇱🇮
+  - "1131819135" # Sion to Col de Sanetsch (2133m elevation gain) 🚴🇪🇺🇨🇭
+  - "1133646946" # Col de Sanetsch to CERN 🚴🇪🇺🇨🇭
+  - "10143696942" # Day 1 post PhD 🚴🇪🇺🇨🇭🇫🇷
+  - "10148790717" # Day 2 - Valence to Sete 🚴🇪🇺🇫🇷
+  - "10154431803" # Day 3 - a very windy workout 🚴🇪🇺🇫🇷
+  - "10159084440" # Day 4 - Climb up to Salardu 🚴🇪🇺🇫🇷🇪🇸
+  - "10171756726" # Day 5 - Crossing the Pyrenees 🚴🇪🇺🇪🇸
+  - "10177904347" # Day 6 - Finish (of part 1) in Valencia! 🚴🇪🇺🇪🇸
+  - "10253094711" # Start of part 2! Valencia to Jumilla 🚴🇪🇺🇪🇸
+  - "10258438586" # Jumilla to Baza 🚴🇪🇺🇪🇸
+  - "10263187008" # Baza to Laroles 🚴🇪🇺🇪🇸
+  - "10268437202" # Laroles to Moraima 🚴🇪🇺🇪🇸
+  - "10274894269" # Cycling the gravel route up Pico de Veleta 3395m! 🚴🇪🇺🇪🇸
+  - "10281645686" # Exploring every single beach between Malaga and Gibraltar 🚴🇪🇺🇪🇸
+  - "10284899004" # Finish in Tarifa! 🚴🇪🇺🇪🇸

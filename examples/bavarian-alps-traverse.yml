@@ -1,0 +1,19 @@
+collection_name: "Bavarian alps traverse"
+output_dir: "docs/source/"
+activity_ids:
+  - "12284003055F" # Bad Reichenhall to Salzburg 🏃⛰️
+  - "12231765525" # Bad Reichenhall to Ruhpolding 🏃⛰️
+  - "11603714471F" # Prien am Chiemsee to Ruhpolding 🏃⛰️
+  - "11487681160" # Aschau to Brannenburg 🏃⛰️
+  - "11492585278" # Brannenburg to Bayerischzell 🏃⛰️
+  - "9020068072" # To Tegernsee 🏃⛰️
+  - "11518973205" # Halfway around Tegernsee 🏃⛰️
+  - "9327605554F" # Romantic walk through the mountains 🏃⛰️
+  - "9586696097" # Lenggries to Kochel 🏃⛰️
+  - "9961995244" # Kochel to Eschenlohe 🏃⛰️
+  - "11166740981" # Snowy hike to Garmisch 🏃⛰️
+  - "11378142289F" # Füssen to Garmisch 🏃⛰️🇩🇪
+  - "11368440756F" # Pfronten to Füssen 🏃⛰️🇩🇪🇦🇹
+  - "15177143911" # Pfronten to Sonthofen 🏃⛰️
+  - "15877224330" # Sonthofen to Oberstaufen 🏃⛰️
+  - "16029679520" # Finish of the Bavarian alps traverse! 🏃⛰️

@@ -1,0 +1,15 @@
+collection_name: "Ibiza sailing trip"
+output_dir: "docs/source/"
+activity_ids:
+  - "10184212131" # Evening Run
+  - "10188508424" # Lunch Run
+  - "10201453185" # Evening Run
+  - "10209283997" # Valencia to Ibiza
+  - "10210461413" # Morning Sail
+  - "10215286376" # Morning Run
+  - "10220935820" # Ibiza beach biking
+  - "10223047971" # Ibiza to Formentera
+  - "10232455929" # Morning Run in Formentera
+  - "10239392263" # Formentera to Alcossebre
+  - "10240530649" # Afternoon Run
+  - "10244023732" # Morning Run

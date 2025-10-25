@@ -1,0 +1,7 @@
+collection_name: "Singapore to Kuala Lumpur"
+output_dir: "docs/source/"
+activity_ids:
+  - "836894407" # Day 1 - Singapore - Batu Pahat 🚴🏯🇸🇬🇲🇾
+  - "838026669" # Day 2 - Batu Pahat - Seremban 🚴🏯🇲🇾
+  - "838748059" # Day 3 - Seremban - Kuala Lumpur 🚴🏯🇲🇾
+  - "840195182" # Day 4.1 - KL to the bus station 🚴🏯🇲🇾
