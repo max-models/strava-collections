@@ -313,19 +313,19 @@ document.getElementById('lightbox').addEventListener('click', () => {
 
     def to_yaml(self, output_dir, filename: str | None = None):
         yaml_str = ""
-        yaml_str += f"collection_name: \"{self.name}\"\n"
-        yaml_str += f"output_dir: \"{output_dir}\"\n"
+        yaml_str += f'collection_name: "{self.name}"\n'
+        yaml_str += f'output_dir: "{output_dir}"\n'
         yaml_str += "activity_ids:\n"
         for activity in self.activities:
             id = f"{activity.activity_id}"
             if activity.flip:
                 id += "F"
-            yaml_str += f"  - \"{id}\" # {activity.activity.name}\n"
+            yaml_str += f'  - "{id}" # {activity.activity.name}\n'
 
         if filename:
-            with open(filename, 'w') as f:
+            with open(filename, "w") as f:
                 f.write(yaml_str)
-        
+
         return yaml_str
 
     @property
