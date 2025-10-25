@@ -1,0 +1,7 @@
+collection_name: "Singapore to Kuala Lumpur"
+output_dir: "docs/source/"
+activity_ids: 
+  - "836894407"
+  - "838026669"
+  - "838748059"
+  - "840195182"

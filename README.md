@@ -23,7 +23,7 @@ strava-collections 1324271479 1325123423 1326744150 1327962669 1328949546 133008
 Mainly for Github actions, but you can also do:
 
 ```
-strava-collections -i .github/actions/collections/taiwan/action.yml
+strava-collections -i examples/taiwan.yml
 ```
 
 #TODO: The yaml reader should be simplified and all the collections run in the CI should be moved into `examples/`

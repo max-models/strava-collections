@@ -1,0 +1,14 @@
+name: "Build Strava Collection"
+description: "Generates a Strava collection from given activity IDs"
+inputs:
+  yaml_path:
+    description: "Space-separated Strava activity IDs"
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Generate strava-collections
+      shell: bash
+      run: |
+        echo "Generating collection: ${{ inputs.yaml_path }}"
+        strava-collections -i ${{ inputs.yaml_path }}"
