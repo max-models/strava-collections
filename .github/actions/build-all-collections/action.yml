@@ -3,47 +3,5 @@ description: "Wrapper action for building all collections"
 runs:
   using: "composite"
   steps:
-    - name: Bavarian Alps Traverse
-      uses: ./.github/actions/build-collection-yaml
-      with:
-        yaml_path: examples/bavarian-alps-traverse.yml
-
-    - name: Singapore to Kuala Lumpur
-      uses: ./.github/actions/build-collection-yaml
-      with:
-        yaml_path: examples/singapore-to-kl.yml
-
-    - name: Ibiza Sailing Trip
-      uses: ./.github/actions/build-collection-yaml
-      with:
-        yaml_path: examples/ibiza-sailing.yml
-
-    - name: Hikes with Perla
-      uses: ./.github/actions/build-collection-yaml
-      with:
-        yaml_path: examples/hikes-with-perla.yml
-
-    - name: Japan
-      uses: ./.github/actions/build-collection-yaml
-      with:
-        yaml_path: examples/japan.yml
-
-    - name: Vietnam
-      uses: ./.github/actions/build-collection-yaml
-      with:
-        yaml_path: examples/vietnam.yml
-
-    - name: Taiwan
-      uses: ./.github/actions/build-collection-yaml
-      with:
-        yaml_path: examples/taiwan.yml
-
-    - name: Berlin to Tarifa
-      uses: ./.github/actions/build-collection-yaml
-      with:
-        yaml_path: examples/berlin-to-tarifa.yml
-
-    - name: Bergen to Istanbul
-      uses: ./.github/actions/build-collection-yaml
-      with:
-        yaml_path: examples/bergen-to-istanbul.yml
+    - name: Loop over all collections and build
+      run: for file in examples/*.yml; do echo $file; strava-collections -i $file; done
