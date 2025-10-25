@@ -56,6 +56,9 @@ class StravaCollection:
 
         for color_index, activity in enumerate(self.activities):
 
+            if activity.no_map:
+                continue
+
             # pick a line color from palette
             line_color = palette[color_index % len(palette)]
 
@@ -103,6 +106,10 @@ class StravaCollection:
         color_index = 0
 
         for activity in self.activities:
+
+            if activity.no_map:
+                continue
+
             df = activity.to_dataframe()
 
             lons, lats = df["lon"], df["lat"]

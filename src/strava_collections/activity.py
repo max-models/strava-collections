@@ -250,6 +250,10 @@ class StravaActivity:
         return f"https://www.strava.com/activities/{self.activity_id}"
 
     @property
+    def no_map(self):
+        return len(self.get_coords()) == 0
+
+    @property
     def photos(self):
         return self._photos
 
