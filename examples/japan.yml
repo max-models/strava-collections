@@ -1,13 +1,13 @@
 collection_name: "Japan"
 output_dir: "docs/source/"
-activity_ids: 
-  - "2663962144"
-  - "2666207046"
-  - "2669210977"
-  - "2672807915"
-  - "2675591839" 
-  - "2678504583"
-  - "2681678397" 
-  - "2685785353" 
-  - "11702826079" 
-  - "2687395619"
+activity_ids:
+  - "2663962144" # Day 1: Hiyoshi to Yugawara 🚴🏯🇯🇵
+  - "2666207046" # Day 2: Yugawara - Shizuoka 🚴🏯🇯🇵
+  - "2669210977" # Day 3: Shizuoka - Lake Hamana 🚴🏯🇯🇵
+  - "2672807915" # Day4: Lake Hamamatsu - Mie 🚴🏯🇯🇵
+  - "2675591839" # Day 5: Mie - Wakayama - Tokushima 🚴🏯🇯🇵
+  - "2678504583" # Day 6: Tokushima - Niihama 🚴🏯🇯🇵
+  - "2681678397" # Day 7: Niihama - Hiroshima 🚴🏯🇯🇵
+  - "2685785353" # Day 8: Hiroshima - Ube 🚴🏯🇯🇵
+  - "11702826079" # Walk with punctured bike 🚴🏯🇯🇵
+  - "2687395619" # Day 9: Ube - Fukuoka 🚴🏯🇯🇵

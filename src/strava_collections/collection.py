@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 import plotly.colors as pc
 import plotly.graph_objects as go
+import yaml
 
 from strava_collections.activity import StravaActivity
 from strava_collections.utils import export_plotly_fig
@@ -309,6 +310,23 @@ document.getElementById('lightbox').addEventListener('click', () => {
         with open(filepath, "w", encoding="utf-8") as f:
             f.write(collection_full_md)
         print(f"Saved markdown page to {filepath}")
+
+    def to_yaml(self, output_dir, filename: str | None = None):
+        yaml_str = ""
+        yaml_str += f"collection_name: \"{self.name}\"\n"
+        yaml_str += f"output_dir: \"{output_dir}\"\n"
+        yaml_str += "activity_ids:\n"
+        for activity in self.activities:
+            id = f"{activity.activity_id}"
+            if activity.flip:
+                id += "F"
+            yaml_str += f"  - \"{id}\" # {activity.activity.name}\n"
+
+        if filename:
+            with open(filename, 'w') as f:
+                f.write(yaml_str)
+        
+        return yaml_str
 
     @property
     def activities(self) -> List[StravaActivity]:

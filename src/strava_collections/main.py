@@ -1,4 +1,5 @@
 import argparse
+from fileinput import filename
 import os
 from ast import arg
 
@@ -87,6 +88,8 @@ def main():
         activity_ids=activity_ids_flip,
         force_update=args.force_update,
     )
+
+    print(collection.to_yaml(output_dir = output, filename = args.input,))
 
     # Set filenames
     path_static = os.path.join(output, "_static")
