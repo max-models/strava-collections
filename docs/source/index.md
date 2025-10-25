@@ -25,6 +25,12 @@
     <span>Bergen to Istanbul</span>
   </a>
 
+  <a href="collection-races.html" class="button-card">
+    <img class="img-default" src="_static/collection-races-map.png" alt="Races">
+    <img class="img-hover" src="_static/collection-races-map-thick.png" alt="Races">
+    <span>Races</span>
+  </a>
+
   <a href="collection-berlin-to-tarifa.html" class="button-card">
     <img class="img-default" src="_static/collection-berlin-to-tarifa-map.png" alt="Berlin to Tarifa">
     <img class="img-hover" src="_static/collection-berlin-to-tarifa-map-thick.png" alt="Berlin to Tarifa">
