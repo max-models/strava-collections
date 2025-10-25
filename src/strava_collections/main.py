@@ -89,12 +89,12 @@ def main():
         force_update=args.force_update,
     )
 
-    print(
-        collection.to_yaml(
-            output_dir=output,
-            filename=args.input,
-        )
-    )
+    # print(
+    #     collection.to_yaml(
+    #         output_dir=output,
+    #         # filename=args.input,
+    #     )
+    # )
 
     # Set filenames
     path_static = os.path.join(output, "_static")
