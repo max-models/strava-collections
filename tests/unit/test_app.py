@@ -187,6 +187,50 @@ def test_main_accepts_multiple_yaml_inputs(monkeypatch, tmp_path):
     assert calls["generate_astro"][1][0].endswith("collection-japan.astro")
 
 
+def test_main_defaults_to_docs_site_output(monkeypatch, tmp_path, capsys):
+    calls = {"sync_site": []}
+
+    class FakeActivity:
+        activity_id = 123
+
+        def plot_elevation(self, filepath, **kwargs):
+            return None
+
+    class FakeCollection:
+        def __init__(self, name, activity_ids, force_update=False):
+            self.activities = [FakeActivity()]
+
+        def plot_map(self, filepath, **kwargs):
+            return None
+
+        def plot_elevation(self, filepath, **kwargs):
+            return None
+
+        def generate_astro(self, filepath, **kwargs):
+            Path(filepath).write_text("---\n", encoding="utf-8")
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr("strava_collections.main.StravaCollection", FakeCollection)
+    monkeypatch.setattr("strava_collections.main.mapbox_token", "test-token")
+    monkeypatch.setattr(
+        "strava_collections.main.sync_site",
+        lambda site_root: calls["sync_site"].append(Path(site_root)),
+    )
+    monkeypatch.setattr(
+        "sys.argv",
+        ["strava-collections", "123", "-c", "Taiwan"],
+    )
+
+    main()
+    stdout = capsys.readouterr().out
+
+    site_root = (tmp_path / "docs").resolve()
+    assert (site_root / "astro" / "package.json").exists()
+    assert (site_root / "source" / "collection-taiwan.astro").exists()
+    assert calls["sync_site"] == [site_root]
+    assert f"Standalone site ready at: {site_root}" in stdout
+
+
 def test_main_output_scaffolds_site_template(monkeypatch, tmp_path, capsys):
     yaml_path = tmp_path / "taiwan.yml"
     yaml_path.write_text(

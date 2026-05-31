@@ -5,4 +5,4 @@ runs:
   steps:
     - name: Loop over all collections and build
       shell: bash
-      run: for file in examples/*.yml; do echo $file; strava-collections -i $file; done
+      run: strava-collections -i 'examples/*.yml'

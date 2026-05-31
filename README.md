@@ -35,7 +35,7 @@ export MAPBOX_TOKEN="pk..."
 Use strava activity IDs
 
 ```
-strava-collections 1324271479 1325123423 1326744150 1327962669 1328949546 1330086898 1331713983 1332641515 1333971033 1336237609 -o docs/source/ -c "Taiwan"
+strava-collections 1324271479 1325123423 1326744150 1327962669 1328949546 1330086898 1331713983 1332641515 1333971033 1336237609 -c "Taiwan"
 ```
 
 Mainly for Github actions, but you can also do:
@@ -48,23 +48,9 @@ strava-collections -i examples/taiwan.yml
 
 # Build docs
 
-The static webpage is built with Astro. The Python command generates collection
-`.astro` pages plus maxplotlib elevation plots rendered as Plotly HTML assets
-for the collection and each individual activity, alongside Plotly map assets
-under `docs/source/`; the Astro sync step copies those generated pages into the
-Astro app and still falls back to legacy collection markdown when needed.
+By default, `strava-collections` now generates a complete Astro site under
+`docs/`:
 
-```
-
-To scaffold a standalone site outside the repository, pass `-o/--output`. This
-copies the packaged Astro template into `<output>/astro` and writes generated
-collection data into `<output>/source`:
-
-```
-strava-collections -i 'examples/*.yml' -o /tmp/strava-site
-cd /tmp/strava-site/astro
-npm ci
-npm run dev
 ```
 strava-collections -i examples/taiwan.yml
 cd docs/astro
@@ -72,8 +58,28 @@ npm ci
 npm run dev
 ```
 
+The generated site layout is:
+
+```
+docs/
+  astro/
+  source/
+```
+
+where `source/` contains the generated collection `.astro` pages and Plotly
+assets, and `astro/` is the copied Astro site template.
+
+To scaffold the same site structure somewhere else, pass `-o/--output`:
+
+```
+strava-collections -i 'examples/*.yml' -o /tmp/strava-site
+cd /tmp/strava-site/astro
+npm ci
+npm run dev
+```
+
 The dev server automatically re-syncs `docs/source/` into the Astro app when
-the generated markdown or figures change, so you can rerun
+the generated collection files or figures change, so you can rerun
 `strava-collections -i examples/taiwan.yml` in another terminal and refresh the
 page without manually re-syncing.
 

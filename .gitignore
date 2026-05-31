@@ -73,6 +73,7 @@ instance/
 docs/_build/
 docs/source/tutorials/
 docs/astro/public/_static/
+/docs/
 
 # PyBuilder
 .pybuilder/

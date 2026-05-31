@@ -63,9 +63,16 @@ def resolve_output_directory(
         return site_root / "source", site_root
 
     if yaml_output_dir is not None:
-        return Path(yaml_output_dir).resolve(), None
+        output_dir = Path(yaml_output_dir).resolve()
+        if output_dir.name == "source":
+            site_root = output_dir.parent
+            ensure_site_template(site_root)
+            return output_dir, site_root
+        return output_dir, None
 
-    return Path("./").resolve(), None
+    site_root = Path("docs").resolve()
+    ensure_site_template(site_root)
+    return site_root / "source", site_root
 
 
 def print_site_instructions(site_root: Path) -> None:
