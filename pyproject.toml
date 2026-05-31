@@ -32,6 +32,7 @@ dependencies = [
   "polyline",
   "tabulate",
   "fastrdp",
+  "markdown",
 ]
 
 optional-dependencies.dev = [
