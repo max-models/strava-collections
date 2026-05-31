@@ -58,14 +58,14 @@ class StravaActivity:
         os.makedirs(name=CACHE_PATH, exist_ok=True)
         pickle_path = f"{CACHE_PATH}/{self.activity_id}.pkl"
         if os.path.exists(pickle_path) and force_update is False:
-            print(f"Loading cached activity {self.activity_id}")
+            print(f"{self.activity_id} (cached)", end = ", ")
             with open(pickle_path, "rb") as f:
                 data = pickle.load(f)
             self._activity = data["activity"]
             self._activity_stream = data["activity_stream"]
             self._photos = data["photos"]
         else:
-            print(f"Downloading activity {self.activity_id}")
+            print(f"{self.activity_id} (downloaded)", end = ", ")
 
             # Load Strava credentials from environment
             client_id = os.getenv("STRAVA_CLIENT_ID")
@@ -122,6 +122,7 @@ class StravaActivity:
         height=200,
         config=None,
         backend="plotly",
+        verbose: bool = False,
     ):
         """Plot the activity elevation profile with maxplotlib."""
         if config is None:
@@ -160,7 +161,8 @@ class StravaActivity:
                 export_tikz_figure(fig=fig, filepath=filepath)
             else:
                 raise ValueError(f"Unsupported elevation backend: {backend}")
-            print(f"Saved elevation plot to: {filepath}")
+            if verbose:
+                print(f"Saved elevation plot to: {filepath}")
         return fig
 
     def get_coords(self):

@@ -1,4 +1,3 @@
-import sys
 from datetime import datetime
 from pathlib import Path
 from types import SimpleNamespace
@@ -7,13 +6,9 @@ from strava_collections.activity import StravaActivity
 from strava_collections.astro_page import markdown_to_body_html, render_collection_page
 from strava_collections.collection import StravaCollection
 from strava_collections.main import elevation_extension_for_backend, main
+from strava_collections.site_sync import sync_collections
+from strava_collections.site_template import build_site_paths, ensure_site_template
 from strava_collections.utils import build_maxplotlib_elevation_canvas
-
-sys.path.insert(
-    0,
-    str(Path(__file__).resolve().parents[2] / "docs" / "astro" / "scripts"),
-)
-import sync_generated_content
 
 
 def test_main_uses_plotly_html_for_yaml_input(monkeypatch, tmp_path):
@@ -192,6 +187,124 @@ def test_main_accepts_multiple_yaml_inputs(monkeypatch, tmp_path):
     assert calls["generate_astro"][1][0].endswith("collection-japan.astro")
 
 
+def test_main_output_scaffolds_site_template(monkeypatch, tmp_path):
+    yaml_path = tmp_path / "taiwan.yml"
+    yaml_path.write_text(
+        "\n".join(
+            [
+                'collection_name: "Taiwan"',
+                'output_dir: "ignored-by-output-flag"',
+                "activity_ids:",
+                '  - "123"',
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    calls = {"sync_site": []}
+
+    class FakeActivity:
+        activity_id = 123
+
+        def plot_elevation(self, filepath, **kwargs):
+            return None
+
+    class FakeCollection:
+        def __init__(self, name, activity_ids, force_update=False):
+            self.activities = [FakeActivity()]
+
+        def plot_map(self, filepath, **kwargs):
+            return None
+
+        def plot_elevation(self, filepath, **kwargs):
+            return None
+
+        def generate_astro(self, filepath, **kwargs):
+            Path(filepath).write_text("---\n", encoding="utf-8")
+
+    monkeypatch.setattr("strava_collections.main.StravaCollection", FakeCollection)
+    monkeypatch.setattr("strava_collections.main.mapbox_token", "test-token")
+    monkeypatch.setattr(
+        "strava_collections.main.sync_site",
+        lambda site_root: calls["sync_site"].append(Path(site_root)),
+    )
+    monkeypatch.setattr(
+        "sys.argv",
+        ["strava-collections", "-i", str(yaml_path), "-o", str(tmp_path / "site")],
+    )
+
+    main()
+
+    site_root = tmp_path / "site"
+    assert (site_root / "astro" / "package.json").exists()
+    assert (site_root / "source" / "collection-taiwan.astro").exists()
+    assert calls["sync_site"] == [site_root.resolve()]
+
+
+def test_main_output_reuses_yaml_map_assets_without_mapbox_token(monkeypatch, tmp_path):
+    legacy_output = tmp_path / "legacy-source"
+    legacy_static = legacy_output / "_static"
+    legacy_static.mkdir(parents=True)
+    for suffix in ("map.html", "map.png", "map-thick.png"):
+        (legacy_static / f"collection-taiwan-{suffix}").write_text(
+            suffix,
+            encoding="utf-8",
+        )
+
+    yaml_path = tmp_path / "taiwan.yml"
+    yaml_path.write_text(
+        "\n".join(
+            [
+                'collection_name: "Taiwan"',
+                f'output_dir: "{legacy_output.as_posix()}"',
+                "activity_ids:",
+                '  - "123"',
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    class FakeActivity:
+        activity_id = 123
+
+        def plot_elevation(self, filepath, **kwargs):
+            return None
+
+    class FakeCollection:
+        def __init__(self, name, activity_ids, force_update=False):
+            self.activities = [FakeActivity()]
+
+        def plot_map(self, filepath, **kwargs):
+            raise AssertionError("plot_map should not run when fallback assets exist")
+
+        def plot_elevation(self, filepath, **kwargs):
+            return None
+
+        def generate_astro(self, filepath, **kwargs):
+            Path(filepath).write_text("---\n", encoding="utf-8")
+
+    monkeypatch.setattr("strava_collections.main.StravaCollection", FakeCollection)
+    monkeypatch.setattr("strava_collections.main.mapbox_token", None)
+    monkeypatch.setattr("strava_collections.main.sync_site", lambda site_root: None)
+    monkeypatch.setattr(
+        "sys.argv",
+        ["strava-collections", "-i", str(yaml_path), "-o", str(tmp_path / "site")],
+    )
+
+    main()
+
+    generated_static = tmp_path / "site" / "source" / "_static"
+    assert (generated_static / "collection-taiwan-map.html").read_text(
+        encoding="utf-8"
+    ) == "map.html"
+    assert (generated_static / "collection-taiwan-map.png").read_text(
+        encoding="utf-8"
+    ) == "map.png"
+    assert (generated_static / "collection-taiwan-map-thick.png").read_text(
+        encoding="utf-8"
+    ) == "map-thick.png"
+
+
 def test_main_expands_globbed_yaml_inputs(monkeypatch, tmp_path):
     for name, activity_id in (("Taiwan", "123"), ("Japan", "456")):
         (tmp_path / f"{name.lower()}.yml").write_text(
@@ -239,6 +352,15 @@ def test_main_expands_globbed_yaml_inputs(monkeypatch, tmp_path):
     main()
 
     assert seen_names == ["Japan", "Taiwan"]
+
+
+def test_ensure_site_template_copies_astro_app(tmp_path):
+    paths = ensure_site_template(tmp_path / "site")
+
+    assert (paths.astro_dir / "package.json").exists()
+    assert (paths.astro_dir / "src" / "pages" / "index.astro").exists()
+    assert paths.manifest_path.exists()
+    assert paths.source_dir.exists()
 
 
 def test_activity_summary_uses_html_elevation_iframe_by_default():
@@ -461,9 +583,10 @@ def test_render_collection_page_extracts_promoted_description_titles():
 
 
 def test_sync_collections_prefers_generated_astro(monkeypatch, tmp_path):
-    source_dir = tmp_path / "source"
-    page_dir = tmp_path / "pages"
-    generated_dir = tmp_path / "generated"
+    paths = build_site_paths(tmp_path)
+    source_dir = paths.source_dir
+    page_dir = paths.page_dir
+    generated_dir = paths.generated_dir
     static_dir = source_dir / "_static"
     static_dir.mkdir(parents=True)
 
@@ -488,16 +611,7 @@ const base = import.meta.env.BASE_URL.endsWith('/')
         encoding="utf-8",
     )
 
-    monkeypatch.setattr(sync_generated_content, "SPHINX_SOURCE", source_dir)
-    monkeypatch.setattr(sync_generated_content, "PAGE_DIR", page_dir)
-    monkeypatch.setattr(sync_generated_content, "GENERATED_DIR", generated_dir)
-    monkeypatch.setattr(
-        sync_generated_content,
-        "MANIFEST_PATH",
-        generated_dir / "collections.ts",
-    )
-
-    sync_generated_content.sync_collections()
+    sync_collections(paths)
 
     synced_page = (page_dir / "taiwan.astro").read_text(encoding="utf-8")
     manifest = (generated_dir / "collections.ts").read_text(encoding="utf-8")

@@ -1,5 +1,6 @@
 import os
 import subprocess
+from tabnanny import verbose
 import tempfile
 from html import escape
 from pathlib import Path
@@ -53,6 +54,7 @@ class StravaCollection:
         self._name = name
 
         self._activity_ids = activity_ids
+        print(f"Loading collection '{self.name}':")
         self._activities = [
             StravaActivity(
                 *(activity_id),
@@ -60,6 +62,7 @@ class StravaCollection:
             )
             for activity_id in activity_ids
         ]
+        print()
         tot_elevation_gaion = 0.0
         for activity in self.activities:
             tot_elevation_gaion += activity.activity.total_elevation_gain
@@ -74,6 +77,7 @@ class StravaCollection:
         height=200,
         config={"staticPlot": True, "displayModeBar": False},
         backend="plotly",
+        verbose: bool = False,
     ):
         """Plot elevation profile of all activities with maxplotlib."""
         distance_traveled = 0.0
@@ -126,7 +130,8 @@ class StravaCollection:
                 export_tikz_figure(fig=fig, filepath=filepath)
             else:
                 raise ValueError(f"Unsupported elevation backend: {backend}")
-            print(f"Saved elevation plot to: {filepath}")
+            if verbose:
+                print(f"Saved elevation plot to: {filepath}")
         return fig
 
     def plot_map(
@@ -136,6 +141,7 @@ class StravaCollection:
         height: int = 300,
         linewidths: list = [8, 1],
         width_to_height=5.0,
+        verbose: bool = False,
     ):
         """Plot all activities together as lon/lat lines."""
         fig = go.Figure()
@@ -259,7 +265,8 @@ class StravaCollection:
                 width_to_height=width_to_height,
                 full_html=True,
             )
-            print(f"Saved map plot to: {filepath}")
+            if verbose:
+                print(f"Saved map plot to: {filepath}")
         return fig
 
     def build_collection_body_html(
@@ -334,6 +341,7 @@ class StravaCollection:
         sort_by_date: bool = False,
         include_table: bool = False,
         prettify: bool = False,
+        verbose: bool = False,
     ):
         body_html = self.build_collection_body_html(
             mapfig_name=mapfig_name,
@@ -368,7 +376,8 @@ class StravaCollection:
 
         with open(filepath, "w", encoding="utf-8") as f:
             f.write(collection_full_md)
-        print(f"Saved markdown page to {filepath}")
+        if verbose:
+            print(f"Saved markdown page to {filepath}")
 
     def generate_astro(
         self,
@@ -380,6 +389,7 @@ class StravaCollection:
         sort_by_date: bool = False,
         include_table: bool = False,
         prettify: bool = False,
+        verbose: bool = False,
     ):
         body_html = self.build_collection_body_html(
             mapfig_name=mapfig_name,
@@ -412,7 +422,8 @@ class StravaCollection:
 
         with open(filepath, "w", encoding="utf-8") as f:
             f.write(page_source)
-        print(f"Saved Astro page to {filepath}")
+        if verbose:
+            print(f"Saved Astro page to {filepath}")
 
     def to_yaml(self, output_dir, filename: str | None = None):
         yaml_str = ""

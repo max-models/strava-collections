@@ -55,6 +55,17 @@ under `docs/source/`; the Astro sync step copies those generated pages into the
 Astro app and still falls back to legacy collection markdown when needed.
 
 ```
+
+To scaffold a standalone site outside the repository, pass `-o/--output`. This
+copies the packaged Astro template into `<output>/astro` and writes generated
+collection data into `<output>/source`:
+
+```
+strava-collections -i 'examples/*.yml' -o /tmp/strava-site
+cd /tmp/strava-site/astro
+npm ci
+npm run dev
+```
 strava-collections -i examples/taiwan.yml
 cd docs/astro
 npm ci
