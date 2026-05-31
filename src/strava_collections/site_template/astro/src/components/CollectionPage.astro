@@ -28,7 +28,7 @@ const collectionLinks = collections.map((collection) => {
 const tocHeadings = headings.filter((heading) => heading.level >= 2);
 ---
 
-<Layout title={title} wide={true}>
+<Layout title={title} wide={true} includePlotly={true}>
   <nav class="mb-6 flex items-center gap-2 text-sm text-slate-500">
     <a href={base} class="hover:text-strava transition-colors">Collections</a>
     <span>/</span>
@@ -94,6 +94,10 @@ const tocHeadings = headings.filter((heading) => heading.level >= 2);
     }
   </div>
 </Layout>
+
+<script>
+  import '../scripts/gallery-lightbox';
+</script>
 
 <style is:global>
   .collection-shell {

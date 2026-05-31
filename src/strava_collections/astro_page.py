@@ -98,6 +98,7 @@ def inline_local_plotly_iframes(markup: str, asset_dir: Path) -> str:
             "plotly-embed--map" if "map" in asset_name else "plotly-embed--chart"
         )
         body = load_local_plotly_asset(asset_path)
+        
         return f'<div class="plotly-embed {embed_variant}">\n{body}\n</div>'
 
     updated = IFRAME_WRAPPER_RE.sub(replace_iframe, markup)

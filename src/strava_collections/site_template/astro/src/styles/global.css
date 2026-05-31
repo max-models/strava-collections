@@ -110,3 +110,22 @@
   border-radius: 18px;
   box-shadow: 0 24px 60px rgba(15, 23, 42, 0.42);
 }
+
+/* ── Plotly embed with fullscreen button ──────────────────────────── */
+
+.plotly-embed {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+}
+
+.plotly-embed--map {
+  margin-bottom: 20px;
+}
+
+
+.plotly-embed--map.expanded .js-plotly-plot,
+.plotly-embed--map.expanded .plotly {
+  height: 80vh !important;
+}
+

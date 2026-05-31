@@ -44,6 +44,27 @@ Mainly for Github actions, but you can also do:
 strava-collections -i examples/taiwan.yml
 ```
 
+## YAML Configuration
+
+The YAML files can include optional `places:` to mark specific locations on the map:
+
+```yaml
+collection_name: "Taiwan"
+output_dir: "docs/source/"
+places:
+  - name: "Taipei"
+    lat: 25.0330
+    lon: 121.5654
+  - name: "Taitung"
+    lat: 22.7606
+    lon: 121.1424
+activity_ids:
+  - "1324271479"
+  - "1325123423"
+```
+
+Places are rendered as red markers on the collection map with hover tooltips showing the name and coordinates.
+
 #TODO: The yaml reader should be simplified and all the collections run in the CI should be moved into `examples/`
 
 # Build docs
@@ -68,6 +89,12 @@ docs/
 
 where `source/` contains the generated collection `.astro` pages and Plotly
 assets, and `astro/` is the copied Astro site template.
+
+### Map Features
+
+Collection maps include:
+- **Map style dropdown** (top-left): Switch between different map styles (outdoors, streets, light, dark, satellite, etc.)
+- **Places markers** (red dots): If places are defined in the YAML, they appear as red markers on the map with hover tooltips
 
 To scaffold the same site structure somewhere else, pass `-o/--output`:
 
