@@ -1,0 +1,117 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Generated-content styles ──────────────────────────────────────── */
+/* These classes are emitted by the Python pipeline and must stay here. */
+
+.description-box {
+  background: #ffffff;
+  padding: 24px 28px;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.description-title {
+  font-weight: 700;
+  font-size: 1.6rem;
+  color: #0f172a;
+  margin-bottom: 12px;
+  letter-spacing: 0.3px;
+  padding-bottom: 6px;
+}
+
+.description-text {
+  font-size: 0.95rem;
+  color: #374151;
+  line-height: 1.6;
+  background: #f9fafb;
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+  white-space: pre-wrap;
+  margin-bottom: 12px;
+}
+
+/* ── Gallery ──────────────────────────────────────────────────────── */
+
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.gallery img {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.gallery img:hover {
+  transform: scale(1.03);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+}
+
+/* ── Activity stat icons ──────────────────────────────────────────── */
+
+.static-icon,
+.icon {
+  width: 18px;
+  height: 18px;
+  vertical-align: middle;
+  margin-right: 3px;
+  display: inline-block;
+}
+
+.icon {
+  cursor: default;
+  transition: transform 0.2s ease;
+}
+
+.icon:hover {
+  transform: scale(1.1);
+}
+
+.icon-link {
+  display: inline-block;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.icon-link img.icon {
+  cursor: pointer;
+}
+
+/* ── Lightbox ──────────────────────────────────────────────────────── */
+
+#lightbox {
+  display: none;
+  position: fixed;
+  z-index: 9999;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.92);
+  justify-content: center;
+  align-items: center;
+}
+
+#lightbox.show {
+  display: flex;
+}
+
+#lightbox img {
+  max-width: 90%;
+  max-height: 90%;
+  border-radius: 10px;
+  box-shadow: 0 0 30px rgba(255, 255, 255, 0.2);
+  cursor: zoom-out;
+}
+
+.lightbox-trigger {
+  cursor: pointer;
+}
