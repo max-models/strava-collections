@@ -729,9 +729,7 @@ def test_main_parses_places_from_yaml(monkeypatch, tmp_path):
 
     monkeypatch.setattr("strava_collections.main.StravaCollection", FakeCollection)
     monkeypatch.setattr("strava_collections.main.mapbox_token", "test-token")
-    monkeypatch.setattr(
-        "strava_collections.main.sync_site", lambda site_root: None
-    )
+    monkeypatch.setattr("strava_collections.main.sync_site", lambda site_root: None)
     monkeypatch.setattr(
         "sys.argv",
         ["strava-collections", "-i", str(yaml_path)],

@@ -74,7 +74,9 @@ def sync_collections(paths: SitePaths) -> None:
     for old_file in paths.page_dir.glob("*.astro"):
         if old_file.name not in synced_filenames:
             old_file.unlink()
-            print(f"Removed obsolete collection page: {display_path(old_file, paths.site_root)}")
+            print(
+                f"Removed obsolete collection page: {display_path(old_file, paths.site_root)}"
+            )
 
     paths.manifest_path.write_text(
         render_collections_manifest(manifest),

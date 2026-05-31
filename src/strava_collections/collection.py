@@ -145,7 +145,7 @@ class StravaCollection:
         places: list[dict] | None = None,
     ):
         """Plot all activities together as lon/lat lines.
-        
+
         Args:
             places: List of dicts with 'name', 'lat', 'lon' keys to mark as red dots.
         """
@@ -212,29 +212,31 @@ class StravaCollection:
         if places:
             place_lats = [place["lat"] for place in places]
             place_lons = [place["lon"] for place in places]
-            place_names = [place.get("name", f"Place {i+1}") for i, place in enumerate(places)]
-            
+            place_names = [
+                place.get("name", f"Place {i+1}") for i, place in enumerate(places)
+            ]
+
             # Update bounds to include places
             if place_lats:
-               maxlat = max(maxlat, max(place_lats))
-               minlat = min(minlat, min(place_lats))
-               maxlon = max(maxlon, max(place_lons))
-               minlon = min(minlon, min(place_lons))
-            
+                maxlat = max(maxlat, max(place_lats))
+                minlat = min(minlat, min(place_lats))
+                maxlon = max(maxlon, max(place_lons))
+                minlon = min(minlon, min(place_lons))
+
             fig.add_trace(
-               go.Scattermapbox(
-                   lat=place_lats,
-                   lon=place_lons,
-                   mode="markers",
-                   marker=dict(
-                       size=12,
-                       color="red",
-                       opacity=0.8,
-                   ),
-                   text=place_names,
-                   hovertemplate="<b>%{text}</b><br>Lat: %{lat}<br>Lon: %{lon}<extra></extra>",
-                   showlegend=False,
-               )
+                go.Scattermapbox(
+                    lat=place_lats,
+                    lon=place_lons,
+                    mode="markers",
+                    marker=dict(
+                        size=12,
+                        color="red",
+                        opacity=0.8,
+                    ),
+                    text=place_names,
+                    hovertemplate="<b>%{text}</b><br>Lat: %{lat}<br>Lon: %{lon}<extra></extra>",
+                    showlegend=False,
+                )
             )
 
         zoom, center = zoom_center(
