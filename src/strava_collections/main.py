@@ -133,7 +133,8 @@ def main():
     elevfig_name = f"{collection_filename}-elev.{elevation_extension}"
     elev_path = os.path.join(path_static, elevfig_name)
 
-    path_collection_md = os.path.join(output, f"{collection_filename}.md")
+    path_collection_astro = os.path.join(output, f"{collection_filename}.astro")
+    legacy_markdown_path = os.path.join(output, f"{collection_filename}.md")
 
     if args.include_activity_elevation:
         for activity in collection.activities:
@@ -178,15 +179,18 @@ def main():
         else:
             raise RuntimeError(mapbox_token_help)
 
-    # Create markdown for hte collection
-    collection.generate_markdown(
-        filepath=path_collection_md,
+    collection.generate_astro(
+        filepath=path_collection_astro,
         mapfig_name=mapfig_name,
         elevfig_name=elevfig_name,
         include_activity_elevation=args.include_activity_elevation,
         activity_elevation_extension=elevation_extension,
         prettify=args.prettify,
     )
+
+    if os.path.exists(legacy_markdown_path):
+        os.remove(legacy_markdown_path)
+        print(f"Removed legacy markdown page at {legacy_markdown_path}")
 
 
 if __name__ == "__main__":

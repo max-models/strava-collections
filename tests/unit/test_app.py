@@ -3,6 +3,10 @@ from pathlib import Path
 from types import SimpleNamespace
 import sys
 
+from strava_collections.astro_page import (
+    markdown_to_body_html,
+    render_collection_page,
+)
 from strava_collections.activity import StravaActivity
 from strava_collections.collection import StravaCollection
 from strava_collections.main import elevation_extension_for_backend, main
@@ -17,6 +21,8 @@ import sync_generated_content
 
 def test_main_uses_plotly_html_for_yaml_input(monkeypatch, tmp_path):
     yaml_path = tmp_path / "taiwan.yml"
+    legacy_markdown = tmp_path / "collection-taiwan.md"
+    legacy_markdown.write_text("old", encoding="utf-8")
     yaml_path.write_text(
         '\n'.join(
             [
@@ -50,8 +56,8 @@ def test_main_uses_plotly_html_for_yaml_input(monkeypatch, tmp_path):
         def plot_elevation(self, filepath, **kwargs):
             calls["plot_elevation"] = (filepath, kwargs)
 
-        def generate_markdown(self, filepath, **kwargs):
-            calls["generate_markdown"] = (filepath, kwargs)
+        def generate_astro(self, filepath, **kwargs):
+            calls["generate_astro"] = (filepath, kwargs)
 
     monkeypatch.setattr("strava_collections.main.StravaCollection", FakeCollection)
     monkeypatch.setattr("strava_collections.main.mapbox_token", "test-token")
@@ -67,10 +73,12 @@ def test_main_uses_plotly_html_for_yaml_input(monkeypatch, tmp_path):
     assert calls["plot_elevation"][0].endswith("collection-taiwan-elev.html")
     assert calls["plot_elevation"][1]["backend"] == "plotly"
     assert (
-        calls["generate_markdown"][1]["elevfig_name"] == "collection-taiwan-elev.html"
+        calls["generate_astro"][1]["elevfig_name"] == "collection-taiwan-elev.html"
     )
-    assert calls["generate_markdown"][1]["include_activity_elevation"] is True
-    assert calls["generate_markdown"][1]["activity_elevation_extension"] == "html"
+    assert calls["generate_astro"][0].endswith("collection-taiwan.astro")
+    assert calls["generate_astro"][1]["include_activity_elevation"] is True
+    assert calls["generate_astro"][1]["activity_elevation_extension"] == "html"
+    assert not legacy_markdown.exists()
 
 
 def test_main_reuses_existing_map_assets_without_mapbox_token(monkeypatch, tmp_path):
@@ -110,8 +118,8 @@ def test_main_reuses_existing_map_assets_without_mapbox_token(monkeypatch, tmp_p
         def plot_elevation(self, filepath, **kwargs):
             calls["plot_elevation"] = (filepath, kwargs)
 
-        def generate_markdown(self, filepath, **kwargs):
-            calls["generate_markdown"] = (filepath, kwargs)
+        def generate_astro(self, filepath, **kwargs):
+            calls["generate_astro"] = (filepath, kwargs)
 
     monkeypatch.setattr("strava_collections.main.StravaCollection", FakeCollection)
     monkeypatch.setattr("strava_collections.main.mapbox_token", None)
@@ -124,7 +132,7 @@ def test_main_reuses_existing_map_assets_without_mapbox_token(monkeypatch, tmp_p
 
     assert "plot_map" not in calls
     assert calls["plot_elevation"][0].endswith("collection-taiwan-elev.html")
-    assert calls["generate_markdown"][0].endswith("collection-taiwan.md")
+    assert calls["generate_astro"][0].endswith("collection-taiwan.astro")
 
 
 def test_activity_summary_uses_html_elevation_iframe_by_default():
@@ -170,31 +178,45 @@ def test_activity_summary_gallery_images_keep_lightbox_class_and_accessibility()
     assert 'alt="Day 1 photo 1"' in markdown
 
 
-def test_collection_markdown_uses_direct_iframe_for_html_elevation(tmp_path):
+def test_collection_generate_astro_writes_astro_page(tmp_path):
     collection = StravaCollection.__new__(StravaCollection)
     collection._name = "Taiwan"
     collection._activities = []
+    static_dir = tmp_path / "_static"
+    static_dir.mkdir()
+    for asset_name in ("collection-taiwan-map.html", "collection-taiwan-elev.html"):
+        (static_dir / asset_name).write_text(
+            """
+<html>
+  <body>
+    <div id="plot" class="plotly-graph-div"></div>
+    <script>Plotly.newPlot("plot", [], {});</script>
+  </body>
+</html>
+""".strip(),
+            encoding="utf-8",
+        )
 
-    output_path = tmp_path / "collection-taiwan.md"
-    collection.generate_markdown(
+    output_path = tmp_path / "collection-taiwan.astro"
+    collection.generate_astro(
         filepath=str(output_path),
         mapfig_name="collection-taiwan-map.html",
         elevfig_name="collection-taiwan-elev.html",
     )
 
-    markdown = output_path.read_text(encoding="utf-8")
+    astro_page = output_path.read_text(encoding="utf-8")
 
-    assert 'src="/_static/collection-taiwan-map.html"' in markdown
-    assert 'src="/_static/collection-taiwan-elev.html"' in markdown
-    assert "<iframe " in markdown
-    assert "aspect-ratio: 3 / 1" in markdown
-    assert "loading=\"lazy\"" not in markdown
-    assert "lazy-" not in markdown
-    assert 'id="lightbox"' not in markdown
-    assert "querySelectorAll('.gallery img')" not in markdown
+    assert "CollectionPage.astro" in astro_page
+    assert 'const title = "Taiwan";' in astro_page
+    assert "Plotly.newPlot" in astro_page
+    assert "bodyHtml" not in astro_page
+    assert "<CollectionPage title={title}>" in astro_page
+    assert "<script is:inline>" in astro_page
+    assert "<iframe " not in astro_page
+    assert 'src="/_static/collection-taiwan-map.html"' not in astro_page
 
 
-def test_sync_conversion_strips_legacy_lightbox_markup():
+def test_generate_astro_inlines_plotly_and_wraps_gallery(tmp_path):
     markdown = """# Taiwan
 
 <div class="gallery"><img src="/_static/photo.jpg" class="lightbox-trigger"></div>
@@ -211,19 +233,118 @@ document.querySelectorAll('.gallery img').forEach(img => {
 </script>
 """
 
-    converted = sync_generated_content.convert_markdown(markdown)
-    page = sync_generated_content.render_collection_page(
-        title="Taiwan",
-        body_html=sync_generated_content.markdown_to_html(converted),
-    )
+    body_html = markdown_to_body_html(markdown, asset_dir=tmp_path / "_static")
+    page = render_collection_page(title="Taiwan", body_html=body_html)
 
-    assert 'id="lightbox"' not in converted
-    assert "querySelectorAll('.gallery img')" not in converted
-    assert 'class="gallery"' in converted
-    assert 'class="glightbox"' in converted
-    assert 'data-gallery="collection-gallery-0"' in converted
+    assert 'id="lightbox"' not in body_html
+    assert "querySelectorAll('.gallery img')" not in body_html
+    assert 'class="gallery"' in body_html
+    assert 'class="glightbox"' in body_html
+    assert 'data-gallery="collection-gallery-0"' in body_html
     assert "CollectionPage.astro" in page
     assert 'const title = "Taiwan";' in page
+    assert "bodyHtml" not in page
+    assert '<CollectionPage title={title}>' in page
+    assert 'href={`${base}_static/photo.jpg`}' in page
+
+
+def test_markdown_to_body_html_inlines_local_plotly_assets(tmp_path):
+    static_dir = tmp_path / "_static"
+    static_dir.mkdir(parents=True)
+    (static_dir / "activity-123.html").write_text(
+        """
+<html>
+  <head><meta charset="utf-8" /></head>
+  <body>
+    <div>
+      <script>window.PlotlyConfig = {MathJaxConfig: 'local'};</script>
+      <script charset="utf-8" src="https://cdn.plot.ly/plotly-3.4.0.min.js" integrity="sha256-KEmPoupLpFyGMyGAiOsiNDbKDKAvxXAn/W+oQa0ZAfk=" crossorigin="anonymous"></script>
+      <div id="plot-123" class="plotly-graph-div" style="height:200px; width:100%;"></div>
+      <script>Plotly.newPlot("plot-123", [], {});</script>
+    </div>
+  </body>
+</html>
+""".strip(),
+        encoding="utf-8",
+    )
+
+    markdown = """# Taiwan
+
+<div style="position: relative; width: 100%; height: 220px; aspect-ratio: 3 / 1;">
+  <iframe src="/_static/activity-123.html" style="width:100%; height:100%; border:none; border-radius: 12px;"></iframe>
+</div>
+"""
+
+    converted = markdown_to_body_html(markdown, asset_dir=static_dir)
+
+    assert "<iframe " not in converted
+    assert 'class="plotly-embed plotly-embed--chart"' in converted
+    assert 'id="plot-123"' in converted
+    assert 'Plotly.newPlot("plot-123", [], {});' in converted
+    assert "cdn.plot.ly" not in converted
+    assert "window.PlotlyConfig" not in converted
+
+
+def test_render_collection_page_keeps_plotly_scripts_inline():
+    page = render_collection_page(
+        title="Taiwan",
+        body_html="""
+<div class="plotly-embed plotly-embed--chart">
+  <div id="plot-123" class="plotly-graph-div"></div>
+  <script>Plotly.newPlot("plot-123", [], {});</script>
+</div>
+""".strip(),
+    )
+
+    assert '<script is:inline>Plotly.newPlot("plot-123", [], {});</script>' in page
+    assert "<script>Plotly.newPlot" not in page
+
+
+def test_sync_collections_prefers_generated_astro(monkeypatch, tmp_path):
+    source_dir = tmp_path / "source"
+    page_dir = tmp_path / "pages"
+    generated_dir = tmp_path / "generated"
+    static_dir = source_dir / "_static"
+    static_dir.mkdir(parents=True)
+
+    (source_dir / "collection-taiwan.md").write_text(
+        "# Wrong Title\n",
+        encoding="utf-8",
+    )
+    (source_dir / "collection-taiwan.astro").write_text(
+        """---
+import CollectionPage from '../../components/CollectionPage.astro';
+
+const title = "Taiwan";
+const base = import.meta.env.BASE_URL.endsWith('/')
+  ? import.meta.env.BASE_URL
+  : `${import.meta.env.BASE_URL}/`;
+---
+
+<CollectionPage title={title}>
+  <h1>Taiwan</h1>
+</CollectionPage>
+""",
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr(sync_generated_content, "SPHINX_SOURCE", source_dir)
+    monkeypatch.setattr(sync_generated_content, "PAGE_DIR", page_dir)
+    monkeypatch.setattr(sync_generated_content, "GENERATED_DIR", generated_dir)
+    monkeypatch.setattr(
+        sync_generated_content,
+        "MANIFEST_PATH",
+        generated_dir / "collections.ts",
+    )
+
+    sync_generated_content.sync_collections()
+
+    synced_page = (page_dir / "taiwan.astro").read_text(encoding="utf-8")
+    manifest = (generated_dir / "collections.ts").read_text(encoding="utf-8")
+
+    assert 'const title = "Taiwan";' in synced_page
+    assert "Wrong Title" not in synced_page
+    assert '"slug": "taiwan"' in manifest
 
 
 def test_elevation_canvas_is_wider_than_2_to_1():

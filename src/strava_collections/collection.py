@@ -1,6 +1,7 @@
 import os
 import subprocess
 import tempfile
+from html import escape
 from pathlib import Path
 from typing import List
 
@@ -11,6 +12,7 @@ import plotly.colors as pc
 import plotly.graph_objects as go
 
 from strava_collections.activity import StravaActivity, embed_iframe, embed_image
+from strava_collections.astro_page import prepare_collection_markup, render_collection_page
 from strava_collections.utils import (
     build_maxplotlib_elevation_plot,
     export_plotly_fig,
@@ -257,20 +259,15 @@ class StravaCollection:
             print(f"Saved map plot to: {filepath}")
         return fig
 
-    def generate_markdown(
+    def build_collection_body_html(
         self,
-        filepath: str,
         mapfig_name: str,
         elevfig_name: str,
         include_activity_elevation: bool = False,
         activity_elevation_extension: str = "html",
         sort_by_date: bool = False,
         include_table: bool = False,
-        prettify: bool = False,
     ):
-
-        # This string will contain the the html for the images and activities,
-        # and may be prettified before added to the markdown
         html_str = ""
         html_str += f"""
 <div style="position: relative; width: 100%; height: 350px;">
@@ -293,7 +290,10 @@ class StravaCollection:
         if include_table:
             data = []
             for activity in self.activities:
-                name_link = f"[{activity.activity.name}]({activity.link})"
+                name_link = (
+                    f'<a href="{activity.link}" target="_blank" rel="noopener">'
+                    f"{escape(activity.activity.name)}</a>"
+                )
                 data.append(
                     {
                         "Activity": name_link,
@@ -311,44 +311,103 @@ class StravaCollection:
             if sort_by_date:
                 df = df.sort_values(by="Date", ascending=True)
 
-            # Convert DataFrame to Markdown table
-            collection_table_md = df.to_markdown(index=False)
+            collection_table_md = df.to_html(index=False, escape=False, border=0)
 
         html_str += "\n\n"
-        # Add blocks with each individual activities
         for activity in self.activities:
             html_str += activity.generate_markdown_summary(
                 include_elevation=include_activity_elevation,
                 elevation_asset_extension=activity_elevation_extension,
             )
+        return f"<h1>{escape(self.name)}</h1>\n{html_str}{collection_table_md}"
+
+    def generate_markdown(
+        self,
+        filepath: str,
+        mapfig_name: str,
+        elevfig_name: str,
+        include_activity_elevation: bool = False,
+        activity_elevation_extension: str = "html",
+        sort_by_date: bool = False,
+        include_table: bool = False,
+        prettify: bool = False,
+    ):
+        body_html = self.build_collection_body_html(
+            mapfig_name=mapfig_name,
+            elevfig_name=elevfig_name,
+            include_activity_elevation=include_activity_elevation,
+            activity_elevation_extension=activity_elevation_extension,
+            sort_by_date=sort_by_date,
+            include_table=include_table,
+        )
 
         if prettify:
             with tempfile.NamedTemporaryFile(
                 "w+", suffix=".html", delete=False, encoding="utf-8"
             ) as tmp_file:
-                tmp_file.write(html_str)
+                tmp_file.write(body_html)
                 tmp_file.flush()
                 tmp_path = Path(tmp_file.name)
                 tmp_folder = tmp_path.parent
-            # print(f"{tmp_path = }")
             subprocess.run(
                 ["prettier", "--write", str(tmp_path)], check=True, cwd=tmp_folder
             )
 
             with open(tmp_path, "r", encoding="utf-8") as f:
-                html_str = f.read()
+                body_html = f.read()
 
-        # Add markdown title
-        collection_title_md = f"# {self.name}\n"
-
-        frontmatter = f'---\ntitle: "{self.name}"\n---\n'
-        collection_full_md = (
-            frontmatter + collection_title_md + html_str + collection_table_md
-        )
+        title_heading = f"<h1>{escape(self.name)}</h1>\n"
+        if body_html.startswith(title_heading):
+            body_html = body_html.removeprefix(title_heading)
+        collection_full_md = f'---\ntitle: "{self.name}"\n---\n# {self.name}\n{body_html}'
 
         with open(filepath, "w", encoding="utf-8") as f:
             f.write(collection_full_md)
         print(f"Saved markdown page to {filepath}")
+
+    def generate_astro(
+        self,
+        filepath: str,
+        mapfig_name: str,
+        elevfig_name: str,
+        include_activity_elevation: bool = False,
+        activity_elevation_extension: str = "html",
+        sort_by_date: bool = False,
+        include_table: bool = False,
+        prettify: bool = False,
+    ):
+        body_html = self.build_collection_body_html(
+            mapfig_name=mapfig_name,
+            elevfig_name=elevfig_name,
+            include_activity_elevation=include_activity_elevation,
+            activity_elevation_extension=activity_elevation_extension,
+            sort_by_date=sort_by_date,
+            include_table=include_table,
+        )
+        asset_dir = Path(filepath).parent / "_static"
+        page_source = render_collection_page(
+            title=self.name,
+            body_html=prepare_collection_markup(body_html, asset_dir=asset_dir),
+        )
+
+        if prettify:
+            with tempfile.NamedTemporaryFile(
+                "w+", suffix=".astro", delete=False, encoding="utf-8"
+            ) as tmp_file:
+                tmp_file.write(page_source)
+                tmp_file.flush()
+                tmp_path = Path(tmp_file.name)
+                tmp_folder = tmp_path.parent
+            subprocess.run(
+                ["prettier", "--write", str(tmp_path)], check=True, cwd=tmp_folder
+            )
+
+            with open(tmp_path, "r", encoding="utf-8") as f:
+                page_source = f.read()
+
+        with open(filepath, "w", encoding="utf-8") as f:
+            f.write(page_source)
+        print(f"Saved Astro page to {filepath}")
 
     def to_yaml(self, output_dir, filename: str | None = None):
         yaml_str = ""

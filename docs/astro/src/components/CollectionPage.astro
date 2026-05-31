@@ -3,10 +3,9 @@ import Layout from '../layouts/Layout.astro';
 
 interface Props {
   title: string;
-  bodyHtml: string;
 }
 
-const { title, bodyHtml } = Astro.props;
+const { title } = Astro.props;
 const base = import.meta.env.BASE_URL.endsWith('/')
   ? import.meta.env.BASE_URL
   : `${import.meta.env.BASE_URL}/`;
@@ -19,7 +18,9 @@ const base = import.meta.env.BASE_URL.endsWith('/')
     <span class="text-slate-800 font-medium">{title}</span>
   </nav>
 
-  <article class="collection-body" set:html={bodyHtml} />
+  <article class="collection-body">
+    <slot />
+  </article>
 </Layout>
 
 <style is:global>
@@ -47,6 +48,16 @@ const base = import.meta.env.BASE_URL.endsWith('/')
 
   .collection-body iframe {
     border: none;
+    border-radius: 12px;
+  }
+
+  .collection-body .plotly-embed {
+    margin: 1rem 0;
+  }
+
+  .collection-body .plotly-embed .plotly-graph-div {
+    width: 100%;
+    overflow: hidden;
     border-radius: 12px;
   }
 
