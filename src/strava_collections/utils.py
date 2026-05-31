@@ -9,7 +9,7 @@ def build_maxplotlib_elevation_canvas(
     traces: list[dict],
     *,
     height: int,
-    width_to_height: float = 5.0,
+    width_to_height: float = 3.0,
     line_width: float = 1.5,
 ):
     from maxplotlib import Canvas
@@ -40,7 +40,7 @@ def build_maxplotlib_elevation_plot(
     *,
     height: int,
     backend: ElevationBackend = "plotly",
-    width_to_height: float = 5.0,
+    width_to_height: float = 3.0,
     line_width: float = 1.5,
 ) -> Any:
     canvas = build_maxplotlib_elevation_canvas(
@@ -82,12 +82,13 @@ def export_tikz_figure(
     transparent: bool = True,
     use_web_compilation: bool = False,
 ):
-    print(f"Writing TikZ-backed figure to: {filepath}", flush=True)
+    # print(f"Writing TikZ-backed figure to: {filepath}", flush=True)
     fig.savefig(
         filepath,
         dpi=dpi,
         transparent=transparent,
         use_web_compilation=use_web_compilation,
+        # verbose=True,
     )
 
 

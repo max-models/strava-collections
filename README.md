@@ -49,14 +49,25 @@ strava-collections -i examples/taiwan.yml
 # Build docs
 
 The static webpage is built with Astro. The Python command generates collection
-markdown plus maxplotlib elevation plots rendered through the TikZ backend as
-PNG assets for the collection and each individual activity, alongside Plotly
-map assets under `docs/source/`; the Astro sync step copies them into the Astro
-app.
+markdown plus maxplotlib elevation plots rendered as Plotly HTML assets for the
+collection and each individual activity, alongside Plotly map assets under
+`docs/source/`; the Astro sync step copies them into the Astro app.
 
 ```
 strava-collections -i examples/taiwan.yml
 cd docs/astro
+npm ci
+npm run dev
+```
+
+The dev server automatically re-syncs `docs/source/` into the Astro app when
+the generated markdown or figures change, so you can rerun
+`strava-collections -i examples/taiwan.yml` in another terminal and refresh the
+page without manually re-syncing.
+
+To produce a static build instead:
+
+```
 npm ci
 npm run build:from-generated
 npm run preview

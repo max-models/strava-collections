@@ -3,7 +3,19 @@ import os
 
 import yaml
 
-from strava_collections.collection import StravaCollection
+from strava_collections.collection import (
+    StravaCollection,
+    mapbox_token,
+    mapbox_token_help,
+)
+
+
+def elevation_extension_for_backend(backend: str) -> str:
+    if backend == "plotly":
+        return "html"
+    if backend in {"tikzfigure", "matplotlib"}:
+        return "png"
+    raise ValueError(f"Unsupported backend: {backend}")
 
 
 def main():
@@ -111,8 +123,13 @@ def main():
     path_static = os.path.join(output, "_static")
     mapfig_name = f"{collection_filename}-map.html"
     map_path = os.path.join(path_static, mapfig_name)
+    map_asset_paths = [
+        map_path,
+        map_path.replace(".html", ".png"),
+        map_path.replace(".html", "-thick.png"),
+    ]
 
-    elevation_extension = "png"
+    elevation_extension = elevation_extension_for_backend(args.backend)
     elevfig_name = f"{collection_filename}-elev.{elevation_extension}"
     elev_path = os.path.join(path_static, elevfig_name)
 
@@ -134,24 +151,32 @@ def main():
     # Plot figures
     plot_map = True
     if plot_map:
-        collection.plot_map(
-            filepath=map_path,
-            # height=1000,
-            linewidths=[8, 2],
-            width_to_height=3.0,
-        )
-        collection.plot_map(
-            filepath=map_path.replace(".html", ".png"),
-            linewidths=[16, 8],
-            height=500,
-            width_to_height=1.0,
-        )
-        collection.plot_map(
-            filepath=map_path.replace(".html", "-thick.png"),
-            linewidths=[32, 16],
-            height=500,
-            width_to_height=1.0,
-        )
+        if mapbox_token:
+            collection.plot_map(
+                filepath=map_path,
+                # height=1000,
+                linewidths=[8, 2],
+                width_to_height=3.0,
+            )
+            collection.plot_map(
+                filepath=map_path.replace(".html", ".png"),
+                linewidths=[16, 8],
+                height=500,
+                width_to_height=1.0,
+            )
+            collection.plot_map(
+                filepath=map_path.replace(".html", "-thick.png"),
+                linewidths=[32, 16],
+                height=500,
+                width_to_height=1.0,
+            )
+        elif all(os.path.exists(path) for path in map_asset_paths):
+            print(
+                "MAPBOX_TOKEN is not set; reusing existing map assets in "
+                f"{path_static}."
+            )
+        else:
+            raise RuntimeError(mapbox_token_help)
 
     # Create markdown for hte collection
     collection.generate_markdown(

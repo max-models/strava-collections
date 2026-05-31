@@ -68,7 +68,7 @@ class StravaCollection:
         filepath=None,
         height=200,
         config={"staticPlot": True, "displayModeBar": False},
-        backend="tikzfigure",
+        backend="plotly",
     ):
         """Plot elevation profile of all activities with maxplotlib."""
         distance_traveled = 0.0
@@ -111,7 +111,12 @@ class StravaCollection:
         print(f"Total distance travelled: {distance_traveled} km")
         if isinstance(filepath, str):
             if backend == "plotly":
-                export_plotly_fig(fig=fig, filepath=filepath, config=config)
+                export_plotly_fig(
+                    fig=fig,
+                    filepath=filepath,
+                    config=config,
+                    full_html=filepath.lower().endswith(".html"),
+                )
             elif backend == "tikzfigure":
                 export_tikz_figure(fig=fig, filepath=filepath)
             else:
@@ -258,7 +263,7 @@ class StravaCollection:
         mapfig_name: str,
         elevfig_name: str,
         include_activity_elevation: bool = False,
-        activity_elevation_extension: str = "png",
+        activity_elevation_extension: str = "html",
         sort_by_date: bool = False,
         include_table: bool = False,
         prettify: bool = False,

@@ -21,9 +21,14 @@ from strava_collections.utils import (
 CACHE_PATH = os.getenv("STRAVA_CACHE_DIR", "cache")
 
 
-def embed_iframe(src: str, height: str = "250px") -> str:
+def embed_iframe(
+    src: str,
+    *,
+    height: str = "220px",
+    aspect_ratio: str = "3 / 1",
+) -> str:
     return f"""
-<div style="position: relative; width: 100%; height: {height};">
+<div style="position: relative; width: 100%; height: {height}; aspect-ratio: {aspect_ratio};">
   <iframe src="{src}" style="width:100%; height:100%; border:none; border-radius: 12px;"></iframe>
 </div>\n\n"""
 
@@ -32,10 +37,11 @@ def embed_image(
     src: str,
     *,
     alt: str,
-    height: str = "250px",
+    height: str = "220px",
+    aspect_ratio: str = "3 / 1",
 ) -> str:
     return f"""
-<img src="{src}" alt="{alt}" style="width:100%; height:{height}; object-fit:contain; display:block;" />\n\n"""
+<img src="{src}" alt="{alt}" style="width:100%; height:{height}; aspect-ratio:{aspect_ratio}; object-fit:contain; display:block;" />\n\n"""
 
 
 class StravaActivity:
@@ -115,7 +121,7 @@ class StravaActivity:
         filepath=None,
         height=200,
         config=None,
-        backend="tikzfigure",
+        backend="plotly",
     ):
         """Plot the activity elevation profile with maxplotlib."""
         if config is None:
@@ -144,7 +150,12 @@ class StravaActivity:
 
         if isinstance(filepath, str):
             if backend == "plotly":
-                export_plotly_fig(fig=fig, filepath=filepath, config=config)
+                export_plotly_fig(
+                    fig=fig,
+                    filepath=filepath,
+                    config=config,
+                    full_html=filepath.lower().endswith(".html"),
+                )
             elif backend == "tikzfigure":
                 export_tikz_figure(fig=fig, filepath=filepath)
             else:
@@ -193,7 +204,7 @@ class StravaActivity:
     def generate_markdown_summary(
         self,
         include_elevation: bool = False,
-        elevation_asset_extension: str = "png",
+        elevation_asset_extension: str = "html",
     ):
         out_str = ""
         #         out_str += """<div style="

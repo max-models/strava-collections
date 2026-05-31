@@ -3,8 +3,8 @@
   "type": "module",
   "version": "1.0.0",
   "scripts": {
-    "predev": "python3 scripts/sync_generated_content.py",
-    "dev": "astro dev",
+    "astro:dev": "astro dev",
+    "dev": "python3 scripts/watch_and_serve.py",
     "prebuild": "python3 scripts/sync_generated_content.py",
     "sync:generated": "python3 scripts/sync_generated_content.py",
     "build:from-generated": "npm run build",

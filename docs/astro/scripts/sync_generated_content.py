@@ -14,16 +14,45 @@ if not ASTRO_BASE_PATH.endswith("/"):
     ASTRO_BASE_PATH = f"{ASTRO_BASE_PATH}/"
 
 
+FRONTMATTER_RE = re.compile(r"^---\n.*?\n---\n", re.DOTALL)
+
+
+def strip_frontmatter(markdown: str) -> str:
+    return FRONTMATTER_RE.sub("", markdown, count=1)
+
+
 def title_from_markdown(markdown: str) -> str:
-    match = re.search(r"^#\s+(.+)$", markdown, re.MULTILINE)
+    match = re.search(r"^#\s+(.+)$", strip_frontmatter(markdown), re.MULTILINE)
     if not match:
         raise ValueError("Collection markdown is missing an H1 title")
     return match.group(1).strip()
 
 
+def upgrade_elevation_embeds(markdown: str) -> str:
+    def replace_image(match: re.Match[str]) -> str:
+        prefix = match.group("prefix")
+        asset_name = match.group("asset_name")
+        html_asset = f"{asset_name}.html"
+        if not (SPHINX_SOURCE / "_static" / html_asset).exists():
+            return match.group(0)
+        return (
+            '<div style="position: relative; width: 100%; height: 220px; aspect-ratio: 3 / 1;">\n'
+            f'  <iframe src="{prefix}{html_asset}" style="width:100%; height:100%; border:none; border-radius: 12px;"></iframe>\n'
+            "</div>"
+        )
+
+    pattern = re.compile(
+        r'<img\s+src="(?P<prefix>/?_static/)(?P<asset_name>(?:collection-.*?-elev|activity-\d+))\.png"[^>]*>',
+        re.IGNORECASE,
+    )
+    return pattern.sub(replace_image, markdown)
+
+
 def convert_markdown(markdown: str) -> str:
     title = title_from_markdown(markdown)
-    body = markdown.replace('src="_static/', f'src="{ASTRO_BASE_PATH}_static/')
+    body = strip_frontmatter(markdown)
+    body = upgrade_elevation_embeds(body)
+    body = body.replace('src="_static/', f'src="{ASTRO_BASE_PATH}_static/')
     body = body.replace('href="_static/', f'href="{ASTRO_BASE_PATH}_static/')
     body = body.replace('src="/_static/', f'src="{ASTRO_BASE_PATH}_static/')
     body = body.replace('href="/_static/', f'href="{ASTRO_BASE_PATH}_static/')
