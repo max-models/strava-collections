@@ -1,0 +1,52 @@
+collection_name: "Capitals of Europe"
+output_dir: "docs/source/"
+activity_ids:
+  - "7603766442F" # Røldal to Bergen 🚴🇪🇺🇳🇴
+  - "7591809739F" # To Røldal 🚴🇪🇺🇳🇴
+  - "7588727912F" # Moss to Totak 🚴🇪🇺🇳🇴
+  - "7609035405" # Oslo to Strömstad 🚴🇪🇺🇳🇴🇸🇪
+  - "7575170664F" # Sightseeing in Denmark 🚴🇪🇺🇩🇪🇩🇰
+  - "7565316218F" # Short warmup ride (escaping Hamburg) 🚴🇪🇺🇩🇪
+  - "7067014667" # 1. Hamburg - Oldenburg 🚴🇪🇺🇩🇪
+  - "7073100394" # 2. Oldenburg - Brussels 🚴🇪🇺🇩🇪🇳🇱🇧🇪
+  - "7078529322" # 3. Brussels - Paris 🚴🇪🇺🇧🇪🇫🇷
+  - "7352360345" # Connecting the trips 🚴🇪🇺🇫🇷
+  - "7328018729" # 24h Paris to Geneva 🚴🇪🇺🇫🇷🇨🇭
+  - "1133646946F" # Col de Sanetsch to CERN 🚴🇪🇺🇨🇭
+  - "1131819135F" # Sion to Col de Sanetsch (2133m elevation gain) 🚴🇪🇺🇨🇭
+  - "7787652169" # 1. From Switzerland, over Furkapass to Lichtenstein-Austria 🚴🇪🇺🇨🇭🇦🇹🇱🇮
+  - "7791850673" # 2. Rainy ride home (Bodensee to Munich) 🚴🇪🇺🇦🇹🇩🇪
+  - "7706802222" # Morning Run
+  - "5715851214" # Day 1 - BBQ by Tegernsee 🚴🇪🇺🇩🇪
+  - "5721348134" # Day 2: Tegensee to Fusch 🚴🇪🇺🇩🇪🇦🇹
+  - "5726139628" # Day 3.1 - Grossglockner 🚴🇪🇺🇦🇹
+  - "14992147210" # Filling in a gap from 2021
+  - "5727831041" # Day 3.2 🚴🇪🇺🇦🇹
+  - "5733598831" # Day 4 - Italy 🚴🇪🇺🇦🇹🇮🇹
+  - "5738696741" # Day 5 - Trieste - Slovenia - Cres 🚴🇪🇺🇮🇹🇸🇮🇭🇷
+  - "5745332772" # Ferry - Mali Losinj - Zadar
+  - "5745320059" # Day 6.1 - Cres - Mali Losinj 🚴🇪🇺🇭🇷
+  - "5750059027" # Day 7 - Zadar - Dubrovnik 🚴🇪🇺🇭🇷
+  - "8114329845" # Dubrovnik to Podgorica 🚴🇪🇺🇭🇷🇲🇪
+  - "8118520965" # Podgorica to Pristina 🚴🇪🇺🇲🇪🇦🇱🇽🇰
+  - "8122936063" # Pristina to Dojran Lake 🚴🇪🇺🇽🇰🇲🇰
+  - "8127253146" # Dorian Lake to Kavala 🚴🇪🇺🇲🇰🇬🇷
+  - "8132462476" # Kavala to Keşan 🚴🇪🇺🇬🇷🇹🇷
+  - "8136340589" # Keşan to Istanbul 🚴🇪🇺🇹🇷
+  - "8766382217F" # Dresden to Berlin 🚴🇪🇺🇩🇪
+  - "8741391139F" # To Dresden 🚴🇪🇺🇨🇿🇩🇪
+  - "8736885309F" # Hilly ride to Karlovy Vary 🚴🇪🇺🇩🇪🇨🇿
+  - "8730837773F" # Munich to ~Schwandorf 🚴🇪🇺🇩🇪
+  - "10143696942" # Day 1 post PhD 🚴🇪🇺🇨🇭🇫🇷
+  - "10148790717" # Day 2 - Valence to Sete 🚴🇪🇺🇫🇷
+  - "10154431803" # Day 3 - a very windy workout 🚴🇪🇺🇫🇷
+  - "10159084440" # Day 4 - Climb up to Salardu 🚴🇪🇺🇫🇷🇪🇸
+  - "10171756726" # Day 5 - Crossing the Pyrenees 🚴🇪🇺🇪🇸
+  - "10177904347" # Day 6 - Finish (of part 1) in Valencia! 🚴🇪🇺🇪🇸
+  - "10253094711" # Start of part 2! Valencia to Jumilla 🚴🇪🇺🇪🇸
+  - "10258438586" # Jumilla to Baza 🚴🇪🇺🇪🇸
+  - "10263187008" # Baza to Laroles 🚴🇪🇺🇪🇸
+  - "10268437202" # Laroles to Moraima 🚴🇪🇺🇪🇸
+  - "10274894269" # Cycling the gravel route up Pico de Veleta 3395m! 🚴🇪🇺🇪🇸
+  - "10281645686" # Exploring every single beach between Malaga and Gibraltar 🚴🇪🇺🇪🇸
+  - "10284899004" # Finish in Tarifa! 🚴🇪🇺🇪🇸
