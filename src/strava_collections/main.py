@@ -1,7 +1,5 @@
 import argparse
 import os
-from ast import arg
-from fileinput import filename
 
 import yaml
 

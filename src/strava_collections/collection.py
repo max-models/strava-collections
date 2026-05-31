@@ -9,7 +9,6 @@ import numpy as np
 import pandas as pd
 import plotly.colors as pc
 import plotly.graph_objects as go
-import yaml
 
 from strava_collections.activity import StravaActivity, lazy_iframe
 from strava_collections.utils import export_plotly_fig
