@@ -25,6 +25,12 @@
     <span>Bergen to Istanbul</span>
   </a>
 
+  <a href="collection-capitals-of-europe.html" class="button-card">
+    <img class="img-default" src="_static/collection-capitals-of-europe-map.png" alt="Capitals of Europe">
+    <img class="img-hover" src="_static/collection-capitals-of-europe-map.png" alt="Capitals of Europe">
+    <span>Capitals of Europe</span>
+  </a>
+
   <a href="collection-races.html" class="button-card">
     <img class="img-default" src="_static/collection-races-map.png" alt="Races">
     <img class="img-hover" src="_static/collection-races-map-thick.png" alt="Races">

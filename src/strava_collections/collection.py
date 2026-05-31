@@ -16,6 +16,11 @@ from strava_collections.utils import export_plotly_fig
 
 palette = pc.qualitative.Plotly  # default Plotly categorical colors
 mapbox_token = os.getenv("MAPBOX_TOKEN")
+mapbox_token_help = (
+    "MAPBOX_TOKEN is required to render Mapbox maps and export map images. "
+    "Create or copy a public token from https://console.mapbox.com/account/access-tokens/ "
+    'and run: export MAPBOX_TOKEN="pk..."'
+)
 
 
 class StravaCollection:
@@ -161,6 +166,9 @@ class StravaCollection:
             maxlon, minlon, maxlat, minlat, width_to_height=width_to_height
         )
 
+        if not mapbox_token:
+            raise RuntimeError(mapbox_token_help)
+
         styles = [
             "outdoors",
             "streets",
@@ -174,12 +182,18 @@ class StravaCollection:
         # Create buttons for each style
         buttons = [
             dict(
-                label=style.capitalize().replace("-", " "),
+                label=style.replace("-", " ").title(),
                 method="relayout",
                 args=["mapbox.style", style],
             )
             for style in styles
         ]
+        mapbox_layout = {
+            "accesstoken": mapbox_token,
+            "style": "outdoors",
+            "center": center,
+            "zoom": zoom,
+        }
 
         fig.update_layout(
             height=height,
@@ -187,13 +201,7 @@ class StravaCollection:
             showlegend=False,
             margin=dict(l=0, r=0, t=0, b=0),
             # title="Strava Activities",
-            mapbox={
-                "accesstoken": mapbox_token,
-                "style": "outdoors",
-                # "style": "satellite",
-                "center": center,
-                "zoom": zoom,
-            },
+            mapbox=mapbox_layout,
             updatemenus=[
                 dict(
                     type="dropdown",
