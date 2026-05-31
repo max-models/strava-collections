@@ -234,13 +234,13 @@ class StravaCollection:
         html_str = ""
         html_str += f"""
 <div style="position: relative; width: 100%; height: 350px;">
-<iframe src="_static/{mapfig_name}" style="width:100%; height:100%; border:none;"></iframe>
+<iframe src="/_static/{mapfig_name}" style="width:100%; height:100%; border:none;"></iframe>
 </div>
 \n\n"""
 
         html_str += f"""
 <div style="position: relative; width: 100%; padding-bottom: 250px; height: 0;">
-<iframe src="_static/{elevfig_name}" style="position:absolute; top:0; left:0; width:100%; height:100%; border:none;"></iframe>
+<iframe src="/_static/{elevfig_name}" style="position:absolute; top:0; left:0; width:100%; height:100%; border:none;"></iframe>
 </div>\n\n"""
 
         collection_table_md = ""
@@ -312,7 +312,8 @@ document.getElementById('lightbox').addEventListener('click', () => {
         # Add markdown title
         collection_title_md = f"# {self.name}\n"
 
-        collection_full_md = collection_title_md + html_str + collection_table_md
+        frontmatter = f'---\ntitle: "{self.name}"\n---\n'
+        collection_full_md = frontmatter + collection_title_md + html_str + collection_table_md
 
         with open(filepath, "w", encoding="utf-8") as f:
             f.write(collection_full_md)

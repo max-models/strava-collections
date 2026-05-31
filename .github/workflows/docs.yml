@@ -58,7 +58,7 @@ jobs:
         with:
           python-version: "3.10"
 
-      - name: Install dependencies
+      - name: Install Python dependencies
         run: |
           pip install --upgrade pip
           pip install ".[dev,docs]"
@@ -73,22 +73,33 @@ jobs:
           path: cache/
           key: strava-cache-v1
 
-      - name: Build HTML docs
+      - name: Prepare Astro assets
         run: |
-          sudo apt-get update
-          sudo apt-get install -y pandoc
-          cd docs
-          make clean
-          make html
-          cd ..
+          mkdir -p docs/astro/public/_static
+          cp -r docs/source/_static/* docs/astro/public/_static/
+          mkdir -p docs/astro/src/content/collections
+          cp docs/source/collection-*.md docs/astro/src/content/collections/
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: docs/astro/package.json
+
+      - name: Install Astro dependencies
+        run: cd docs/astro && npm install
+
+      - name: Build Astro site
+        run: cd docs/astro && npm run build
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
-      - name: Upload built docs
+      - name: Upload built site
         uses: actions/upload-pages-artifact@v3
         with:
-          path: docs/build/html/
+          path: docs/astro/dist/
 
       - name: Deploy to GitHub Pages
         id: deployment

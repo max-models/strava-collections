@@ -205,7 +205,7 @@ class StravaActivity:
 
         out_str += f"""
 <div style="position: relative; width: 100%; padding-bottom: 250px; height: 0;">
-<iframe src="_static/activity-{self.activity_id}.html" style="position:absolute; top:0; left:0; width:100%; height:100%; border:none;"></iframe>
+<iframe src="/_static/activity-{self.activity_id}.html" style="position:absolute; top:0; left:0; width:100%; height:100%; border:none;"></iframe>
 </div>\n\n"""
 
         # Photos
