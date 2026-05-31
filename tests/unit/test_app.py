@@ -686,3 +686,58 @@ def test_elevation_extension_matches_backend():
     assert elevation_extension_for_backend("plotly") == "html"
     assert elevation_extension_for_backend("tikzfigure") == "png"
     assert elevation_extension_for_backend("matplotlib") == "png"
+
+
+def test_main_parses_places_from_yaml(monkeypatch, tmp_path):
+    yaml_path = tmp_path / "taiwan.yml"
+    yaml_path.write_text(
+        "\n".join(
+            [
+                'collection_name: "Taiwan"',
+                f'output_dir: "{tmp_path.as_posix()}"',
+                "places:",
+                '  - name: "Taipei"',
+                "    lat: 25.0330",
+                "    lon: 121.5654",
+                "activity_ids:",
+                '  - "123"',
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    plot_map_calls = []
+
+    class FakeActivity:
+        activity_id = 123
+
+        def plot_elevation(self, filepath, **kwargs):
+            return None
+
+    class FakeCollection:
+        def __init__(self, name, activity_ids, force_update=False):
+            self.activities = [FakeActivity()]
+
+        def plot_map(self, filepath, **kwargs):
+            plot_map_calls.append(kwargs)
+
+        def plot_elevation(self, filepath, **kwargs):
+            return None
+
+        def generate_astro(self, filepath, **kwargs):
+            Path(filepath).write_text("---\n", encoding="utf-8")
+
+    monkeypatch.setattr("strava_collections.main.StravaCollection", FakeCollection)
+    monkeypatch.setattr("strava_collections.main.mapbox_token", "test-token")
+    monkeypatch.setattr("strava_collections.main.sync_site", lambda site_root: None)
+    monkeypatch.setattr(
+        "sys.argv",
+        ["strava-collections", "-i", str(yaml_path)],
+    )
+
+    main()
+
+    assert len(plot_map_calls) == 3
+    for call in plot_map_calls:
+        assert "places" in call
+        assert call["places"] == [{"name": "Taipei", "lat": 25.0330, "lon": 121.5654}]

@@ -93,6 +93,7 @@ def generate_collection(
     output_dir: Path,
     fallback_static_dir: Path | None,
     args,
+    places: list[dict] | None = None,
 ) -> None:
     collection_filename = "collection-" + collection_name.lower().replace(" ", "-")
     activity_ids_flip = parse_activity_ids(activity_ids)
@@ -139,18 +140,21 @@ def generate_collection(
             filepath=str(map_path),
             linewidths=[8, 2],
             width_to_height=3.0,
+            places=places,
         )
         collection.plot_map(
             filepath=str(map_path.with_suffix(".png")),
             linewidths=[16, 8],
             height=500,
             width_to_height=1.0,
+            places=places,
         )
         collection.plot_map(
             filepath=str(path_static / f"{collection_filename}-map-thick.png"),
             linewidths=[32, 16],
             height=500,
             width_to_height=1.0,
+            places=places,
         )
     elif fallback_static_dir is not None and all(
         (fallback_static_dir / path.name).exists() for path in map_asset_paths
@@ -194,6 +198,7 @@ def generate_collection_from_yaml(input_path: str, args) -> Path | None:
         output_dir=output_dir,
         fallback_static_dir=Path(data["output_dir"]).resolve() / "_static",
         args=args,
+        places=data.get("places"),
     )
     return site_root
 

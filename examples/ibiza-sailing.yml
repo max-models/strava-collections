@@ -1,5 +1,12 @@
 collection_name: "Ibiza sailing trip"
 output_dir: "docs/source/"
+places:
+  - name: "Ibiza"
+    lat: 39.0200
+    lon: 1.4820
+  - name: "Formentera"
+    lat: 38.7268
+    lon: 1.4174
 activity_ids:
   - "10184212131" # Evening Run
   - "10188508424" # Lunch Run
