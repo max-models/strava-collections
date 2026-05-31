@@ -321,27 +321,6 @@ class StravaCollection:
                 include_elevation=include_activity_elevation,
                 elevation_asset_extension=activity_elevation_extension,
             )
-        html_str += """
-<div id="lightbox" class="lightbox">
-  <img id="lightbox-img" src="" alt="Full Image">
-</div>"""
-        html_str += """
-<script>
-document.querySelectorAll('.gallery img').forEach(img => {
-  img.addEventListener('click', event => {
-    event.preventDefault();  // stop the default link behavior
-    const lightbox = document.getElementById('lightbox');
-    const lightboxImg = document.getElementById('lightbox-img');
-    lightboxImg.src = img.src;
-    lightbox.classList.add('show');
-  });
-});
-
-document.getElementById('lightbox').addEventListener('click', () => {
-  document.getElementById('lightbox').classList.remove('show');
-});
-
-</script>"""
 
         if prettify:
             with tempfile.NamedTemporaryFile(

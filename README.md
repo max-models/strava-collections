@@ -51,7 +51,8 @@ strava-collections -i examples/taiwan.yml
 The static webpage is built with Astro. The Python command generates collection
 markdown plus maxplotlib elevation plots rendered as Plotly HTML assets for the
 collection and each individual activity, alongside Plotly map assets under
-`docs/source/`; the Astro sync step copies them into the Astro app.
+`docs/source/`; the Astro sync step converts those generated collection files
+into Astro pages and copies the static assets into the Astro app.
 
 ```
 strava-collections -i examples/taiwan.yml

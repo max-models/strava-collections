@@ -276,11 +276,13 @@ class StravaActivity:
         if self.photos:
             if len(self.photos) > 0:
                 out_str += '<div class="gallery">'
-                for photo in self.photos:
+                for index, photo in enumerate(self.photos, start=1):
                     size = list(photo["urls"].keys())[0]
                     url = photo["urls"][str(size)]
                     out_str += (
-                        f'<img src="{url}" height="200" class="lightbox-trigger">'
+                        f'<img src="{url}" height="200" class="lightbox-trigger" '
+                        f'loading="lazy" decoding="async" '
+                        f'alt="{self.activity.name} photo {index}">'
                     )
                 out_str += "</div>"
         # out_str += "</div>"

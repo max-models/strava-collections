@@ -1,39 +1,28 @@
 ---
-import { getCollection, render } from 'astro:content';
-import Layout from '../../layouts/Layout.astro';
-import { getCollectionRouteSlug } from '../../utils/collections';
+import Layout from '../layouts/Layout.astro';
 
-export async function getStaticPaths() {
-  const entries = await getCollection('collections');
-  return entries.map((entry) => ({
-    params: { slug: getCollectionRouteSlug(entry) },
-    props: { entry },
-  }));
+interface Props {
+  title: string;
+  bodyHtml: string;
 }
 
-const { entry } = Astro.props;
-const { Content } = await render(entry);
+const { title, bodyHtml } = Astro.props;
 const base = import.meta.env.BASE_URL.endsWith('/')
   ? import.meta.env.BASE_URL
   : `${import.meta.env.BASE_URL}/`;
 ---
 
-<Layout title={entry.data.title}>
-  <!-- Breadcrumb -->
+<Layout title={title}>
   <nav class="mb-6 flex items-center gap-2 text-sm text-slate-500">
     <a href={base} class="hover:text-strava transition-colors">Collections</a>
     <span>/</span>
-    <span class="text-slate-800 font-medium">{entry.data.title}</span>
+    <span class="text-slate-800 font-medium">{title}</span>
   </nav>
 
-  <!-- Collection content (rendered markdown with embedded iframes) -->
-  <article class="collection-body">
-    <Content />
-  </article>
+  <article class="collection-body" set:html={bodyHtml} />
 </Layout>
 
 <style is:global>
-  /* Scope generated-content styles to the collection body */
   .collection-body h1 {
     font-size: 2.25rem;
     font-weight: 700;
@@ -56,13 +45,11 @@ const base = import.meta.env.BASE_URL.endsWith('/')
     margin-bottom: 1rem;
   }
 
-  /* Responsive iframes */
   .collection-body iframe {
     border: none;
     border-radius: 12px;
   }
 
-  /* Tables (summary tables from --include-table) */
   .collection-body table {
     width: 100%;
     border-collapse: collapse;
@@ -90,7 +77,7 @@ const base = import.meta.env.BASE_URL.endsWith('/')
   }
 
   .collection-body a {
-    color: #FC4C02;
+    color: #fc4c02;
     text-decoration: none;
   }
 

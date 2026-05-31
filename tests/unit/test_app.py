@@ -1,11 +1,18 @@
 from datetime import datetime
 from pathlib import Path
 from types import SimpleNamespace
+import sys
 
 from strava_collections.activity import StravaActivity
 from strava_collections.collection import StravaCollection
 from strava_collections.main import elevation_extension_for_backend, main
 from strava_collections.utils import build_maxplotlib_elevation_canvas
+
+sys.path.insert(
+    0,
+    str(Path(__file__).resolve().parents[2] / "docs" / "astro" / "scripts"),
+)
+import sync_generated_content
 
 
 def test_main_uses_plotly_html_for_yaml_input(monkeypatch, tmp_path):
@@ -142,6 +149,27 @@ def test_activity_summary_uses_html_elevation_iframe_by_default():
     assert "lazy-" not in markdown
 
 
+def test_activity_summary_gallery_images_keep_lightbox_class_and_accessibility():
+    activity = StravaActivity.__new__(StravaActivity)
+    activity._activity_id = 1324271479
+    activity._activity = SimpleNamespace(
+        name="Day 1",
+        start_date_local=datetime(2025, 1, 1),
+        distance=1000.0,
+        total_elevation_gain=50.0,
+        elapsed_time=3600,
+        description="",
+    )
+    activity._photos = [{"urls": {"500": "https://example.com/photo.jpg"}}]
+
+    markdown = activity.generate_markdown_summary(include_elevation=False)
+
+    assert 'class="lightbox-trigger"' in markdown
+    assert 'loading="lazy"' in markdown
+    assert 'decoding="async"' in markdown
+    assert 'alt="Day 1 photo 1"' in markdown
+
+
 def test_collection_markdown_uses_direct_iframe_for_html_elevation(tmp_path):
     collection = StravaCollection.__new__(StravaCollection)
     collection._name = "Taiwan"
@@ -162,6 +190,40 @@ def test_collection_markdown_uses_direct_iframe_for_html_elevation(tmp_path):
     assert "aspect-ratio: 3 / 1" in markdown
     assert "loading=\"lazy\"" not in markdown
     assert "lazy-" not in markdown
+    assert 'id="lightbox"' not in markdown
+    assert "querySelectorAll('.gallery img')" not in markdown
+
+
+def test_sync_conversion_strips_legacy_lightbox_markup():
+    markdown = """# Taiwan
+
+<div class="gallery"><img src="/_static/photo.jpg" class="lightbox-trigger"></div>
+
+<div id="lightbox" class="lightbox">
+  <img id="lightbox-img" src="" alt="Full Image">
+</div>
+<script>
+document.querySelectorAll('.gallery img').forEach(img => {
+  img.addEventListener('click', event => {
+    event.preventDefault();
+  });
+});
+</script>
+"""
+
+    converted = sync_generated_content.convert_markdown(markdown)
+    page = sync_generated_content.render_collection_page(
+        title="Taiwan",
+        body_html=sync_generated_content.markdown_to_html(converted),
+    )
+
+    assert 'id="lightbox"' not in converted
+    assert "querySelectorAll('.gallery img')" not in converted
+    assert 'class="gallery"' in converted
+    assert 'class="glightbox"' in converted
+    assert 'data-gallery="collection-gallery-0"' in converted
+    assert "CollectionPage.astro" in page
+    assert 'const title = "Taiwan";' in page
 
 
 def test_elevation_canvas_is_wider_than_2_to_1():
