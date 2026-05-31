@@ -32,7 +32,9 @@ def build_site_paths(site_root: str | Path) -> SitePaths:
 
 def ensure_site_template(site_root: str | Path) -> SitePaths:
     paths = build_site_paths(site_root)
-    template_root = files("strava_collections").joinpath("site_template").joinpath("astro")
+    template_root = (
+        files("strava_collections").joinpath("site_template").joinpath("astro")
+    )
 
     with as_file(template_root) as template_dir:
         shutil.copytree(template_dir, paths.astro_dir, dirs_exist_ok=True)
