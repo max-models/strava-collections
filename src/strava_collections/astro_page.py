@@ -5,11 +5,11 @@ from pathlib import Path
 
 import markdown
 
-TITLE_FROM_ASTRO_RE = re.compile(
-    r'const title = (?P<literal>"(?:[^"\\]|\\.)*");'
-)
+TITLE_FROM_ASTRO_RE = re.compile(r'const title = (?P<literal>"(?:[^"\\]|\\.)*");')
 FRONTMATTER_RE = re.compile(r"\A---\s*\n.*?\n---\s*\n?", re.DOTALL)
-MARKDOWN_TITLE_RE = re.compile(r'^\s*title:\s*["\']?(?P<title>.+?)["\']?\s*$', re.MULTILINE)
+MARKDOWN_TITLE_RE = re.compile(
+    r'^\s*title:\s*["\']?(?P<title>.+?)["\']?\s*$', re.MULTILINE
+)
 H1_RE = re.compile(r"^\s*#\s+(?P<title>.+?)\s*$", re.MULTILINE)
 SCRIPT_TAG_RE = re.compile(r"<script(?P<attrs>[^>]*)>")
 STATIC_ASSET_ATTR_RE = re.compile(
@@ -94,7 +94,9 @@ def inline_local_plotly_iframes(markup: str, asset_dir: Path) -> str:
         asset_path = asset_dir / asset_name
         if not asset_path.exists():
             return match.group(0)
-        embed_variant = "plotly-embed--map" if "map" in asset_name else "plotly-embed--chart"
+        embed_variant = (
+            "plotly-embed--map" if "map" in asset_name else "plotly-embed--chart"
+        )
         body = load_local_plotly_asset(asset_path)
         return f'<div class="plotly-embed {embed_variant}">\n{body}\n</div>'
 
@@ -129,7 +131,9 @@ def wrap_gallery_images(markup: str) -> str:
             alt_match = ALT_RE.search(attrs)
             alt = alt_match.group("alt") if alt_match else ""
             class_match = CLASS_RE.search(attrs)
-            class_attr = f' class="{class_match.group("classname")}"' if class_match else ""
+            class_attr = (
+                f' class="{class_match.group("classname")}"' if class_match else ""
+            )
             return (
                 f'<a href="{src}" class="glightbox" data-gallery="{gallery_id}"'
                 f' aria-label="{alt or "Open gallery image"}">'

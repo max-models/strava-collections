@@ -344,7 +344,9 @@ def test_render_collection_page_extracts_promoted_description_titles():
 
     assert "To Dresden" in page
     assert '"slug": "to-dresden"' in page
-    assert '<h2 class="description-title" id="to-dresden">To Dresden 🚴🇪🇺🇨🇿🇩🇪</h2>' in page
+    assert (
+        '<h2 class="description-title" id="to-dresden">To Dresden 🚴🇪🇺🇨🇿🇩🇪</h2>' in page
+    )
 
 
 def test_sync_collections_prefers_generated_astro(monkeypatch, tmp_path):
