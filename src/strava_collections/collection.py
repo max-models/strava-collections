@@ -12,7 +12,10 @@ import plotly.colors as pc
 import plotly.graph_objects as go
 
 from strava_collections.activity import StravaActivity, embed_iframe, embed_image
-from strava_collections.astro_page import prepare_collection_markup, render_collection_page
+from strava_collections.astro_page import (
+    prepare_collection_markup,
+    render_collection_page,
+)
 from strava_collections.utils import (
     build_maxplotlib_elevation_plot,
     export_plotly_fig,
@@ -359,7 +362,9 @@ class StravaCollection:
         title_heading = f"<h1>{escape(self.name)}</h1>\n"
         if body_html.startswith(title_heading):
             body_html = body_html.removeprefix(title_heading)
-        collection_full_md = f'---\ntitle: "{self.name}"\n---\n# {self.name}\n{body_html}'
+        collection_full_md = (
+            f'---\ntitle: "{self.name}"\n---\n# {self.name}\n{body_html}'
+        )
 
         with open(filepath, "w", encoding="utf-8") as f:
             f.write(collection_full_md)

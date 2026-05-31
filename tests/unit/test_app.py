@@ -1,13 +1,10 @@
+import sys
 from datetime import datetime
 from pathlib import Path
 from types import SimpleNamespace
-import sys
 
-from strava_collections.astro_page import (
-    markdown_to_body_html,
-    render_collection_page,
-)
 from strava_collections.activity import StravaActivity
+from strava_collections.astro_page import markdown_to_body_html, render_collection_page
 from strava_collections.collection import StravaCollection
 from strava_collections.main import elevation_extension_for_backend, main
 from strava_collections.utils import build_maxplotlib_elevation_canvas
@@ -24,7 +21,7 @@ def test_main_uses_plotly_html_for_yaml_input(monkeypatch, tmp_path):
     legacy_markdown = tmp_path / "collection-taiwan.md"
     legacy_markdown.write_text("old", encoding="utf-8")
     yaml_path.write_text(
-        '\n'.join(
+        "\n".join(
             [
                 'collection_name: "Taiwan"',
                 f'output_dir: "{tmp_path.as_posix()}"',
@@ -72,9 +69,7 @@ def test_main_uses_plotly_html_for_yaml_input(monkeypatch, tmp_path):
     assert calls["activity_plot_elevation"][0][1]["backend"] == "plotly"
     assert calls["plot_elevation"][0].endswith("collection-taiwan-elev.html")
     assert calls["plot_elevation"][1]["backend"] == "plotly"
-    assert (
-        calls["generate_astro"][1]["elevfig_name"] == "collection-taiwan-elev.html"
-    )
+    assert calls["generate_astro"][1]["elevfig_name"] == "collection-taiwan-elev.html"
     assert calls["generate_astro"][0].endswith("collection-taiwan.astro")
     assert calls["generate_astro"][1]["include_activity_elevation"] is True
     assert calls["generate_astro"][1]["activity_elevation_extension"] == "html"
@@ -84,7 +79,7 @@ def test_main_uses_plotly_html_for_yaml_input(monkeypatch, tmp_path):
 def test_main_reuses_existing_map_assets_without_mapbox_token(monkeypatch, tmp_path):
     yaml_path = tmp_path / "taiwan.yml"
     yaml_path.write_text(
-        '\n'.join(
+        "\n".join(
             [
                 'collection_name: "Taiwan"',
                 f'output_dir: "{tmp_path.as_posix()}"',
@@ -153,7 +148,7 @@ def test_activity_summary_uses_html_elevation_iframe_by_default():
     assert 'src="/_static/activity-1324271479.html"' in markdown
     assert "<iframe " in markdown
     assert "aspect-ratio: 3 / 1" in markdown
-    assert "loading=\"lazy\"" not in markdown
+    assert 'loading="lazy"' not in markdown
     assert "lazy-" not in markdown
 
 
@@ -244,8 +239,8 @@ document.querySelectorAll('.gallery img').forEach(img => {
     assert "CollectionPage.astro" in page
     assert 'const title = "Taiwan";' in page
     assert "bodyHtml" not in page
-    assert '<CollectionPage title={title}>' in page
-    assert 'href={`${base}_static/photo.jpg`}' in page
+    assert "<CollectionPage title={title}>" in page
+    assert "href={`${base}_static/photo.jpg`}" in page
 
 
 def test_markdown_to_body_html_inlines_local_plotly_assets(tmp_path):

@@ -6,8 +6,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "src"))
 
-from strava_collections.astro_page import (  # noqa: E402
-    markdown_to_body_html,
+from strava_collections.astro_page import markdown_to_body_html  # noqa: E402
+from strava_collections.astro_page import (
     render_collection_page,
     route_slug_from_filename,
     title_from_astro,
