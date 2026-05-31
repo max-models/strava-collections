@@ -25,5 +25,7 @@ token_response = client.exchange_code_for_token(
 access_token = token_response["access_token"]
 refresh_token = token_response["refresh_token"]  # You'll need this in 6 hours
 
-print(f"{access_token = }")
-print(f"{refresh_token = }")
+print()
+print("Copy and paste these into your shell:")
+print(f'export STRAVA_ACCESS_TOKEN="{access_token}"')
+print(f'export STRAVA_REFRESH_TOKEN="{refresh_token}"')

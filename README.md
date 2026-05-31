@@ -6,11 +6,29 @@ Link to the published webpage: https://max-models.github.io/strava-collections/
 
 # Get the tokens
 
+## Strava
+
 ```
 python update_strava_tokens.py
 ```
 
-export the tokes as `STRAVA_REFRESH_TOKEN` and `STRAVA_ACCESS_TOKEN`.
+The script prints commands you can copy and paste to export
+`STRAVA_REFRESH_TOKEN` and `STRAVA_ACCESS_TOKEN`.
+
+## Mapbox
+
+Map image export uses Plotly/Kaleido with Mapbox styles, so you also need a
+Mapbox access token.
+
+1. Open https://console.mapbox.com/account/access-tokens/
+2. Sign in or create a Mapbox account.
+3. Copy your `Default public token`, or create a new public token for this
+   project. Public Mapbox tokens start with `pk`.
+4. Export it before building collections:
+
+```
+export MAPBOX_TOKEN="pk..."
+```
 
 # Build collection
 
