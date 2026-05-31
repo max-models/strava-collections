@@ -54,7 +54,9 @@ def parse_activity_ids(activity_ids: list[str]) -> list[tuple[int, bool]]:
     return activity_ids_flip
 
 
-def resolve_output_directory(args, yaml_output_dir: str | None = None) -> tuple[Path, Path | None]:
+def resolve_output_directory(
+    args, yaml_output_dir: str | None = None
+) -> tuple[Path, Path | None]:
     if args.output:
         site_root = Path(args.output).resolve()
         ensure_site_template(site_root)
@@ -64,6 +66,17 @@ def resolve_output_directory(args, yaml_output_dir: str | None = None) -> tuple[
         return Path(yaml_output_dir).resolve(), None
 
     return Path("./").resolve(), None
+
+
+def print_site_instructions(site_root: Path) -> None:
+    astro_dir = site_root / "astro"
+    print("")
+    print(f"Standalone site ready at: {site_root}")
+    print("Next steps:")
+    print(f"  cd {astro_dir}")
+    print("  npm ci")
+    print("  npm run dev")
+    print("  npm run build:from-generated")
 
 
 def generate_collection(
@@ -106,7 +119,8 @@ def generate_collection(
         for activity in collection.activities:
             activity.plot_elevation(
                 filepath=str(
-                    path_static / f"activity-{activity.activity_id}.{elevation_extension}"
+                    path_static
+                    / f"activity-{activity.activity_id}.{elevation_extension}"
                 ),
                 backend=args.backend,
             )
@@ -143,8 +157,7 @@ def generate_collection(
         )
     elif all(path.exists() for path in map_asset_paths):
         print(
-            "MAPBOX_TOKEN is not set; reusing existing map assets in "
-            f"{path_static}."
+            "MAPBOX_TOKEN is not set; reusing existing map assets in " f"{path_static}."
         )
     else:
         raise RuntimeError(mapbox_token_help)
@@ -250,6 +263,7 @@ def main():
             site_root = generate_collection_from_yaml(input_path=input_path, args=args)
         if site_root is not None:
             sync_site(site_root)
+            print_site_instructions(site_root)
         return
 
     output_dir, site_root = resolve_output_directory(args)
@@ -262,6 +276,7 @@ def main():
     )
     if site_root is not None:
         sync_site(site_root)
+        print_site_instructions(site_root)
 
 
 if __name__ == "__main__":

@@ -2,8 +2,8 @@ import json
 import shutil
 from pathlib import Path
 
-from strava_collections.astro_page import markdown_to_body_html
 from strava_collections.astro_page import (
+    markdown_to_body_html,
     render_collection_page,
     route_slug_from_filename,
     title_from_astro,

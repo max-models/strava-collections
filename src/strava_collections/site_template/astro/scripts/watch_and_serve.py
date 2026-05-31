@@ -18,7 +18,10 @@ def snapshot_source_tree() -> dict[str, tuple[int, int]]:
         if not path.is_file():
             continue
         stat = path.stat()
-        state[str(path.relative_to(PATHS.source_dir))] = (stat.st_mtime_ns, stat.st_size)
+        state[str(path.relative_to(PATHS.source_dir))] = (
+            stat.st_mtime_ns,
+            stat.st_size,
+        )
     return state
 
 

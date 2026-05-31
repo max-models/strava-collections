@@ -58,14 +58,14 @@ class StravaActivity:
         os.makedirs(name=CACHE_PATH, exist_ok=True)
         pickle_path = f"{CACHE_PATH}/{self.activity_id}.pkl"
         if os.path.exists(pickle_path) and force_update is False:
-            print(f"{self.activity_id} (cached)", end = ", ")
+            print(f"{self.activity_id} (cached)", end=", ")
             with open(pickle_path, "rb") as f:
                 data = pickle.load(f)
             self._activity = data["activity"]
             self._activity_stream = data["activity_stream"]
             self._photos = data["photos"]
         else:
-            print(f"{self.activity_id} (downloaded)", end = ", ")
+            print(f"{self.activity_id} (downloaded)", end=", ")
 
             # Load Strava credentials from environment
             client_id = os.getenv("STRAVA_CLIENT_ID")

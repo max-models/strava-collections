@@ -187,7 +187,7 @@ def test_main_accepts_multiple_yaml_inputs(monkeypatch, tmp_path):
     assert calls["generate_astro"][1][0].endswith("collection-japan.astro")
 
 
-def test_main_output_scaffolds_site_template(monkeypatch, tmp_path):
+def test_main_output_scaffolds_site_template(monkeypatch, tmp_path, capsys):
     yaml_path = tmp_path / "taiwan.yml"
     yaml_path.write_text(
         "\n".join(
@@ -234,11 +234,17 @@ def test_main_output_scaffolds_site_template(monkeypatch, tmp_path):
     )
 
     main()
+    stdout = capsys.readouterr().out
 
     site_root = tmp_path / "site"
     assert (site_root / "astro" / "package.json").exists()
     assert (site_root / "source" / "collection-taiwan.astro").exists()
     assert calls["sync_site"] == [site_root.resolve()]
+    assert f"Standalone site ready at: {site_root.resolve()}" in stdout
+    assert f"  cd {site_root.resolve() / 'astro'}" in stdout
+    assert "  npm ci" in stdout
+    assert "  npm run dev" in stdout
+    assert "  npm run build:from-generated" in stdout
 
 
 def test_main_output_reuses_yaml_map_assets_without_mapbox_token(monkeypatch, tmp_path):
