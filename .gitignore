@@ -183,3 +183,4 @@ junit/
 old_scripts/
 collection-*.md
 *.pkl
+docs/astro/node_modules/
