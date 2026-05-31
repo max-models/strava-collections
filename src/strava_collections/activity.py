@@ -17,6 +17,13 @@ from strava_collections.utils import export_plotly_fig
 CACHE_PATH = os.getenv("STRAVA_CACHE_DIR", "cache")
 
 
+def lazy_iframe(src: str, label: str, height: str = "250px") -> str:
+    return f"""
+<div class="lazy-iframe" data-src="{src}" data-height="{height}">
+  <button type="button" class="lazy-iframe-button">{label}</button>
+</div>\n\n"""
+
+
 class StravaActivity:
     """Wrapper around stravalib's DetailedActivity with convenience methods."""
 
@@ -156,7 +163,7 @@ class StravaActivity:
                 f,
             )
 
-    def generate_markdown_summary(self):
+    def generate_markdown_summary(self, include_elevation: bool = False):
         out_str = ""
         #         out_str += """<div style="
         #     # background-color: #dbf9e1;
@@ -202,11 +209,11 @@ class StravaActivity:
             out_str += "</div>\n"
 
         # Elevation profile
-
-        out_str += f"""
-<div style="position: relative; width: 100%; padding-bottom: 250px; height: 0;">
-<iframe src="/_static/activity-{self.activity_id}.html" style="position:absolute; top:0; left:0; width:100%; height:100%; border:none;"></iframe>
-</div>\n\n"""
+        if include_elevation:
+            out_str += lazy_iframe(
+                src=f"/_static/activity-{self.activity_id}.html",
+                label="Load activity elevation profile",
+            )
 
         # Photos
         # TODO: Get photos from the DetailedActivity (currently seems broken?)

@@ -4,7 +4,6 @@ import re
 import shutil
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[3]
 SPHINX_SOURCE = ROOT / "docs" / "source"
 ASTRO_ROOT = ROOT / "docs" / "astro"
@@ -52,7 +51,9 @@ def sync_static() -> None:
     shutil.copytree(source_static, PUBLIC_STATIC_DIR)
 
     for map_image in PUBLIC_STATIC_DIR.glob("collection-*-map.png"):
-        thick_image = map_image.with_name(map_image.name.replace("-map.png", "-map-thick.png"))
+        thick_image = map_image.with_name(
+            map_image.name.replace("-map.png", "-map-thick.png")
+        )
         if not thick_image.exists():
             shutil.copy2(map_image, thick_image)
             print(f"Created missing hover image: {thick_image.relative_to(ROOT)}")

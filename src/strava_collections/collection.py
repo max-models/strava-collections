@@ -12,6 +12,7 @@ import plotly.graph_objects as go
 import yaml
 
 from strava_collections.activity import StravaActivity
+from strava_collections.activity import lazy_iframe
 from strava_collections.utils import export_plotly_fig
 
 palette = pc.qualitative.Plotly  # default Plotly categorical colors
@@ -232,6 +233,7 @@ class StravaCollection:
         filepath: str,
         mapfig_name: str,
         elevfig_name: str,
+        include_activity_elevation: bool = False,
         sort_by_date: bool = False,
         include_table: bool = False,
         prettify: bool = False,
@@ -242,14 +244,14 @@ class StravaCollection:
         html_str = ""
         html_str += f"""
 <div style="position: relative; width: 100%; height: 350px;">
-<iframe src="/_static/{mapfig_name}" style="width:100%; height:100%; border:none;"></iframe>
+<iframe src="/_static/{mapfig_name}" loading="lazy" style="width:100%; height:100%; border:none;"></iframe>
 </div>
 \n\n"""
 
-        html_str += f"""
-<div style="position: relative; width: 100%; padding-bottom: 250px; height: 0;">
-<iframe src="/_static/{elevfig_name}" style="position:absolute; top:0; left:0; width:100%; height:100%; border:none;"></iframe>
-</div>\n\n"""
+        html_str += lazy_iframe(
+            src=f"/_static/{elevfig_name}",
+            label="Load collection elevation profile",
+        )
 
         collection_table_md = ""
         if include_table:
@@ -279,7 +281,9 @@ class StravaCollection:
         html_str += "\n\n"
         # Add blocks with each individual activities
         for activity in self.activities:
-            html_str += activity.generate_markdown_summary()
+            html_str += activity.generate_markdown_summary(
+                include_elevation=include_activity_elevation,
+            )
         html_str += """
 <div id="lightbox" class="lightbox">
   <img id="lightbox-img" src="" alt="Full Image">
@@ -298,6 +302,23 @@ document.querySelectorAll('.gallery img').forEach(img => {
 
 document.getElementById('lightbox').addEventListener('click', () => {
   document.getElementById('lightbox').classList.remove('show');
+});
+
+document.querySelectorAll('.lazy-iframe').forEach(container => {
+  const button = container.querySelector('.lazy-iframe-button');
+  if (!button) {
+    return;
+  }
+  button.addEventListener('click', () => {
+    const iframe = document.createElement('iframe');
+    iframe.src = container.dataset.src;
+    iframe.loading = 'lazy';
+    iframe.style.width = '100%';
+    iframe.style.height = container.dataset.height || '250px';
+    iframe.style.border = 'none';
+    iframe.style.borderRadius = '12px';
+    container.replaceChildren(iframe);
+  });
 });
 </script>"""
 
