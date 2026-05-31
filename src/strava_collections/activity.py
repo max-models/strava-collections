@@ -11,17 +11,37 @@ import requests
 from stravalib import Client
 from stravalib.model import DetailedActivity
 
-from strava_collections.utils import export_plotly_fig
+from strava_collections.utils import (
+    build_maxplotlib_elevation_plot,
+    export_plotly_fig,
+    export_tikz_figure,
+)
 
 # CACHE_PATH = strava_collections.__path__[0]
 CACHE_PATH = os.getenv("STRAVA_CACHE_DIR", "cache")
 
 
-def lazy_iframe(src: str, label: str, height: str = "250px") -> str:
+def embed_iframe(
+    src: str,
+    *,
+    height: str = "220px",
+    aspect_ratio: str = "3 / 1",
+) -> str:
     return f"""
-<div class="lazy-iframe" data-src="{src}" data-height="{height}">
-  <button type="button" class="lazy-iframe-button">{label}</button>
+<div style="position: relative; width: 100%; height: {height}; aspect-ratio: {aspect_ratio};">
+  <iframe src="{src}" style="width:100%; height:100%; border:none; border-radius: 12px;"></iframe>
 </div>\n\n"""
+
+
+def embed_image(
+    src: str,
+    *,
+    alt: str,
+    height: str = "220px",
+    aspect_ratio: str = "3 / 1",
+) -> str:
+    return f"""
+<img src="{src}" alt="{alt}" style="width:100%; height:{height}; aspect-ratio:{aspect_ratio}; object-fit:contain; display:block;" />\n\n"""
 
 
 class StravaActivity:
@@ -100,29 +120,47 @@ class StravaActivity:
         self,
         filepath=None,
         height=200,
-        config={"staticPlot": True, "displayModeBar": False},
+        config=None,
+        backend="plotly",
     ):
-        """Plot elevation profile of all activities with filled translucent area."""
-        fig = go.Figure()
-        self.add_elevation_to_fig(fig, distance_traveled=0.0, color="black")
+        """Plot the activity elevation profile with maxplotlib."""
+        if config is None:
+            config = {"staticPlot": True, "displayModeBar": False}
 
-        fig.update_layout(
-            # title="Elevation Profiles",
-            xaxis_title="Distance (km)",
-            yaxis_title="Elevation (m)",
+        distance = np.array(self.activity_stream["distance"].data) * 1e-3
+        elev = np.array(self.activity_stream["altitude"].data)
+        distance, elev = fastrdp.rdp(distance, elev, epsilon=0.1)
+
+        if self.flip:
+            dmax = distance[-1]
+            distance = np.array([dmax - dist for dist in distance])[::-1]
+            elev = elev[::-1]
+
+        fig = build_maxplotlib_elevation_plot(
+            [
+                {
+                    "x": distance,
+                    "y": elev,
+                    "color": "black",
+                }
+            ],
             height=height,
-            hovermode="x unified",
-            showlegend=False,
-            xaxis=dict(tickformat=",.0f"),
-            margin=dict(l=0, r=0, t=0, b=0),
-            autosize=True,
-            plot_bgcolor="white",
-            paper_bgcolor="white",
+            backend=backend,
         )
 
         if isinstance(filepath, str):
-            export_plotly_fig(fig=fig, filepath=filepath, config=config)
-        print(f"Saved elevation plot to: {filepath}")
+            if backend == "plotly":
+                export_plotly_fig(
+                    fig=fig,
+                    filepath=filepath,
+                    config=config,
+                    full_html=filepath.lower().endswith(".html"),
+                )
+            elif backend == "tikzfigure":
+                export_tikz_figure(fig=fig, filepath=filepath)
+            else:
+                raise ValueError(f"Unsupported elevation backend: {backend}")
+            print(f"Saved elevation plot to: {filepath}")
         return fig
 
     def get_coords(self):
@@ -163,7 +201,11 @@ class StravaActivity:
                 f,
             )
 
-    def generate_markdown_summary(self, include_elevation: bool = False):
+    def generate_markdown_summary(
+        self,
+        include_elevation: bool = False,
+        elevation_asset_extension: str = "html",
+    ):
         out_str = ""
         #         out_str += """<div style="
         #     # background-color: #dbf9e1;
@@ -177,7 +219,7 @@ class StravaActivity:
         # Heading
         # out_str += f"## {self.name}\n\n"
         out_str += '<div class="description-box">\n'
-        out_str += f'<div class="description-title">{self.name}</div>\n'
+        out_str += f'<h2 class="description-title">{self.name}</h2>\n'
 
         out_str += "<div>\n"
 
@@ -210,10 +252,19 @@ class StravaActivity:
 
         # Elevation profile
         if include_elevation:
-            out_str += lazy_iframe(
-                src=f"/_static/activity-{self.activity_id}.html",
-                label="Load activity elevation profile",
+            elevation_asset_extension = elevation_asset_extension.lstrip(".")
+            elevation_src = (
+                f"/_static/activity-{self.activity_id}.{elevation_asset_extension}"
             )
+            if elevation_asset_extension == "html":
+                out_str += embed_iframe(
+                    src=elevation_src,
+                )
+            else:
+                out_str += embed_image(
+                    src=elevation_src,
+                    alt=f"{self.activity.name} elevation profile",
+                )
 
         # Photos
         # TODO: Get photos from the DetailedActivity (currently seems broken?)
@@ -225,11 +276,13 @@ class StravaActivity:
         if self.photos:
             if len(self.photos) > 0:
                 out_str += '<div class="gallery">'
-                for photo in self.photos:
+                for index, photo in enumerate(self.photos, start=1):
                     size = list(photo["urls"].keys())[0]
                     url = photo["urls"][str(size)]
                     out_str += (
-                        f'<img src="{url}" height="200" class="lightbox-trigger">'
+                        f'<img src="{url}" height="200" class="lightbox-trigger" '
+                        f'loading="lazy" decoding="async" '
+                        f'alt="{self.activity.name} photo {index}">'
                     )
                 out_str += "</div>"
         # out_str += "</div>"

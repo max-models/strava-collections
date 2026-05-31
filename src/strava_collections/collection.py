@@ -1,6 +1,7 @@
 import os
 import subprocess
 import tempfile
+from html import escape
 from pathlib import Path
 from typing import List
 
@@ -10,10 +11,30 @@ import pandas as pd
 import plotly.colors as pc
 import plotly.graph_objects as go
 
-from strava_collections.activity import StravaActivity, lazy_iframe
-from strava_collections.utils import export_plotly_fig
+from strava_collections.activity import StravaActivity, embed_iframe, embed_image
+from strava_collections.astro_page import (
+    prepare_collection_markup,
+    render_collection_page,
+)
+from strava_collections.utils import (
+    build_maxplotlib_elevation_plot,
+    export_plotly_fig,
+    export_tikz_figure,
+)
 
 palette = pc.qualitative.Plotly  # default Plotly categorical colors
+tikz_palette = [
+    "RoyalBlue",
+    "Orange",
+    "ForestGreen",
+    "BrickRed",
+    "DarkOrchid",
+    "Goldenrod",
+    "CadetBlue",
+    "Magenta",
+    "SaddleBrown",
+    "Gray",
+]
 mapbox_token = os.getenv("MAPBOX_TOKEN")
 mapbox_token_help = (
     "MAPBOX_TOKEN is required to render Mapbox maps and export map images. "
@@ -52,44 +73,59 @@ class StravaCollection:
         filepath=None,
         height=200,
         config={"staticPlot": True, "displayModeBar": False},
+        backend="plotly",
     ):
-        """Plot elevation profile of all activities with filled translucent area."""
-        fig = go.Figure()
-
+        """Plot elevation profile of all activities with maxplotlib."""
         distance_traveled = 0.0
+        traces = []
 
         for color_index, activity in enumerate(self.activities):
 
             if activity.no_map:
                 continue
 
-            # pick a line color from palette
-            line_color = palette[color_index % len(palette)]
+            line_color = (
+                tikz_palette[color_index % len(tikz_palette)]
+                if backend == "tikzfigure"
+                else palette[color_index % len(palette)]
+            )
+            distance = np.array(activity.activity_stream["distance"].data) * 1e-3
+            elev = np.array(activity.activity_stream["altitude"].data)
+            distance, elev = fastrdp.rdp(distance, elev, epsilon=0.1)
 
-            activity.add_elevation_to_fig(
-                fig=fig,
-                distance_traveled=distance_traveled,
-                color=line_color,
+            if activity.flip:
+                dmax = distance[-1]
+                distance = np.array([dmax - dist for dist in distance])[::-1]
+                elev = elev[::-1]
+
+            traces.append(
+                {
+                    "x": distance + distance_traveled,
+                    "y": elev,
+                    "color": line_color,
+                }
             )
 
             distance_traveled += activity.activity_stream["distance"].data[-1] * 1e-3
 
-        fig.update_layout(
-            # title="Elevation Profiles",
-            xaxis_title="Distance (km)",
-            yaxis_title="Elevation (m)",
+        fig = build_maxplotlib_elevation_plot(
+            traces,
             height=height,
-            hovermode="x unified",
-            showlegend=False,
-            xaxis=dict(tickformat=",.0f"),
-            margin=dict(l=0, r=0, t=0, b=0),
-            autosize=True,
-            plot_bgcolor="white",
-            paper_bgcolor="white",
+            backend=backend,
         )
         print(f"Total distance travelled: {distance_traveled} km")
         if isinstance(filepath, str):
-            export_plotly_fig(fig=fig, filepath=filepath, config=config)
+            if backend == "plotly":
+                export_plotly_fig(
+                    fig=fig,
+                    filepath=filepath,
+                    config=config,
+                    full_html=filepath.lower().endswith(".html"),
+                )
+            elif backend == "tikzfigure":
+                export_tikz_figure(fig=fig, filepath=filepath)
+            else:
+                raise ValueError(f"Unsupported elevation backend: {backend}")
             print(f"Saved elevation plot to: {filepath}")
         return fig
 
@@ -226,36 +262,41 @@ class StravaCollection:
             print(f"Saved map plot to: {filepath}")
         return fig
 
-    def generate_markdown(
+    def build_collection_body_html(
         self,
-        filepath: str,
         mapfig_name: str,
         elevfig_name: str,
         include_activity_elevation: bool = False,
+        activity_elevation_extension: str = "html",
         sort_by_date: bool = False,
         include_table: bool = False,
-        prettify: bool = False,
     ):
-
-        # This string will contain the the html for the images and activities,
-        # and may be prettified before added to the markdown
         html_str = ""
         html_str += f"""
 <div style="position: relative; width: 100%; height: 350px;">
-<iframe src="/_static/{mapfig_name}" loading="lazy" style="width:100%; height:100%; border:none;"></iframe>
+<iframe src="/_static/{mapfig_name}" style="width:100%; height:100%; border:none;"></iframe>
 </div>
 \n\n"""
 
-        html_str += lazy_iframe(
-            src=f"/_static/{elevfig_name}",
-            label="Load collection elevation profile",
-        )
+        collection_elevation_src = f"/_static/{elevfig_name}"
+        if elevfig_name.lower().endswith(".html"):
+            html_str += embed_iframe(
+                src=collection_elevation_src,
+            )
+        else:
+            html_str += embed_image(
+                src=collection_elevation_src,
+                alt=f"{self.name} elevation profile",
+            )
 
         collection_table_md = ""
         if include_table:
             data = []
             for activity in self.activities:
-                name_link = f"[{activity.activity.name}]({activity.link})"
+                name_link = (
+                    f'<a href="{activity.link}" target="_blank" rel="noopener">'
+                    f"{escape(activity.activity.name)}</a>"
+                )
                 data.append(
                     {
                         "Activity": name_link,
@@ -273,80 +314,105 @@ class StravaCollection:
             if sort_by_date:
                 df = df.sort_values(by="Date", ascending=True)
 
-            # Convert DataFrame to Markdown table
-            collection_table_md = df.to_markdown(index=False)
+            collection_table_md = df.to_html(index=False, escape=False, border=0)
 
         html_str += "\n\n"
-        # Add blocks with each individual activities
         for activity in self.activities:
             html_str += activity.generate_markdown_summary(
                 include_elevation=include_activity_elevation,
+                elevation_asset_extension=activity_elevation_extension,
             )
-        html_str += """
-<div id="lightbox" class="lightbox">
-  <img id="lightbox-img" src="" alt="Full Image">
-</div>"""
-        html_str += """
-<script>
-document.querySelectorAll('.gallery img').forEach(img => {
-  img.addEventListener('click', event => {
-    event.preventDefault();  // stop the default link behavior
-    const lightbox = document.getElementById('lightbox');
-    const lightboxImg = document.getElementById('lightbox-img');
-    lightboxImg.src = img.src;
-    lightbox.classList.add('show');
-  });
-});
+        return f"<h1>{escape(self.name)}</h1>\n{html_str}{collection_table_md}"
 
-document.getElementById('lightbox').addEventListener('click', () => {
-  document.getElementById('lightbox').classList.remove('show');
-});
-
-document.querySelectorAll('.lazy-iframe').forEach(container => {
-  const button = container.querySelector('.lazy-iframe-button');
-  if (!button) {
-    return;
-  }
-  button.addEventListener('click', () => {
-    const iframe = document.createElement('iframe');
-    iframe.src = container.dataset.src;
-    iframe.loading = 'lazy';
-    iframe.style.width = '100%';
-    iframe.style.height = container.dataset.height || '250px';
-    iframe.style.border = 'none';
-    iframe.style.borderRadius = '12px';
-    container.replaceChildren(iframe);
-  });
-});
-</script>"""
+    def generate_markdown(
+        self,
+        filepath: str,
+        mapfig_name: str,
+        elevfig_name: str,
+        include_activity_elevation: bool = False,
+        activity_elevation_extension: str = "html",
+        sort_by_date: bool = False,
+        include_table: bool = False,
+        prettify: bool = False,
+    ):
+        body_html = self.build_collection_body_html(
+            mapfig_name=mapfig_name,
+            elevfig_name=elevfig_name,
+            include_activity_elevation=include_activity_elevation,
+            activity_elevation_extension=activity_elevation_extension,
+            sort_by_date=sort_by_date,
+            include_table=include_table,
+        )
 
         if prettify:
             with tempfile.NamedTemporaryFile(
                 "w+", suffix=".html", delete=False, encoding="utf-8"
             ) as tmp_file:
-                tmp_file.write(html_str)
+                tmp_file.write(body_html)
                 tmp_file.flush()
                 tmp_path = Path(tmp_file.name)
                 tmp_folder = tmp_path.parent
-            # print(f"{tmp_path = }")
             subprocess.run(
                 ["prettier", "--write", str(tmp_path)], check=True, cwd=tmp_folder
             )
 
             with open(tmp_path, "r", encoding="utf-8") as f:
-                html_str = f.read()
+                body_html = f.read()
 
-        # Add markdown title
-        collection_title_md = f"# {self.name}\n"
-
-        frontmatter = f'---\ntitle: "{self.name}"\n---\n'
+        title_heading = f"<h1>{escape(self.name)}</h1>\n"
+        if body_html.startswith(title_heading):
+            body_html = body_html.removeprefix(title_heading)
         collection_full_md = (
-            frontmatter + collection_title_md + html_str + collection_table_md
+            f'---\ntitle: "{self.name}"\n---\n# {self.name}\n{body_html}'
         )
 
         with open(filepath, "w", encoding="utf-8") as f:
             f.write(collection_full_md)
         print(f"Saved markdown page to {filepath}")
+
+    def generate_astro(
+        self,
+        filepath: str,
+        mapfig_name: str,
+        elevfig_name: str,
+        include_activity_elevation: bool = False,
+        activity_elevation_extension: str = "html",
+        sort_by_date: bool = False,
+        include_table: bool = False,
+        prettify: bool = False,
+    ):
+        body_html = self.build_collection_body_html(
+            mapfig_name=mapfig_name,
+            elevfig_name=elevfig_name,
+            include_activity_elevation=include_activity_elevation,
+            activity_elevation_extension=activity_elevation_extension,
+            sort_by_date=sort_by_date,
+            include_table=include_table,
+        )
+        asset_dir = Path(filepath).parent / "_static"
+        page_source = render_collection_page(
+            title=self.name,
+            body_html=prepare_collection_markup(body_html, asset_dir=asset_dir),
+        )
+
+        if prettify:
+            with tempfile.NamedTemporaryFile(
+                "w+", suffix=".astro", delete=False, encoding="utf-8"
+            ) as tmp_file:
+                tmp_file.write(page_source)
+                tmp_file.flush()
+                tmp_path = Path(tmp_file.name)
+                tmp_folder = tmp_path.parent
+            subprocess.run(
+                ["prettier", "--write", str(tmp_path)], check=True, cwd=tmp_folder
+            )
+
+            with open(tmp_path, "r", encoding="utf-8") as f:
+                page_source = f.read()
+
+        with open(filepath, "w", encoding="utf-8") as f:
+            f.write(page_source)
+        print(f"Saved Astro page to {filepath}")
 
     def to_yaml(self, output_dir, filename: str | None = None):
         yaml_str = ""
@@ -392,7 +458,7 @@ def zoom_center(
     # lonlats: tuple = None,
     # format: str = "lonlat",
     projection: str = "mercator",
-    width_to_height: float = 2.0,
+    width_to_height: float = 3.0,
 ) -> (float, dict):
     """Finds optimal zoom and centering for a plotly mapbox.
     Must be passed (lons & lats) or lonlats.

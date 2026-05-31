@@ -1,4 +1,95 @@
+from typing import Any, Literal
+
 from plotly.graph_objects import Figure
+
+ElevationBackend = Literal["plotly", "tikzfigure", "matplotlib"]
+
+
+def build_maxplotlib_elevation_canvas(
+    traces: list[dict],
+    *,
+    height: int,
+    width_to_height: float = 3.0,
+    line_width: float = 1.5,
+):
+    from maxplotlib import Canvas
+
+    figure_height = height / 100
+    canvas, ax = Canvas.subplots(
+        figsize=(figure_height * width_to_height, figure_height),
+        fontsize=10,
+    )
+    for trace in traces:
+        color = trace.get("color", "black")
+        ax.fill_between(trace["x"], trace["y"], 0, color=color, alpha=0.15)
+        ax.plot(
+            trace["x"],
+            trace["y"],
+            color=color,
+            linewidth=trace.get("line_width", line_width),
+        )
+
+    ax.set_xlabel("Distance (km)")
+    ax.set_ylabel("Elevation (m)")
+    ax.set_grid(False)
+    return canvas
+
+
+def build_maxplotlib_elevation_plot(
+    traces: list[dict],
+    *,
+    height: int,
+    backend: ElevationBackend = "plotly",
+    width_to_height: float = 3.0,
+    line_width: float = 1.5,
+) -> Any:
+    canvas = build_maxplotlib_elevation_canvas(
+        traces,
+        height=height,
+        width_to_height=width_to_height,
+        line_width=line_width,
+    )
+
+    if backend == "plotly":
+        fig = canvas.plot(backend="plotly")
+        fig.update_layout(
+            height=height,
+            hovermode="x unified",
+            showlegend=False,
+            xaxis=dict(tickformat=",.0f"),
+            margin=dict(l=0, r=0, t=0, b=0),
+            autosize=True,
+            plot_bgcolor="white",
+            paper_bgcolor="white",
+        )
+        fig.update_traces(
+            hovertemplate="Distance: %{x:.1f} km<br>Elevation: %{y:.1f} m<extra></extra>",
+            selector=dict(type="scatter"),
+        )
+        return fig
+
+    if backend == "tikzfigure":
+        return canvas.plot(backend="tikzfigure")
+
+    raise ValueError(f"Unsupported maxplotlib backend: {backend}")
+
+
+def export_tikz_figure(
+    fig,
+    filepath: str,
+    *,
+    dpi: int = 200,
+    transparent: bool = True,
+    use_web_compilation: bool = False,
+):
+    # print(f"Writing TikZ-backed figure to: {filepath}", flush=True)
+    fig.savefig(
+        filepath,
+        dpi=dpi,
+        transparent=transparent,
+        use_web_compilation=use_web_compilation,
+        # verbose=True,
+    )
 
 
 def export_plotly_fig(

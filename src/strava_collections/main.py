@@ -3,7 +3,19 @@ import os
 
 import yaml
 
-from strava_collections.collection import StravaCollection
+from strava_collections.collection import (
+    StravaCollection,
+    mapbox_token,
+    mapbox_token_help,
+)
+
+
+def elevation_extension_for_backend(backend: str) -> str:
+    if backend == "plotly":
+        return "html"
+    if backend in {"tikzfigure", "matplotlib"}:
+        return "png"
+    raise ValueError(f"Unsupported backend: {backend}")
 
 
 def main():
@@ -38,6 +50,13 @@ def main():
     )
 
     parser.add_argument(
+        "-b",
+        "--backend",
+        default="plotly",
+        choices=["plotly", "tikzfigure", "matplotlib"],
+    )
+
+    parser.add_argument(
         "-f",
         "--force-update",
         action="store_true",
@@ -52,8 +71,9 @@ def main():
     )
     parser.add_argument(
         "--include-activity-elevation",
-        action="store_true",
-        help="Embed each activity elevation plot in the collection page.",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Generate and embed each activity elevation plot in the collection page.",
     )
 
     args = parser.parse_args()
@@ -103,53 +123,75 @@ def main():
     path_static = os.path.join(output, "_static")
     mapfig_name = f"{collection_filename}-map.html"
     map_path = os.path.join(path_static, mapfig_name)
+    map_asset_paths = [
+        map_path,
+        map_path.replace(".html", ".png"),
+        map_path.replace(".html", "-thick.png"),
+    ]
 
-    elevfig_name = f"{collection_filename}-elev.html"
+    elevation_extension = elevation_extension_for_backend(args.backend)
+    elevfig_name = f"{collection_filename}-elev.{elevation_extension}"
     elev_path = os.path.join(path_static, elevfig_name)
 
-    path_collection_md = os.path.join(output, f"{collection_filename}.md")
+    path_collection_astro = os.path.join(output, f"{collection_filename}.astro")
+    legacy_markdown_path = os.path.join(output, f"{collection_filename}.md")
 
     if args.include_activity_elevation:
         for activity in collection.activities:
             activity.plot_elevation(
                 filepath=os.path.join(
-                    path_static, f"activity-{activity.activity_id}.html"
+                    path_static,
+                    f"activity-{activity.activity_id}.{elevation_extension}",
                 ),
+                backend=args.backend,
             )
+
+    plot_elevation = True
+    if plot_elevation:
+        collection.plot_elevation(filepath=elev_path, backend=args.backend)
 
     # Plot figures
     plot_map = True
     if plot_map:
-        collection.plot_map(
-            filepath=map_path,
-            # height=1000,
-            linewidths=[8, 2],
-            width_to_height=3.0,
-        )
-        collection.plot_map(
-            filepath=map_path.replace(".html", ".png"),
-            linewidths=[16, 8],
-            height=500,
-            width_to_height=1.0,
-        )
-        collection.plot_map(
-            filepath=map_path.replace(".html", "-thick.png"),
-            linewidths=[32, 16],
-            height=500,
-            width_to_height=1.0,
-        )
-    plot_elevation = True
-    if plot_elevation:
-        collection.plot_elevation(filepath=elev_path)
+        if mapbox_token:
+            collection.plot_map(
+                filepath=map_path,
+                # height=1000,
+                linewidths=[8, 2],
+                width_to_height=3.0,
+            )
+            collection.plot_map(
+                filepath=map_path.replace(".html", ".png"),
+                linewidths=[16, 8],
+                height=500,
+                width_to_height=1.0,
+            )
+            collection.plot_map(
+                filepath=map_path.replace(".html", "-thick.png"),
+                linewidths=[32, 16],
+                height=500,
+                width_to_height=1.0,
+            )
+        elif all(os.path.exists(path) for path in map_asset_paths):
+            print(
+                "MAPBOX_TOKEN is not set; reusing existing map assets in "
+                f"{path_static}."
+            )
+        else:
+            raise RuntimeError(mapbox_token_help)
 
-    # Create markdown for hte collection
-    collection.generate_markdown(
-        filepath=path_collection_md,
+    collection.generate_astro(
+        filepath=path_collection_astro,
         mapfig_name=mapfig_name,
         elevfig_name=elevfig_name,
         include_activity_elevation=args.include_activity_elevation,
+        activity_elevation_extension=elevation_extension,
         prettify=args.prettify,
     )
+
+    if os.path.exists(legacy_markdown_path):
+        os.remove(legacy_markdown_path)
+        print(f"Removed legacy markdown page at {legacy_markdown_path}")
 
 
 if __name__ == "__main__":
