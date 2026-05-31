@@ -1,0 +1,7 @@
+{
+  "tool_name": "Bash",
+  "tool_input_preview": "{\"command\":\"npm run build 2>&1\",\"timeout\":120000,\"description\":\"Build Astro site\"}",
+  "error": "Exit code 1\n\n> strava-collections-site@1.0.0 build\n> astro build\n\n✘ [ERROR] The build was canceled\n\n[GenerateContentTypesError] `astro sync` command failed to generate content collection types: Transform failed with 1 error:\n/Users/max/git_repos/strava-collections/docs/astro/src/content/config.ts:10:13: ERROR: The symbol \"collections\" has already been declared\n  Hint:\n    This error is often caused by a syntax error inside your content, or your content configuration file. Check your `src/content...",
+  "timestamp": "2026-04-07T15:50:41.952Z",
+  "retry_count": 1
+}

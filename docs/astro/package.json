@@ -1,0 +1,17 @@
+{
+  "name": "strava-collections-site",
+  "type": "module",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "astro dev",
+    "sync:generated": "python3 scripts/sync_generated_content.py",
+    "build:from-generated": "npm run sync:generated && astro build",
+    "build": "astro build",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "astro": "^4.16.0",
+    "@astrojs/tailwind": "^5.1.0",
+    "tailwindcss": "^3.4.13"
+  }
+}

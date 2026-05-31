@@ -1,7 +1,5 @@
 import argparse
 import os
-from ast import arg
-from fileinput import filename
 
 import yaml
 
@@ -51,6 +49,11 @@ def main():
         "--prettify",
         action="store_true",
         help="Prettify generated collection files",
+    )
+    parser.add_argument(
+        "--include-activity-elevation",
+        action="store_true",
+        help="Embed each activity elevation plot in the collection page.",
     )
 
     args = parser.parse_args()
@@ -106,10 +109,13 @@ def main():
 
     path_collection_md = os.path.join(output, f"{collection_filename}.md")
 
-    for activity in collection.activities:
-        activity.plot_elevation(
-            filepath=os.path.join(path_static, f"activity-{activity.activity_id}.html"),
-        )
+    if args.include_activity_elevation:
+        for activity in collection.activities:
+            activity.plot_elevation(
+                filepath=os.path.join(
+                    path_static, f"activity-{activity.activity_id}.html"
+                ),
+            )
 
     # Plot figures
     plot_map = True
@@ -141,6 +147,7 @@ def main():
         filepath=path_collection_md,
         mapfig_name=mapfig_name,
         elevfig_name=elevfig_name,
+        include_activity_elevation=args.include_activity_elevation,
         prettify=args.prettify,
     )
 

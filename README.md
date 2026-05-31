@@ -48,8 +48,28 @@ strava-collections -i examples/taiwan.yml
 
 # Build docs
 
+The static webpage is built with Astro. The Python command generates collection
+markdown and Plotly assets under `docs/source/`; the Astro sync step copies them
+into the Astro app.
+
 ```
-make html
-cd ../
-open docs/build/html/index.html
+strava-collections -i examples/taiwan.yml
+cd docs/astro
+npm ci
+npm run build:from-generated
+npm run preview
 ```
+
+The built site is written to `docs/astro/dist/`.
+The default Astro base path is `/strava-collections/` for GitHub Pages. To test
+generated content at the local server root instead, run the sync step with:
+
+```
+ASTRO_BASE_PATH=/ npm run sync:generated
+```
+
+For CI, the cached Strava activities are loaded from the
+`temporary-strava-activities` submodule via `STRAVA_CACHE_DIR`. Because the
+submodule uses the SSH URL, GitHub Actions needs an SSH deploy key secret named
+`STRAVA_ACTIVITIES_DEPLOY_KEY` with access to
+`git@github.com:max-models/temporary-strava-activities.git`.

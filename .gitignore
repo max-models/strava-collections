@@ -72,6 +72,7 @@ instance/
 # Sphinx documentation
 docs/_build/
 docs/source/tutorials/
+docs/astro/public/_static/
 
 # PyBuilder
 .pybuilder/
@@ -183,3 +184,4 @@ junit/
 old_scripts/
 collection-*.md
 *.pkl
+docs/astro/node_modules/

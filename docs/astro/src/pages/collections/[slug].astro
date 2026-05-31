@@ -1,0 +1,99 @@
+---
+import { getCollection } from 'astro:content';
+import Layout from '../../layouts/Layout.astro';
+
+export async function getStaticPaths() {
+  const entries = await getCollection('collections');
+  return entries.map((entry) => ({
+    params: { slug: entry.slug.replace(/^collection-/, '') },
+    props: { entry },
+  }));
+}
+
+const { entry } = Astro.props;
+const { Content } = await entry.render();
+const base = import.meta.env.BASE_URL.endsWith('/')
+  ? import.meta.env.BASE_URL
+  : `${import.meta.env.BASE_URL}/`;
+---
+
+<Layout title={entry.data.title}>
+  <!-- Breadcrumb -->
+  <nav class="mb-6 flex items-center gap-2 text-sm text-slate-500">
+    <a href={base} class="hover:text-strava transition-colors">Collections</a>
+    <span>/</span>
+    <span class="text-slate-800 font-medium">{entry.data.title}</span>
+  </nav>
+
+  <!-- Collection content (rendered markdown with embedded iframes) -->
+  <article class="collection-body">
+    <Content />
+  </article>
+</Layout>
+
+<style is:global>
+  /* Scope generated-content styles to the collection body */
+  .collection-body h1 {
+    font-size: 2.25rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 1.5rem;
+    letter-spacing: -0.02em;
+  }
+
+  .collection-body h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #0f172a;
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+  }
+
+  .collection-body p {
+    color: #475569;
+    line-height: 1.7;
+    margin-bottom: 1rem;
+  }
+
+  /* Responsive iframes */
+  .collection-body iframe {
+    border: none;
+    border-radius: 12px;
+  }
+
+  /* Tables (summary tables from --include-table) */
+  .collection-body table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1.5rem;
+    font-size: 0.875rem;
+  }
+
+  .collection-body th {
+    background: #f1f5f9;
+    padding: 10px 14px;
+    text-align: left;
+    font-weight: 600;
+    color: #334155;
+    border-bottom: 2px solid #e2e8f0;
+  }
+
+  .collection-body td {
+    padding: 10px 14px;
+    border-bottom: 1px solid #e2e8f0;
+    color: #475569;
+  }
+
+  .collection-body tr:last-child td {
+    border-bottom: none;
+  }
+
+  .collection-body a {
+    color: #FC4C02;
+    text-decoration: none;
+  }
+
+  .collection-body a:hover {
+    text-decoration: underline;
+  }
+</style>
