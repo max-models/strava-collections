@@ -23,7 +23,7 @@ classifiers = [
 dependencies = [
   "stravalib",
   "numpy",
-  "maxplotlibx @ git+ssh://git@github.com/max-models/maxplotlib.git",
+  "maxplotlib @ git+ssh://git@github.com/max-models/maxplotlib.git",
   "tikzfigure @ git+ssh://git@github.com/max-models/tikzfigure.git",
   "plotly",
   "kaleido",
