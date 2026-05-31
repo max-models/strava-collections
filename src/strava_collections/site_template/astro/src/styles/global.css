@@ -1,0 +1,112 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Generated-content styles ──────────────────────────────────────── */
+/* These classes are emitted by the Python pipeline and must stay here. */
+
+.description-box {
+  background: #ffffff;
+  padding: 24px 28px;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.description-title {
+  font-weight: 700;
+  font-size: 1.6rem;
+  color: #0f172a;
+  margin-bottom: 12px;
+  letter-spacing: 0.3px;
+  padding-bottom: 6px;
+}
+
+.description-text {
+  font-size: 0.95rem;
+  color: #374151;
+  line-height: 1.6;
+  background: #f9fafb;
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+  white-space: pre-wrap;
+  margin-bottom: 12px;
+}
+
+/* ── Gallery ──────────────────────────────────────────────────────── */
+
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.gallery a {
+  display: block;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.gallery img {
+  width: 100%;
+  height: clamp(180px, 24vw, 240px);
+  object-fit: cover;
+  display: block;
+  border-radius: 14px;
+  cursor: pointer;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease,
+    border-color 0.25s ease;
+}
+
+.gallery img:hover {
+  transform: translateY(-2px);
+  border-color: rgba(252, 76, 2, 0.45);
+  box-shadow: 0 18px 32px rgba(15, 23, 42, 0.18);
+}
+
+.gallery img:focus-visible {
+  outline: 3px solid rgba(252, 76, 2, 0.35);
+  outline-offset: 3px;
+}
+
+/* ── Activity stat icons ──────────────────────────────────────────── */
+
+.static-icon,
+.icon {
+  width: 18px;
+  height: 18px;
+  vertical-align: middle;
+  margin-right: 3px;
+  display: inline-block;
+}
+
+.icon {
+  cursor: default;
+  transition: transform 0.2s ease;
+}
+
+.icon:hover {
+  transform: scale(1.1);
+}
+
+.icon-link {
+  display: inline-block;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.icon-link img.icon {
+  cursor: pointer;
+}
+
+.glightbox-clean .gslide-image img {
+  border-radius: 18px;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.42);
+}

@@ -1,0 +1,21 @@
+{
+  "name": "strava-collections-site",
+  "type": "module",
+  "version": "1.0.0",
+  "scripts": {
+    "astro:dev": "astro dev",
+    "dev": "python3 scripts/watch_and_serve.py",
+    "prebuild": "python3 scripts/sync_generated_content.py",
+    "sync:generated": "python3 scripts/sync_generated_content.py",
+    "build:from-generated": "npm run build",
+    "build": "astro build",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "astro": "^6.4.2",
+    "autoprefixer": "^10.4.20",
+    "glightbox": "^3.3.1",
+    "postcss": "^8.5.1",
+    "tailwindcss": "^3.4.13"
+  }
+}
