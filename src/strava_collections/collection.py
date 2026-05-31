@@ -11,8 +11,7 @@ import plotly.colors as pc
 import plotly.graph_objects as go
 import yaml
 
-from strava_collections.activity import StravaActivity
-from strava_collections.activity import lazy_iframe
+from strava_collections.activity import StravaActivity, lazy_iframe
 from strava_collections.utils import export_plotly_fig
 
 palette = pc.qualitative.Plotly  # default Plotly categorical colors
@@ -342,7 +341,9 @@ document.querySelectorAll('.lazy-iframe').forEach(container => {
         collection_title_md = f"# {self.name}\n"
 
         frontmatter = f'---\ntitle: "{self.name}"\n---\n'
-        collection_full_md = frontmatter + collection_title_md + html_str + collection_table_md
+        collection_full_md = (
+            frontmatter + collection_title_md + html_str + collection_table_md
+        )
 
         with open(filepath, "w", encoding="utf-8") as f:
             f.write(collection_full_md)

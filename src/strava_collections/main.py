@@ -114,7 +114,9 @@ def main():
     if args.include_activity_elevation:
         for activity in collection.activities:
             activity.plot_elevation(
-                filepath=os.path.join(path_static, f"activity-{activity.activity_id}.html"),
+                filepath=os.path.join(
+                    path_static, f"activity-{activity.activity_id}.html"
+                ),
             )
 
     # Plot figures
