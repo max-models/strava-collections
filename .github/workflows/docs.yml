@@ -19,6 +19,7 @@ env:
   STRAVA_CLIENT_SECRET: ${{ secrets.STRAVA_CLIENT_SECRET }}
   STRAVA_REFRESH_TOKEN: ${{ secrets.STRAVA_REFRESH_TOKEN }}
   MAPBOX_TOKEN: ${{ secrets.MAPBOX_TOKEN }}
+  STRAVA_CACHE_DIR: temporary-strava-activities
 
 jobs:
   build-and-deploy:
@@ -28,30 +29,11 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Restore Strava cache
-        uses: actions/cache/restore@v3
-        with:
-          path: cache/
-          key: strava-cache-v1
-          restore-keys: |
-            strava-cache-
-
-      - name: Clone private Strava cache repo
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          repository: max-models/temporary-strava-activities
-          token: ${{ secrets.GITHUB_TOKEN }}
-          path: temp-strava-cache
-
-      - name: Copy cache files
-        run: |
-          mkdir -p cache
-          ls cache/
-          echo "-------------"
-          cp -r temp-strava-cache/* cache/
-          ls cache/
+          submodules: recursive
+          ssh-key: ${{ secrets.STRAVA_ACTIVITIES_DEPLOY_KEY }}
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -66,32 +48,18 @@ jobs:
       - name: Build all collections
         uses: ./.github/actions/build-all-collections
 
-      - name: Save Strava cache
-        if: always()
-        uses: actions/cache/save@v3
-        with:
-          path: cache/
-          key: strava-cache-v1
-
-      - name: Prepare Astro assets
-        run: |
-          mkdir -p docs/astro/public/_static
-          cp -r docs/source/_static/* docs/astro/public/_static/
-          mkdir -p docs/astro/src/content/collections
-          cp docs/source/collection-*.md docs/astro/src/content/collections/
-
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20"
           cache: "npm"
-          cache-dependency-path: docs/astro/package.json
+          cache-dependency-path: docs/astro/package-lock.json
 
       - name: Install Astro dependencies
-        run: cd docs/astro && npm install
+        run: cd docs/astro && npm ci
 
       - name: Build Astro site
-        run: cd docs/astro && npm run build
+        run: cd docs/astro && npm run build:from-generated
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

@@ -6,9 +6,12 @@ interface Props {
 }
 
 const { title, slug, fileSlug } = Astro.props;
-const imgDefault = `/_static/${fileSlug}-map.png`;
-const imgHover   = `/_static/${fileSlug}-map-thick.png`;
-const href        = `/collections/${slug}`;
+const base = import.meta.env.BASE_URL.endsWith('/')
+  ? import.meta.env.BASE_URL
+  : `${import.meta.env.BASE_URL}/`;
+const imgDefault = `${base}_static/${fileSlug}-map.png`;
+const imgHover = `${base}_static/${fileSlug}-map-thick.png`;
+const href = `${base}collections/${slug}`;
 ---
 
 <a href={href} class="collection-card group">

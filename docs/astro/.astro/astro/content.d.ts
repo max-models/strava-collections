@@ -148,6 +148,83 @@ declare module 'astro:content' {
   collection: "collections";
   data: InferEntrySchema<"collections">
 } & { render(): Render[".md"] };
+"collection-bergen-to-istanbul.md": {
+	id: "collection-bergen-to-istanbul.md";
+  slug: "collection-bergen-to-istanbul";
+  body: string;
+  collection: "collections";
+  data: InferEntrySchema<"collections">
+} & { render(): Render[".md"] };
+"collection-berlin-to-tarifa.md": {
+	id: "collection-berlin-to-tarifa.md";
+  slug: "collection-berlin-to-tarifa";
+  body: string;
+  collection: "collections";
+  data: InferEntrySchema<"collections">
+} & { render(): Render[".md"] };
+"collection-capitals-of-europe.md": {
+	id: "collection-capitals-of-europe.md";
+  slug: "collection-capitals-of-europe";
+  body: string;
+  collection: "collections";
+  data: InferEntrySchema<"collections">
+} & { render(): Render[".md"] };
+"collection-example.md": {
+	id: "collection-example.md";
+  slug: "collection-example";
+  body: string;
+  collection: "collections";
+  data: InferEntrySchema<"collections">
+} & { render(): Render[".md"] };
+"collection-hikes-with-perla.md": {
+	id: "collection-hikes-with-perla.md";
+  slug: "collection-hikes-with-perla";
+  body: string;
+  collection: "collections";
+  data: InferEntrySchema<"collections">
+} & { render(): Render[".md"] };
+"collection-ibiza-sailing-trip.md": {
+	id: "collection-ibiza-sailing-trip.md";
+  slug: "collection-ibiza-sailing-trip";
+  body: string;
+  collection: "collections";
+  data: InferEntrySchema<"collections">
+} & { render(): Render[".md"] };
+"collection-japan.md": {
+	id: "collection-japan.md";
+  slug: "collection-japan";
+  body: string;
+  collection: "collections";
+  data: InferEntrySchema<"collections">
+} & { render(): Render[".md"] };
+"collection-races.md": {
+	id: "collection-races.md";
+  slug: "collection-races";
+  body: string;
+  collection: "collections";
+  data: InferEntrySchema<"collections">
+} & { render(): Render[".md"] };
+"collection-singapore-to-kuala-lumpur.md": {
+	id: "collection-singapore-to-kuala-lumpur.md";
+  slug: "collection-singapore-to-kuala-lumpur";
+  body: string;
+  collection: "collections";
+  data: InferEntrySchema<"collections">
+} & { render(): Render[".md"] };
+"collection-taiwan.md": {
+	id: "collection-taiwan.md";
+  slug: "collection-taiwan";
+  body: string;
+  collection: "collections";
+  data: InferEntrySchema<"collections">
+} & { render(): Render[".md"] };
+"collection-vietnam.md": {
+	id: "collection-vietnam.md";
+  slug: "collection-vietnam";
+  body: string;
+  collection: "collections";
+  data: InferEntrySchema<"collections">
+} & { render(): Render[".md"] };
 };
 
 	};

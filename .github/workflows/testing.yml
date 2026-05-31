@@ -11,60 +11,20 @@ env:
   STRAVA_CLIENT_SECRET: ${{ secrets.STRAVA_CLIENT_SECRET }}
   STRAVA_REFRESH_TOKEN: ${{ secrets.STRAVA_REFRESH_TOKEN }}
   MAPBOX_TOKEN: ${{ secrets.MAPBOX_TOKEN }}
+  STRAVA_CACHE_DIR: temporary-strava-activities
 
 jobs:
   build-collections:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-
-      - name: Restore Strava cache
-        uses: actions/cache/restore@v3
-        with:
-          path: strava-cache-${{ matrix.collection.name }}
-          key: strava-cache-${{ matrix.collection.name }}
-          restore-keys: |
-            strava-cache-
-
-      - name: Clone private Strava cache repo
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          repository: max-models/temporary-strava-activities
-          token: ${{ secrets.GITHUB_TOKEN }}
-          path: temp-strava-cache
-
-      - name: Copy cache files
-        run: |
-          mkdir -p cache
-          echo "Listing current folder:"
-          ls
-          echo "Listing cache folder before copy:"
-          ls cache/
-          echo "-------------"
-
-          # Copy per-job strava cache if it exists
-          SRC="strava-cache-${{ matrix.collection.name }}"
-          if [ -d "$SRC" ]; then
-            echo "Copying $SRC into cache/"
-            cp -r "$SRC"/* cache/ || true
-          else
-            echo "Warning: $SRC does not exist"
-          fi
-
-          # Copy temp-strava-cache repo contents if it exists
-          if [ -d "temp-strava-cache" ]; then
-            echo "Copying temp-strava-cache into cache/"
-            cp -r temp-strava-cache/* cache/ || true
-          else
-            echo "Warning: temp-strava-cache folder does not exist"
-          fi
-
-          echo "Listing cache folder after copy:"
-          ls cache/
-          echo "-------------"
+          submodules: recursive
+          ssh-key: ${{ secrets.STRAVA_ACTIVITIES_DEPLOY_KEY }}
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.10"
 
@@ -76,22 +36,18 @@ jobs:
       - name: Build all collections
         uses: ./.github/actions/build-all-collections
 
-      - name: Save Strava cache
-        if: always()
-        uses: actions/cache/save@v3
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          path: cache/
-          key: strava-cache-v1
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: docs/astro/package-lock.json
 
-      - name: Build docs
+      - name: Install Astro dependencies
+        run: cd docs/astro && npm ci
+
+      - name: Build Astro site
         run: |
-          sudo apt-get update
-          sudo apt-get install -y pandoc
-          cd docs
-          make clean
-          make html
-          ls
-          ls build/
-          ls source/
-          ls source/_static/
-          ls build/html/index.html
+          cd docs/astro
+          npm run build:from-generated
+          test -f dist/index.html

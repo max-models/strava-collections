@@ -1,0 +1,3 @@
+[submodule "temporary-strava-activities"]
+	path = temporary-strava-activities
+	url = git@github.com:max-models/temporary-strava-activities.git

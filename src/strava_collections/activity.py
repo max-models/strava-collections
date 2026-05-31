@@ -14,7 +14,7 @@ from stravalib.model import DetailedActivity
 from strava_collections.utils import export_plotly_fig
 
 # CACHE_PATH = strava_collections.__path__[0]
-CACHE_PATH = "cache"
+CACHE_PATH = os.getenv("STRAVA_CACHE_DIR", "cache")
 
 
 class StravaActivity:
