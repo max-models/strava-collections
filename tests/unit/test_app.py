@@ -130,6 +130,117 @@ def test_main_reuses_existing_map_assets_without_mapbox_token(monkeypatch, tmp_p
     assert calls["generate_astro"][0].endswith("collection-taiwan.astro")
 
 
+def test_main_accepts_multiple_yaml_inputs(monkeypatch, tmp_path):
+    yaml_paths = []
+    for name, activity_id in (("Taiwan", "123"), ("Japan", "456")):
+        yaml_path = tmp_path / f"{name.lower()}.yml"
+        yaml_path.write_text(
+            "\n".join(
+                [
+                    f'collection_name: "{name}"',
+                    f'output_dir: "{tmp_path.as_posix()}"',
+                    "activity_ids:",
+                    f'  - "{activity_id}"',
+                ]
+            ),
+            encoding="utf-8",
+        )
+        yaml_paths.append(yaml_path)
+
+    calls = {"collections": [], "generate_astro": []}
+
+    class FakeActivity:
+        def __init__(self, activity_id):
+            self.activity_id = activity_id
+
+        def plot_elevation(self, filepath, **kwargs):
+            calls.setdefault("activity_plot_elevation", []).append((filepath, kwargs))
+
+    class FakeCollection:
+        def __init__(self, name, activity_ids, force_update=False):
+            calls["collections"].append((name, activity_ids, force_update))
+            self.activities = [FakeActivity(activity_ids[0][0])]
+
+        def plot_map(self, filepath, **kwargs):
+            calls.setdefault("plot_map", []).append((filepath, kwargs))
+
+        def plot_elevation(self, filepath, **kwargs):
+            calls.setdefault("plot_elevation", []).append((filepath, kwargs))
+
+        def generate_astro(self, filepath, **kwargs):
+            calls["generate_astro"].append((filepath, kwargs))
+
+    monkeypatch.setattr("strava_collections.main.StravaCollection", FakeCollection)
+    monkeypatch.setattr("strava_collections.main.mapbox_token", "test-token")
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "strava-collections",
+            "-i",
+            str(yaml_paths[0]),
+            str(yaml_paths[1]),
+        ],
+    )
+
+    main()
+
+    assert calls["collections"] == [
+        ("Taiwan", [(123, False)], False),
+        ("Japan", [(456, False)], False),
+    ]
+    assert calls["generate_astro"][0][0].endswith("collection-taiwan.astro")
+    assert calls["generate_astro"][1][0].endswith("collection-japan.astro")
+
+
+def test_main_expands_globbed_yaml_inputs(monkeypatch, tmp_path):
+    for name, activity_id in (("Taiwan", "123"), ("Japan", "456")):
+        (tmp_path / f"{name.lower()}.yml").write_text(
+            "\n".join(
+                [
+                    f'collection_name: "{name}"',
+                    f'output_dir: "{tmp_path.as_posix()}"',
+                    "activity_ids:",
+                    f'  - "{activity_id}"',
+                ]
+            ),
+            encoding="utf-8",
+        )
+
+    seen_names = []
+
+    class FakeActivity:
+        def __init__(self, activity_id):
+            self.activity_id = activity_id
+
+        def plot_elevation(self, filepath, **kwargs):
+            return None
+
+    class FakeCollection:
+        def __init__(self, name, activity_ids, force_update=False):
+            seen_names.append(name)
+            self.activities = [FakeActivity(activity_ids[0][0])]
+
+        def plot_map(self, filepath, **kwargs):
+            return None
+
+        def plot_elevation(self, filepath, **kwargs):
+            return None
+
+        def generate_astro(self, filepath, **kwargs):
+            return None
+
+    monkeypatch.setattr("strava_collections.main.StravaCollection", FakeCollection)
+    monkeypatch.setattr("strava_collections.main.mapbox_token", "test-token")
+    monkeypatch.setattr(
+        "sys.argv",
+        ["strava-collections", "-i", str(tmp_path / "*.yml")],
+    )
+
+    main()
+
+    assert seen_names == ["Japan", "Taiwan"]
+
+
 def test_activity_summary_uses_html_elevation_iframe_by_default():
     activity = StravaActivity.__new__(StravaActivity)
     activity._activity_id = 1324271479
