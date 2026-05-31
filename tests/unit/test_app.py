@@ -167,6 +167,7 @@ def test_activity_summary_gallery_images_keep_lightbox_class_and_accessibility()
 
     markdown = activity.generate_markdown_summary(include_elevation=False)
 
+    assert '<h2 class="description-title">Day 1</h2>' in markdown
     assert 'class="lightbox-trigger"' in markdown
     assert 'loading="lazy"' in markdown
     assert 'decoding="async"' in markdown
@@ -205,7 +206,7 @@ def test_collection_generate_astro_writes_astro_page(tmp_path):
     assert 'const title = "Taiwan";' in astro_page
     assert "Plotly.newPlot" in astro_page
     assert "bodyHtml" not in astro_page
-    assert "<CollectionPage title={title}>" in astro_page
+    assert "<CollectionPage title={title} headings={headings}>" in astro_page
     assert "<script is:inline>" in astro_page
     assert "<iframe " not in astro_page
     assert 'src="/_static/collection-taiwan-map.html"' not in astro_page
@@ -238,8 +239,9 @@ document.querySelectorAll('.gallery img').forEach(img => {
     assert 'data-gallery="collection-gallery-0"' in body_html
     assert "CollectionPage.astro" in page
     assert 'const title = "Taiwan";' in page
+    assert "const headings = [" in page
     assert "bodyHtml" not in page
-    assert "<CollectionPage title={title}>" in page
+    assert "<CollectionPage title={title} headings={headings}>" in page
     assert "href={`${base}_static/photo.jpg`}" in page
 
 
@@ -280,6 +282,22 @@ def test_markdown_to_body_html_inlines_local_plotly_assets(tmp_path):
     assert "window.PlotlyConfig" not in converted
 
 
+def test_markdown_to_body_html_promotes_description_titles_to_headings(tmp_path):
+    converted = markdown_to_body_html(
+        """
+# Berlin to Tarifa
+
+<div class="description-box">
+<div class="description-title">To Dresden 🚴🇪🇺🇨🇿🇩🇪</div>
+</div>
+""".strip(),
+        asset_dir=tmp_path / "_static",
+    )
+
+    assert '<h2 class="description-title">To Dresden 🚴🇪🇺🇨🇿🇩🇪</h2>' in converted
+    assert '<div class="description-title">To Dresden 🚴🇪🇺🇨🇿🇩🇪</div>' not in converted
+
+
 def test_render_collection_page_keeps_plotly_scripts_inline():
     page = render_collection_page(
         title="Taiwan",
@@ -293,6 +311,40 @@ def test_render_collection_page_keeps_plotly_scripts_inline():
 
     assert '<script is:inline>Plotly.newPlot("plot-123", [], {});</script>' in page
     assert "<script>Plotly.newPlot" not in page
+
+
+def test_render_collection_page_extracts_heading_links():
+    page = render_collection_page(
+        title="Taiwan",
+        body_html="""
+<h1>Taiwan</h1>
+<h2>Day 1: Taipei</h2>
+<h2>Day 2: Yilan</h2>
+<h3>Climb</h3>
+""".strip(),
+    )
+
+    assert '"title": "Day 1: Taipei"' in page
+    assert '"slug": "day-1-taipei"' in page
+    assert '"level": 2' in page
+    assert '<h2 id="day-1-taipei">Day 1: Taipei</h2>' in page
+    assert '<h3 id="climb">Climb</h3>' in page
+
+
+def test_render_collection_page_extracts_promoted_description_titles():
+    page = render_collection_page(
+        title="Berlin to Tarifa",
+        body_html="""
+<h1>Berlin to Tarifa</h1>
+<div class="description-box">
+  <h2 class="description-title">To Dresden 🚴🇪🇺🇨🇿🇩🇪</h2>
+</div>
+""".strip(),
+    )
+
+    assert "To Dresden" in page
+    assert '"slug": "to-dresden"' in page
+    assert '<h2 class="description-title" id="to-dresden">To Dresden 🚴🇪🇺🇨🇿🇩🇪</h2>' in page
 
 
 def test_sync_collections_prefers_generated_astro(monkeypatch, tmp_path):
@@ -316,7 +368,7 @@ const base = import.meta.env.BASE_URL.endsWith('/')
   : `${import.meta.env.BASE_URL}/`;
 ---
 
-<CollectionPage title={title}>
+<CollectionPage title={title} headings={[]}>
   <h1>Taiwan</h1>
 </CollectionPage>
 """,

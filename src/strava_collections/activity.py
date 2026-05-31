@@ -219,7 +219,7 @@ class StravaActivity:
         # Heading
         # out_str += f"## {self.name}\n\n"
         out_str += '<div class="description-box">\n'
-        out_str += f'<div class="description-title">{self.name}</div>\n'
+        out_str += f'<h2 class="description-title">{self.name}</h2>\n'
 
         out_str += "<div>\n"
 

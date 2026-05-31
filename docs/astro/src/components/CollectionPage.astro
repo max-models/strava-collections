@@ -1,29 +1,169 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import { collections } from '../generated/collections';
 
 interface Props {
   title: string;
+  headings?: Array<{
+    title: string;
+    slug: string;
+    level: number;
+  }>;
 }
 
-const { title } = Astro.props;
+const { title, headings = [] } = Astro.props;
 const base = import.meta.env.BASE_URL.endsWith('/')
   ? import.meta.env.BASE_URL
   : `${import.meta.env.BASE_URL}/`;
+const currentPath = Astro.url.pathname.replace(/\/$/, '');
+const collectionLinks = collections.map((collection) => {
+  const href = `${base}collections/${collection.slug}/`;
+  const normalizedHref = href.replace(/\/$/, '');
+  return {
+    ...collection,
+    href,
+    isCurrent: normalizedHref === currentPath,
+  };
+});
+const tocHeadings = headings.filter((heading) => heading.level >= 2);
 ---
 
-<Layout title={title}>
+<Layout title={title} wide={true}>
   <nav class="mb-6 flex items-center gap-2 text-sm text-slate-500">
     <a href={base} class="hover:text-strava transition-colors">Collections</a>
     <span>/</span>
     <span class="text-slate-800 font-medium">{title}</span>
   </nav>
 
-  <article class="collection-body">
-    <slot />
-  </article>
+  <div class="collection-shell">
+    <aside class="collection-sidebar collection-sidebar--left">
+      <div class="collection-sidebar-card">
+        <div class="collection-sidebar-title">Collections</div>
+        <nav aria-label="Other collections">
+          <ul class="collection-nav-list">
+            {
+              collectionLinks.map((collection) => (
+                <li>
+                  <a
+                    href={collection.href}
+                    class:list={[
+                      'collection-nav-link',
+                      collection.isCurrent && 'collection-nav-link--current',
+                    ]}
+                    aria-current={collection.isCurrent ? 'page' : undefined}
+                  >
+                    {collection.title}
+                  </a>
+                </li>
+              ))
+            }
+          </ul>
+        </nav>
+      </div>
+    </aside>
+
+    <article class="collection-body">
+      <slot />
+    </article>
+
+    {
+      tocHeadings.length > 0 && (
+        <aside class="collection-sidebar collection-sidebar--right">
+          <div class="collection-sidebar-card">
+            <div class="collection-sidebar-title">On this page</div>
+            <nav aria-label="Table of contents">
+              <ul class="collection-toc-list">
+                {tocHeadings.map((heading) => (
+                  <li>
+                    <a
+                      href={`#${heading.slug}`}
+                      class:list={[
+                        'collection-toc-link',
+                        heading.level === 3 && 'collection-toc-link--nested',
+                      ]}
+                    >
+                      {heading.title}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          </div>
+        </aside>
+      )
+    }
+  </div>
 </Layout>
 
 <style is:global>
+  .collection-shell {
+    display: grid;
+    gap: 2rem;
+  }
+
+  .collection-sidebar {
+    display: none;
+  }
+
+  .collection-sidebar-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 1rem;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+    backdrop-filter: blur(10px);
+    max-height: calc(100vh - 6.5rem);
+    overflow-y: auto;
+    scrollbar-gutter: stable;
+  }
+
+  .collection-sidebar-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #64748b;
+    margin-bottom: 0.75rem;
+  }
+
+  .collection-nav-list,
+  .collection-toc-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .collection-nav-link,
+  .collection-toc-link {
+    display: block;
+    border-radius: 12px;
+    color: #475569;
+    font-size: 0.95rem;
+    line-height: 1.4;
+    padding: 0.55rem 0.75rem;
+    text-decoration: none;
+    transition:
+      background-color 0.2s ease,
+      color 0.2s ease;
+  }
+
+  .collection-nav-link:hover,
+  .collection-toc-link:hover {
+    background: #f8fafc;
+    color: #0f172a;
+  }
+
+  .collection-nav-link--current {
+    background: rgba(252, 76, 2, 0.1);
+    color: #c2410c;
+    font-weight: 600;
+  }
+
+  .collection-toc-link--nested {
+    padding-left: 1.5rem;
+    font-size: 0.88rem;
+  }
+
   .collection-body h1 {
     font-size: 2.25rem;
     font-weight: 700;
@@ -94,5 +234,19 @@ const base = import.meta.env.BASE_URL.endsWith('/')
 
   .collection-body a:hover {
     text-decoration: underline;
+  }
+
+  @media (min-width: 1280px) {
+    .collection-shell {
+      grid-template-columns: minmax(14rem, 18rem) minmax(0, 1fr) minmax(14rem, 18rem);
+      align-items: start;
+    }
+
+    .collection-sidebar {
+      display: block;
+      position: sticky;
+      top: 5.5rem;
+      align-self: start;
+    }
   }
 </style>

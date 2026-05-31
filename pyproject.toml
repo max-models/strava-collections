@@ -23,8 +23,8 @@ classifiers = [
 dependencies = [
   "stravalib",
   "numpy",
-  "maxplotlib @ git+ssh://git@github.com/max-models/maxplotlib.git",
-  "tikzfigure @ git+ssh://git@github.com/max-models/tikzfigure.git",
+  "maxplotlibx @ git+https://github.com/max-models/maxplotlib.git",
+  "tikzfigure @ git+https://github.com/max-models/tikzfigure.git",
   "plotly",
   "kaleido",
   "pandas",
@@ -68,4 +68,3 @@ where = [ "src" ]
 
 [tool.isort]
 profile = "black"
-
