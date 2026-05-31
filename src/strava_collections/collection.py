@@ -10,10 +10,26 @@ import pandas as pd
 import plotly.colors as pc
 import plotly.graph_objects as go
 
-from strava_collections.activity import StravaActivity, lazy_iframe
-from strava_collections.utils import build_maxplotlib_elevation_fig, export_plotly_fig
+from strava_collections.activity import StravaActivity, embed_iframe, embed_image
+from strava_collections.utils import (
+    build_maxplotlib_elevation_plot,
+    export_plotly_fig,
+    export_tikz_figure,
+)
 
 palette = pc.qualitative.Plotly  # default Plotly categorical colors
+tikz_palette = [
+    "RoyalBlue",
+    "Orange",
+    "ForestGreen",
+    "BrickRed",
+    "DarkOrchid",
+    "Goldenrod",
+    "CadetBlue",
+    "Magenta",
+    "SaddleBrown",
+    "Gray",
+]
 mapbox_token = os.getenv("MAPBOX_TOKEN")
 mapbox_token_help = (
     "MAPBOX_TOKEN is required to render Mapbox maps and export map images. "
@@ -52,6 +68,7 @@ class StravaCollection:
         filepath=None,
         height=200,
         config={"staticPlot": True, "displayModeBar": False},
+        backend="tikzfigure",
     ):
         """Plot elevation profile of all activities with maxplotlib."""
         distance_traveled = 0.0
@@ -62,7 +79,11 @@ class StravaCollection:
             if activity.no_map:
                 continue
 
-            line_color = palette[color_index % len(palette)]
+            line_color = (
+                tikz_palette[color_index % len(tikz_palette)]
+                if backend == "tikzfigure"
+                else palette[color_index % len(palette)]
+            )
             distance = np.array(activity.activity_stream["distance"].data) * 1e-3
             elev = np.array(activity.activity_stream["altitude"].data)
             distance, elev = fastrdp.rdp(distance, elev, epsilon=0.1)
@@ -82,10 +103,19 @@ class StravaCollection:
 
             distance_traveled += activity.activity_stream["distance"].data[-1] * 1e-3
 
-        fig = build_maxplotlib_elevation_fig(traces, height=height)
+        fig = build_maxplotlib_elevation_plot(
+            traces,
+            height=height,
+            backend=backend,
+        )
         print(f"Total distance travelled: {distance_traveled} km")
         if isinstance(filepath, str):
-            export_plotly_fig(fig=fig, filepath=filepath, config=config)
+            if backend == "plotly":
+                export_plotly_fig(fig=fig, filepath=filepath, config=config)
+            elif backend == "tikzfigure":
+                export_tikz_figure(fig=fig, filepath=filepath)
+            else:
+                raise ValueError(f"Unsupported elevation backend: {backend}")
             print(f"Saved elevation plot to: {filepath}")
         return fig
 
@@ -228,6 +258,7 @@ class StravaCollection:
         mapfig_name: str,
         elevfig_name: str,
         include_activity_elevation: bool = False,
+        activity_elevation_extension: str = "png",
         sort_by_date: bool = False,
         include_table: bool = False,
         prettify: bool = False,
@@ -238,14 +269,20 @@ class StravaCollection:
         html_str = ""
         html_str += f"""
 <div style="position: relative; width: 100%; height: 350px;">
-<iframe src="/_static/{mapfig_name}" loading="lazy" style="width:100%; height:100%; border:none;"></iframe>
+<iframe src="/_static/{mapfig_name}" style="width:100%; height:100%; border:none;"></iframe>
 </div>
 \n\n"""
 
-        html_str += lazy_iframe(
-            src=f"/_static/{elevfig_name}",
-            label="Load collection elevation profile",
-        )
+        collection_elevation_src = f"/_static/{elevfig_name}"
+        if elevfig_name.lower().endswith(".html"):
+            html_str += embed_iframe(
+                src=collection_elevation_src,
+            )
+        else:
+            html_str += embed_image(
+                src=collection_elevation_src,
+                alt=f"{self.name} elevation profile",
+            )
 
         collection_table_md = ""
         if include_table:
@@ -277,6 +314,7 @@ class StravaCollection:
         for activity in self.activities:
             html_str += activity.generate_markdown_summary(
                 include_elevation=include_activity_elevation,
+                elevation_asset_extension=activity_elevation_extension,
             )
         html_str += """
 <div id="lightbox" class="lightbox">
@@ -298,22 +336,6 @@ document.getElementById('lightbox').addEventListener('click', () => {
   document.getElementById('lightbox').classList.remove('show');
 });
 
-document.querySelectorAll('.lazy-iframe').forEach(container => {
-  const button = container.querySelector('.lazy-iframe-button');
-  if (!button) {
-    return;
-  }
-  button.addEventListener('click', () => {
-    const iframe = document.createElement('iframe');
-    iframe.src = container.dataset.src;
-    iframe.loading = 'lazy';
-    iframe.style.width = '100%';
-    iframe.style.height = container.dataset.height || '250px';
-    iframe.style.border = 'none';
-    iframe.style.borderRadius = '12px';
-    container.replaceChildren(iframe);
-  });
-});
 </script>"""
 
         if prettify:
@@ -388,7 +410,7 @@ def zoom_center(
     # lonlats: tuple = None,
     # format: str = "lonlat",
     projection: str = "mercator",
-    width_to_height: float = 2.0,
+    width_to_height: float = 3.0,
 ) -> (float, dict):
     """Finds optimal zoom and centering for a plotly mapbox.
     Must be passed (lons & lats) or lonlats.

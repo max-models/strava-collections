@@ -11,17 +11,31 @@ import requests
 from stravalib import Client
 from stravalib.model import DetailedActivity
 
-from strava_collections.utils import build_maxplotlib_elevation_fig, export_plotly_fig
+from strava_collections.utils import (
+    build_maxplotlib_elevation_plot,
+    export_plotly_fig,
+    export_tikz_figure,
+)
 
 # CACHE_PATH = strava_collections.__path__[0]
 CACHE_PATH = os.getenv("STRAVA_CACHE_DIR", "cache")
 
 
-def lazy_iframe(src: str, label: str, height: str = "250px") -> str:
+def embed_iframe(src: str, height: str = "250px") -> str:
     return f"""
-<div class="lazy-iframe" data-src="{src}" data-height="{height}">
-  <button type="button" class="lazy-iframe-button">{label}</button>
+<div style="position: relative; width: 100%; height: {height};">
+  <iframe src="{src}" style="width:100%; height:100%; border:none; border-radius: 12px;"></iframe>
 </div>\n\n"""
+
+
+def embed_image(
+    src: str,
+    *,
+    alt: str,
+    height: str = "250px",
+) -> str:
+    return f"""
+<img src="{src}" alt="{alt}" style="width:100%; height:{height}; object-fit:contain; display:block;" />\n\n"""
 
 
 class StravaActivity:
@@ -101,6 +115,7 @@ class StravaActivity:
         filepath=None,
         height=200,
         config=None,
+        backend="tikzfigure",
     ):
         """Plot the activity elevation profile with maxplotlib."""
         if config is None:
@@ -115,7 +130,7 @@ class StravaActivity:
             distance = np.array([dmax - dist for dist in distance])[::-1]
             elev = elev[::-1]
 
-        fig = build_maxplotlib_elevation_fig(
+        fig = build_maxplotlib_elevation_plot(
             [
                 {
                     "x": distance,
@@ -124,10 +139,16 @@ class StravaActivity:
                 }
             ],
             height=height,
+            backend=backend,
         )
 
         if isinstance(filepath, str):
-            export_plotly_fig(fig=fig, filepath=filepath, config=config)
+            if backend == "plotly":
+                export_plotly_fig(fig=fig, filepath=filepath, config=config)
+            elif backend == "tikzfigure":
+                export_tikz_figure(fig=fig, filepath=filepath)
+            else:
+                raise ValueError(f"Unsupported elevation backend: {backend}")
             print(f"Saved elevation plot to: {filepath}")
         return fig
 
@@ -169,7 +190,11 @@ class StravaActivity:
                 f,
             )
 
-    def generate_markdown_summary(self, include_elevation: bool = False):
+    def generate_markdown_summary(
+        self,
+        include_elevation: bool = False,
+        elevation_asset_extension: str = "png",
+    ):
         out_str = ""
         #         out_str += """<div style="
         #     # background-color: #dbf9e1;
@@ -216,10 +241,19 @@ class StravaActivity:
 
         # Elevation profile
         if include_elevation:
-            out_str += lazy_iframe(
-                src=f"/_static/activity-{self.activity_id}.html",
-                label="Load activity elevation profile",
+            elevation_asset_extension = elevation_asset_extension.lstrip(".")
+            elevation_src = (
+                f"/_static/activity-{self.activity_id}.{elevation_asset_extension}"
             )
+            if elevation_asset_extension == "html":
+                out_str += embed_iframe(
+                    src=elevation_src,
+                )
+            else:
+                out_str += embed_image(
+                    src=elevation_src,
+                    alt=f"{self.activity.name} elevation profile",
+                )
 
         # Photos
         # TODO: Get photos from the DetailedActivity (currently seems broken?)

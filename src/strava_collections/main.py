@@ -38,6 +38,13 @@ def main():
     )
 
     parser.add_argument(
+        "-b",
+        "--backend",
+        default="plotly",
+        choices=["plotly", "tikzfigure", "matplotlib"],
+    )
+
+    parser.add_argument(
         "-f",
         "--force-update",
         action="store_true",
@@ -52,8 +59,9 @@ def main():
     )
     parser.add_argument(
         "--include-activity-elevation",
-        action="store_true",
-        help="Embed each activity elevation plot in the collection page.",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Generate and embed each activity elevation plot in the collection page.",
     )
 
     args = parser.parse_args()
@@ -104,7 +112,8 @@ def main():
     mapfig_name = f"{collection_filename}-map.html"
     map_path = os.path.join(path_static, mapfig_name)
 
-    elevfig_name = f"{collection_filename}-elev.html"
+    elevation_extension = "png"
+    elevfig_name = f"{collection_filename}-elev.{elevation_extension}"
     elev_path = os.path.join(path_static, elevfig_name)
 
     path_collection_md = os.path.join(output, f"{collection_filename}.md")
@@ -113,9 +122,14 @@ def main():
         for activity in collection.activities:
             activity.plot_elevation(
                 filepath=os.path.join(
-                    path_static, f"activity-{activity.activity_id}.html"
+                    path_static, f"activity-{activity.activity_id}.{elevation_extension}"
                 ),
+                backend=args.backend,
             )
+
+    plot_elevation = True
+    if plot_elevation:
+        collection.plot_elevation(filepath=elev_path, backend=args.backend)
 
     # Plot figures
     plot_map = True
@@ -138,9 +152,6 @@ def main():
             height=500,
             width_to_height=1.0,
         )
-    plot_elevation = True
-    if plot_elevation:
-        collection.plot_elevation(filepath=elev_path)
 
     # Create markdown for hte collection
     collection.generate_markdown(
@@ -148,6 +159,7 @@ def main():
         mapfig_name=mapfig_name,
         elevfig_name=elevfig_name,
         include_activity_elevation=args.include_activity_elevation,
+        activity_elevation_extension=elevation_extension,
         prettify=args.prettify,
     )
 
