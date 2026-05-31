@@ -11,7 +11,7 @@ import requests
 from stravalib import Client
 from stravalib.model import DetailedActivity
 
-from strava_collections.utils import export_plotly_fig
+from strava_collections.utils import build_maxplotlib_elevation_fig, export_plotly_fig
 
 # CACHE_PATH = strava_collections.__path__[0]
 CACHE_PATH = os.getenv("STRAVA_CACHE_DIR", "cache")
@@ -100,29 +100,35 @@ class StravaActivity:
         self,
         filepath=None,
         height=200,
-        config={"staticPlot": True, "displayModeBar": False},
+        config=None,
     ):
-        """Plot elevation profile of all activities with filled translucent area."""
-        fig = go.Figure()
-        self.add_elevation_to_fig(fig, distance_traveled=0.0, color="black")
+        """Plot the activity elevation profile with maxplotlib."""
+        if config is None:
+            config = {"staticPlot": True, "displayModeBar": False}
 
-        fig.update_layout(
-            # title="Elevation Profiles",
-            xaxis_title="Distance (km)",
-            yaxis_title="Elevation (m)",
+        distance = np.array(self.activity_stream["distance"].data) * 1e-3
+        elev = np.array(self.activity_stream["altitude"].data)
+        distance, elev = fastrdp.rdp(distance, elev, epsilon=0.1)
+
+        if self.flip:
+            dmax = distance[-1]
+            distance = np.array([dmax - dist for dist in distance])[::-1]
+            elev = elev[::-1]
+
+        fig = build_maxplotlib_elevation_fig(
+            [
+                {
+                    "x": distance,
+                    "y": elev,
+                    "color": "black",
+                }
+            ],
             height=height,
-            hovermode="x unified",
-            showlegend=False,
-            xaxis=dict(tickformat=",.0f"),
-            margin=dict(l=0, r=0, t=0, b=0),
-            autosize=True,
-            plot_bgcolor="white",
-            paper_bgcolor="white",
         )
 
         if isinstance(filepath, str):
             export_plotly_fig(fig=fig, filepath=filepath, config=config)
-        print(f"Saved elevation plot to: {filepath}")
+            print(f"Saved elevation plot to: {filepath}")
         return fig
 
     def get_coords(self):

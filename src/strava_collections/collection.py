@@ -11,7 +11,7 @@ import plotly.colors as pc
 import plotly.graph_objects as go
 
 from strava_collections.activity import StravaActivity, lazy_iframe
-from strava_collections.utils import export_plotly_fig
+from strava_collections.utils import build_maxplotlib_elevation_fig, export_plotly_fig
 
 palette = pc.qualitative.Plotly  # default Plotly categorical colors
 mapbox_token = os.getenv("MAPBOX_TOKEN")
@@ -53,40 +53,36 @@ class StravaCollection:
         height=200,
         config={"staticPlot": True, "displayModeBar": False},
     ):
-        """Plot elevation profile of all activities with filled translucent area."""
-        fig = go.Figure()
-
+        """Plot elevation profile of all activities with maxplotlib."""
         distance_traveled = 0.0
+        traces = []
 
         for color_index, activity in enumerate(self.activities):
 
             if activity.no_map:
                 continue
 
-            # pick a line color from palette
             line_color = palette[color_index % len(palette)]
+            distance = np.array(activity.activity_stream["distance"].data) * 1e-3
+            elev = np.array(activity.activity_stream["altitude"].data)
+            distance, elev = fastrdp.rdp(distance, elev, epsilon=0.1)
 
-            activity.add_elevation_to_fig(
-                fig=fig,
-                distance_traveled=distance_traveled,
-                color=line_color,
+            if activity.flip:
+                dmax = distance[-1]
+                distance = np.array([dmax - dist for dist in distance])[::-1]
+                elev = elev[::-1]
+
+            traces.append(
+                {
+                    "x": distance + distance_traveled,
+                    "y": elev,
+                    "color": line_color,
+                }
             )
 
             distance_traveled += activity.activity_stream["distance"].data[-1] * 1e-3
 
-        fig.update_layout(
-            # title="Elevation Profiles",
-            xaxis_title="Distance (km)",
-            yaxis_title="Elevation (m)",
-            height=height,
-            hovermode="x unified",
-            showlegend=False,
-            xaxis=dict(tickformat=",.0f"),
-            margin=dict(l=0, r=0, t=0, b=0),
-            autosize=True,
-            plot_bgcolor="white",
-            paper_bgcolor="white",
-        )
+        fig = build_maxplotlib_elevation_fig(traces, height=height)
         print(f"Total distance travelled: {distance_traveled} km")
         if isinstance(filepath, str):
             export_plotly_fig(fig=fig, filepath=filepath, config=config)

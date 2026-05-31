@@ -2,6 +2,7 @@
 import { getCollection } from 'astro:content';
 import Layout from '../layouts/Layout.astro';
 import CollectionCard from '../components/CollectionCard.astro';
+import { getCollectionFileSlug, getCollectionRouteSlug } from '../utils/collections';
 
 const allCollections = await getCollection('collections');
 
@@ -31,8 +32,8 @@ const sorted = allCollections.sort((a, b) =>
   ) : (
     <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
       {sorted.map((entry) => {
-        const fileSlug = entry.slug; // "collection-bavarian-alps-traverse"
-        const slug = fileSlug.replace(/^collection-/, '');
+        const fileSlug = getCollectionFileSlug(entry);
+        const slug = getCollectionRouteSlug(entry);
         return (
           <CollectionCard
             title={entry.data.title}

@@ -25,6 +25,7 @@ classifiers = [
 dependencies = [
   "stravalib",
   "numpy",
+  "maxplotlib",
   "plotly",
   "kaleido",
   "pandas",
