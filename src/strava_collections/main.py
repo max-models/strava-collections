@@ -266,7 +266,31 @@ def main():
         help="Generate and embed each activity elevation plot in the collection page.",
     )
 
+    
+    parser.add_argument(
+        "--download",
+        action="store_true",
+        help="Download Strava activity streams to JSON"
+    )
     args = parser.parse_args()
+
+    if args.download:
+        import json
+        from pathlib import Path
+        from strava_collections.activity import StravaActivity
+        for aid in args.ids:
+            act = StravaActivity(int(aid))
+            stream = act._activity_stream
+            data = {}
+            for k, v in stream.items():
+                data[k] = v.data
+            out_path = Path("docs/source") / f"strava_{aid}.json"
+            out_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(out_path, "w") as f:
+                json.dump(data, f)
+            print(f"Downloaded {aid} to {out_path}")
+        return
+
 
     site_root: Path | None = None
     if args.input:
@@ -275,6 +299,10 @@ def main():
             site_root = generate_collection_from_yaml(input_path=input_path, args=args)
         if site_root is not None:
             sync_site(site_root)
+        import shutil
+        import os
+        if os.path.exists("live-tracking.yaml"):
+            shutil.copy("live-tracking.yaml", site_root / "source" / "live-tracking.yaml")
             print_site_instructions(site_root)
         return
 
@@ -288,6 +316,10 @@ def main():
     )
     if site_root is not None:
         sync_site(site_root)
+        import shutil
+        import os
+        if os.path.exists("live-tracking.yaml"):
+            shutil.copy("live-tracking.yaml", site_root / "source" / "live-tracking.yaml")
         print_site_instructions(site_root)
 
 

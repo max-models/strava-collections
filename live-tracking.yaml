@@ -1,0 +1,10 @@
+collections:
+  - name: Villach to Zagreb
+    routeGpxFile: "Villach_to_Ljubljana_to_Zagreb.gpx"
+    activities:
+      - garminConnectUrl: "https://connect.garmin.com/app/activity/23101437217"
+        notes: Day 1
+      - stravaActivityId: "1324271479"
+        notes: Day 2 (Strava)
+      - garminLivetrackUrl: "https://livetrack.garmin.com/session/254217e3-0cd9-8f70-8e3d-fa5a40894f00/token/1B4CE620C27ABED3B246A9C4472F3FB"
+        notes: Day 3

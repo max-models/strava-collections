@@ -1,0 +1,138 @@
+---
+import Layout from "../layouts/Layout.astro";
+import "../styles/tracker.css";
+import "leaflet/dist/leaflet.css";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { load as loadYaml } from "js-yaml";
+import type { TripData } from "../data/trip";
+import { loadRouteData } from "../lib/garmin";
+import { loadPlannedRouteData } from "../lib/gpx";
+import { getActivityColor, getCollectionColor, serializeDataForScript } from "../lib/trip";
+
+const yamlContent = readFileSync(join(process.cwd(), "../source/live-tracking.yaml"), "utf-8");
+const tripData = loadYaml(yamlContent) as TripData;
+const routeData = await loadRouteData(tripData.collections);
+const plannedRouteData = await loadPlannedRouteData(tripData.collections);
+
+let activityColorIndex = 0;
+const collectionsWithColors = tripData.collections.map((col, index) => ({
+  ...col,
+  color: getCollectionColor(index),
+  activities: col.activities.map((activity) => ({
+    ...activity,
+    color: getActivityColor(activityColorIndex++),
+  })),
+}));
+
+const trackerPayload = {
+  collections: collectionsWithColors.map((col, ci) => ({
+    name: col.name,
+    color: col.color,
+    plannedRouteData: plannedRouteData[ci]?.collectionGpx ?? null,
+    activities: col.activities.map((activity, ai) => ({
+      color: activity.color,
+      garminConnectUrl: activity.garminConnectUrl ?? null,
+      garminLivetrackUrl: activity.garminLivetrackUrl ?? null,
+      notes: activity.notes ?? null,
+      routeData: routeData[ci]?.[ai] ?? null,
+      plannedRouteData: plannedRouteData[ci]?.activityGpx[ai] ?? null,
+    })),
+  })),
+};
+---
+
+<Layout title="Live Tracking">
+  <div class="page-shell">
+    <header class="site-header">
+      <h1>follow-my-garmin</h1>
+    </header>
+
+    <main>
+      <div id="map-shell" class="map-shell hidden">
+        <div id="main-map" class="map-canvas" aria-label="Route map"></div>
+      </div>
+
+      <div id="map-placeholder" class="empty-state">
+        Add Garmin LiveTrack URLs in <code>collections.yaml</code> once the ride has started.
+      </div>
+
+      <div id="collection-controls" class="collection-controls hidden" role="tablist" aria-label="Collections"></div>
+
+      <div id="map-stats" class="map-stats hidden">
+        <div class="stat-card">
+          <span class="stat-label">Total distance</span>
+          <strong id="stat-distance">-</strong>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Total duration</span>
+          <strong id="stat-duration">-</strong>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Last update</span>
+          <strong id="stat-updated">-</strong>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Track points</span>
+          <strong id="stat-points">-</strong>
+        </div>
+      </div>
+
+      <section id="live-stats" class="live-stats hidden" aria-label="Live activity metrics"></section>
+
+      <section id="route-graphs" class="graphs hidden" aria-labelledby="graphs-heading">
+        <h2 id="graphs-heading" class="graphs-heading">Speed</h2>
+        <div id="graph-switcher" class="graph-switcher" role="tablist" aria-label="Metric graph selector"></div>
+        <div id="graph-canvas"></div>
+      </section>
+
+      <div id="activity-list" class="activity-list hidden"></div>
+    </main>
+  </div>
+
+  <script id="tracker-data" type="application/json" set:html={serializeDataForScript(trackerPayload)}></script>
+  <script>
+    import { setupTripTracker } from "../scripts/tracker";
+
+    const tripDataElement = document.getElementById("tracker-data");
+
+    if (tripDataElement?.textContent) {
+      void setupTripTracker(JSON.parse(tripDataElement.textContent));
+    }
+
+    const themeToggle = document.getElementById("theme-toggle");
+    const sunIcon = document.getElementById("sun-icon");
+    const moonIcon = document.getElementById("moon-icon");
+
+    function updateThemeIcons(theme: string) {
+      if (theme === "dark") {
+        sunIcon?.classList.remove("hidden");
+        moonIcon?.classList.add("hidden");
+      } else {
+        sunIcon?.classList.add("hidden");
+        moonIcon?.classList.remove("hidden");
+      }
+    }
+
+    const currentTheme = document.documentElement.getAttribute("data-theme") || "light";
+    updateThemeIcons(currentTheme);
+
+    themeToggle?.addEventListener("click", () => {
+      const theme = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+      document.documentElement.setAttribute("data-theme", theme);
+      localStorage.setItem("theme", theme);
+      updateThemeIcons(theme);
+    });
+  </script>
+</Layout>
+pt(trackerPayload)}></script>
+  <script>
+    import { setupTripTracker } from "../scripts/tracker";
+
+    const tripDataElement = document.getElementById("tracker-data");
+
+    if (tripDataElement?.textContent) {
+      void setupTripTracker(JSON.parse(tripDataElement.textContent));
+    }
+  </script>
+</Layout>
