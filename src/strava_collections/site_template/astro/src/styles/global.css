@@ -129,3 +129,23 @@
   height: 80vh !important;
 }
 
+/* Fullscreen button overlay for embedded plotly maps */
+.plotly-embed__fullscreen-btn {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  background: rgba(255,255,255,0.92);
+  border: 1px solid rgba(148,163,184,0.18);
+  padding: 6px 8px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: #0f172a;
+  text-decoration: none;
+  box-shadow: 0 6px 16px rgba(15,23,42,0.08);
+  z-index: 20;
+}
+
+.plotly-embed__fullscreen-btn:hover {
+  background: #ffffff;
+}
+

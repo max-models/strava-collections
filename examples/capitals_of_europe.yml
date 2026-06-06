@@ -1,9 +1,22 @@
 collection_name: "Capitals of Europe"
+description:
+  - "Connecting all capitals of Europe! 🚴🇪🇺
+    So far, the following capitals have been visited:
+    - Oslo
+    - Paris
+    - Vienna
+    - Prague
+    - Berlin
+    - Bratislava
+    - Budapest
+    - Ljubljana
+    - Zagreb
+    - Podgorica
+    - Pristina
+    - Skopje
+    "
 output_dir: "docs/source/"
 activity_ids:
-  - "7603766442F" # Røldal to Bergen 🚴🇪🇺🇳🇴
-  - "7591809739F" # To Røldal 🚴🇪🇺🇳🇴
-  - "7588727912F" # Moss to Totak 🚴🇪🇺🇳🇴
   - "7609035405" # Oslo to Strömstad 🚴🇪🇺🇳🇴🇸🇪
   - "7575170664F" # Sightseeing in Denmark 🚴🇪🇺🇩🇪🇩🇰
   - "7565316218F" # Short warmup ride (escaping Hamburg) 🚴🇪🇺🇩🇪
@@ -69,9 +82,6 @@ places:
   - name: "Paris"
     lat: 48.8566
     lon: 2.3522
-  - name: "Geneva"
-    lat: 46.2044
-    lon: 6.1432
   - name: "Bern"
     lat: 46.9481
     lon: 7.4474
@@ -81,9 +91,6 @@ places:
   - name: "Prague"
     lat: 50.0755
     lon: 14.4378
-  - name: "Munich"
-    lat: 48.1351
-    lon: 11.5820
   - name: "Berlin"
     lat: 52.5200
     lon: 13.4050
@@ -111,9 +118,6 @@ places:
   - name: "Athens"
     lat: 37.9838
     lon: 23.7275
-  - name: "Istanbul"
-    lat: 41.0082
-    lon: 28.9784
   - name: "Tirana"
     lat: 41.3275
     lon: 19.8187
