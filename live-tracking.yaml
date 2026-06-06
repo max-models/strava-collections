@@ -1,7 +1,7 @@
 collections:
   - name: Nordic chase 2026
     routeGpxFile:
-      - "NC26_CPH-OSL_Road.gpx"
+      - "temporary-strava-activities/routes/NC26_CPH-OSL_Road.gpx"
       - "temporary-strava-activities/routes/bergen_to_bodo.gpx"
     activities:
       - stravaActivityId: "18796354199"
