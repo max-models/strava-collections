@@ -1,9 +1,9 @@
 import argparse
 import glob
+import re
 from pathlib import Path
 
 import yaml
-import re
 
 from strava_collections.collection import (
     StravaCollection,
@@ -165,23 +165,30 @@ def generate_collection(
     try:
         if map_path.exists():
             html = map_path.read_text(encoding="utf-8")
-            m = re.search(r'<div\s+id="([^"]+)"[^>]*class="plotly-graph-div"[^>]*>', html)
+            m = re.search(
+                r'<div\s+id="([^"]+)"[^>]*class="plotly-graph-div"[^>]*>', html
+            )
             if m:
                 gid = m.group(1)
                 # replace first plot container with full-viewport sizing
                 new_div = f'<div id="{gid}" class="plotly-graph-div" style="height:100vh; width:100vw;"></div>'
-                html2 = re.sub(r'<div\s+id="[^"]+"[^>]*class="plotly-graph-div"[^>]*>', new_div, html, count=1)
+                html2 = re.sub(
+                    r'<div\s+id="[^"]+"[^>]*class="plotly-graph-div"[^>]*>',
+                    new_div,
+                    html,
+                    count=1,
+                )
                 resize_script = (
-                    f'<script>\n'
-                    f'(function(){{\n'
+                    f"<script>\n"
+                    f"(function(){{\n"
                     f'  var gd = document.getElementById("{gid}");\n'
-                    f'  function _resize(){{\n'
-                    f'    Plotly.relayout(gd, {{height: window.innerHeight, width: window.innerWidth}});\n'
-                    f'  }}\n'
+                    f"  function _resize(){{\n"
+                    f"    Plotly.relayout(gd, {{height: window.innerHeight, width: window.innerWidth}});\n"
+                    f"  }}\n"
                     f'  window.addEventListener("resize", _resize);\n'
-                    f'  setTimeout(_resize, 100);\n'
-                    f'}})();\n'
-                    f'</script>\n'
+                    f"  setTimeout(_resize, 100);\n"
+                    f"}})();\n"
+                    f"</script>\n"
                 )
                 if "</body>" in html2:
                     html2 = html2.replace("</body>", resize_script + "</body>")
@@ -192,7 +199,9 @@ def generate_collection(
                 # fallback: copy original html to fullscreen path
                 map_full_path.write_text(html, encoding="utf-8")
         else:
-            print(f"Warning: map HTML not found at {map_path}, skipping fullscreen export")
+            print(
+                f"Warning: map HTML not found at {map_path}, skipping fullscreen export"
+            )
     except Exception as e:
         print(f"Warning: could not create fullscreen map HTML: {e}")
 

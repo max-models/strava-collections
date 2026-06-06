@@ -97,6 +97,46 @@ def embed_image(
 <img src="{src}" alt="{alt}" style="width:100%; height:{height}; aspect-ratio:{aspect_ratio}; object-fit:contain; display:block;" />\n\n"""
 
 
+def get_icon_link(
+    src,
+    href=None,
+):
+    """Return an HTML <img> tag, optionally wrapped in a link."""
+
+    if href:
+        img_tag = f'<img src="{src}" class="icon">'
+        return (
+            f'<a href="{href}" class="icon-link" target="_blank" rel="noopener">'
+            + f"{img_tag}"
+            + "</a>"
+        )
+    else:
+        return f'<img src="{src}" class="static-icon">'
+
+    # <a href="https://www.strava.com/activities/9327605554" class="icon-link" target="_blank" rel="noopener">
+    # <img src="https://cdn.worldvectorlogo.com/logos/strava-2.svg" class="icon">
+    # </a>
+
+
+def get_activity_photos_from_web(activity_id, access_token, size=5000):
+    # https://communityhub.strava.com/t5/developer-discussions/download-all-photos-of-my-own-activities/m-p/11262
+    # Construct the URL manually
+    url = f"https://www.strava.com/api/v3/activities/{activity_id}/photos?size={size}"
+
+    # Headers including the OAuth token for authentication
+    headers = {"Authorization": f"Bearer {access_token}"}
+
+    # Making the GET request to Strava API
+    response = requests.get(url, headers=headers)
+
+    # Check if the request was successful
+    if response.status_code == 200:
+        photos = response.json()  # The photos data in JSON format
+        return photos
+    else:
+        print("Error:", response.status_code, response.text)
+
+
 class StravaActivity:
     """Wrapper around stravalib's DetailedActivity with convenience methods."""
 
@@ -361,43 +401,3 @@ class StravaActivity:
     def __getattr__(self, name):
         """Delegate attribute access to the underlying DetailedActivity."""
         return getattr(self.activity, name)
-
-
-def get_icon_link(
-    src,
-    href=None,
-):
-    """Return an HTML <img> tag, optionally wrapped in a link."""
-
-    if href:
-        img_tag = f'<img src="{src}" class="icon">'
-        return (
-            f'<a href="{href}" class="icon-link" target="_blank" rel="noopener">'
-            + f"{img_tag}"
-            + "</a>"
-        )
-    else:
-        return f'<img src="{src}" class="static-icon">'
-
-    # <a href="https://www.strava.com/activities/9327605554" class="icon-link" target="_blank" rel="noopener">
-    # <img src="https://cdn.worldvectorlogo.com/logos/strava-2.svg" class="icon">
-    # </a>
-
-
-def get_activity_photos_from_web(activity_id, access_token, size=5000):
-    # https://communityhub.strava.com/t5/developer-discussions/download-all-photos-of-my-own-activities/m-p/11262
-    # Construct the URL manually
-    url = f"https://www.strava.com/api/v3/activities/{activity_id}/photos?size={size}"
-
-    # Headers including the OAuth token for authentication
-    headers = {"Authorization": f"Bearer {access_token}"}
-
-    # Making the GET request to Strava API
-    response = requests.get(url, headers=headers)
-
-    # Check if the request was successful
-    if response.status_code == 200:
-        photos = response.json()  # The photos data in JSON format
-        return photos
-    else:
-        print("Error:", response.status_code, response.text)

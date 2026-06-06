@@ -295,7 +295,9 @@ def test_main_output_scaffolds_site_template(monkeypatch, tmp_path, capsys):
     assert "  npm run build:from-generated" in stdout
 
 
-def test_main_output_generates_yaml_map_assets_without_mapbox_token(monkeypatch, tmp_path):
+def test_main_output_generates_yaml_map_assets_without_mapbox_token(
+    monkeypatch, tmp_path
+):
     legacy_output = tmp_path / "legacy-source"
     legacy_static = legacy_output / "_static"
     legacy_static.mkdir(parents=True)
