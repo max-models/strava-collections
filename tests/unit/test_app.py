@@ -7,7 +7,10 @@ import pytest
 import strava_collections.activity as activity_module
 from strava_collections.activity import StravaActivity
 from strava_collections.astro_page import markdown_to_body_html, render_collection_page
-from strava_collections.collection import StravaCollection
+from strava_collections.collection import (
+    PLACE_MARKER_SIZE,
+    StravaCollection,
+)
 from strava_collections.main import elevation_extension_for_backend, main
 from strava_collections.site_sync import sync_collections
 from strava_collections.site_template import build_site_paths, ensure_site_template
@@ -74,7 +77,7 @@ def test_main_uses_plotly_html_for_yaml_input(monkeypatch, tmp_path):
     assert not legacy_markdown.exists()
 
 
-def test_main_reuses_existing_map_assets_without_mapbox_token(monkeypatch, tmp_path):
+def test_main_generates_map_assets_without_mapbox_token(monkeypatch, tmp_path):
     yaml_path = tmp_path / "taiwan.yml"
     yaml_path.write_text(
         "\n".join(
@@ -87,11 +90,6 @@ def test_main_reuses_existing_map_assets_without_mapbox_token(monkeypatch, tmp_p
         ),
         encoding="utf-8",
     )
-
-    static_dir = tmp_path / "_static"
-    static_dir.mkdir()
-    for suffix in ("map.html", "map.png", "map-thick.png"):
-        (static_dir / f"collection-taiwan-{suffix}").write_text("", encoding="utf-8")
 
     calls = {}
 
@@ -123,7 +121,10 @@ def test_main_reuses_existing_map_assets_without_mapbox_token(monkeypatch, tmp_p
 
     main()
 
-    assert "plot_map" not in calls
+    assert len(calls["plot_map"]) == 3
+    assert calls["plot_map"][0][0].endswith("collection-taiwan-map.html")
+    assert calls["plot_map"][1][0].endswith("collection-taiwan-map.png")
+    assert calls["plot_map"][2][0].endswith("collection-taiwan-map-thick.png")
     assert calls["plot_elevation"][0].endswith("collection-taiwan-elev.html")
     assert calls["generate_astro"][0].endswith("collection-taiwan.astro")
 
@@ -294,7 +295,9 @@ def test_main_output_scaffolds_site_template(monkeypatch, tmp_path, capsys):
     assert "  npm run build:from-generated" in stdout
 
 
-def test_main_output_reuses_yaml_map_assets_without_mapbox_token(monkeypatch, tmp_path):
+def test_main_output_generates_yaml_map_assets_without_mapbox_token(
+    monkeypatch, tmp_path
+):
     legacy_output = tmp_path / "legacy-source"
     legacy_static = legacy_output / "_static"
     legacy_static.mkdir(parents=True)
@@ -328,7 +331,7 @@ def test_main_output_reuses_yaml_map_assets_without_mapbox_token(monkeypatch, tm
             self.activities = [FakeActivity()]
 
         def plot_map(self, filepath, **kwargs):
-            raise AssertionError("plot_map should not run when fallback assets exist")
+            Path(filepath).write_text(Path(filepath).name, encoding="utf-8")
 
         def plot_elevation(self, filepath, **kwargs):
             return None
@@ -349,13 +352,13 @@ def test_main_output_reuses_yaml_map_assets_without_mapbox_token(monkeypatch, tm
     generated_static = tmp_path / "site" / "source" / "_static"
     assert (generated_static / "collection-taiwan-map.html").read_text(
         encoding="utf-8"
-    ) == "map.html"
+    ) == "collection-taiwan-map.html"
     assert (generated_static / "collection-taiwan-map.png").read_text(
         encoding="utf-8"
-    ) == "map.png"
+    ) == "collection-taiwan-map.png"
     assert (generated_static / "collection-taiwan-map-thick.png").read_text(
         encoding="utf-8"
-    ) == "map-thick.png"
+    ) == "collection-taiwan-map-thick.png"
 
 
 def test_main_expands_globbed_yaml_inputs(monkeypatch, tmp_path):
@@ -813,3 +816,31 @@ def test_main_parses_places_from_yaml(monkeypatch, tmp_path):
     for call in plot_map_calls:
         assert "places" in call
         assert call["places"] == [{"name": "Taipei", "lat": 25.0330, "lon": 121.5654}]
+
+
+def test_plot_map_colors_places_green_when_track_is_within_20km(monkeypatch):
+    class DataFrameActivity:
+        def __init__(self, coords):
+            self.no_map = False
+            self._coords = coords
+
+        def to_dataframe(self):
+            return __import__("pandas").DataFrame(self._coords, columns=["lat", "lon"])
+
+    collection = StravaCollection.__new__(StravaCollection)
+    collection._activities = [
+        DataFrameActivity([(52.52, 13.405), (52.6, 13.5)]),
+    ]
+
+    monkeypatch.setattr("strava_collections.collection.mapbox_token", "test-token")
+
+    fig = collection.plot_map(
+        places=[
+            {"name": "Berlin", "lat": 52.52, "lon": 13.405},
+            {"name": "Paris", "lat": 48.8566, "lon": 2.3522},
+        ]
+    )
+
+    marker_trace = fig.data[-1]
+    assert marker_trace.marker.size == PLACE_MARKER_SIZE
+    assert list(marker_trace.marker.color) == ["green", "red"]

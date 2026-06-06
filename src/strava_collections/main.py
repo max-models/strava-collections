@@ -1,5 +1,6 @@
 import argparse
 import glob
+import re
 from pathlib import Path
 
 import yaml
@@ -110,8 +111,11 @@ def generate_collection(
 
     mapfig_name = f"{collection_filename}-map.html"
     map_path = path_static / mapfig_name
+    map_full_name = f"{collection_filename}-map-fullscreen.html"
+    map_full_path = path_static / map_full_name
     map_asset_paths = [
         map_path,
+        map_full_path,
         map_path.with_suffix(".png"),
         path_static / f"{collection_filename}-map-thick.png",
     ]
@@ -135,43 +139,71 @@ def generate_collection(
 
     collection.plot_elevation(filepath=str(elev_path), backend=args.backend)
 
-    if mapbox_token:
-        collection.plot_map(
-            filepath=str(map_path),
-            linewidths=[8, 2],
-            width_to_height=3.0,
-            places=places,
-        )
-        collection.plot_map(
-            filepath=str(map_path.with_suffix(".png")),
-            linewidths=[16, 8],
-            height=500,
-            width_to_height=1.0,
-            places=places,
-        )
-        collection.plot_map(
-            filepath=str(path_static / f"{collection_filename}-map-thick.png"),
-            linewidths=[32, 16],
-            height=500,
-            width_to_height=1.0,
-            places=places,
-        )
-    elif fallback_static_dir is not None and all(
-        (fallback_static_dir / path.name).exists() for path in map_asset_paths
-    ):
-        for map_asset_path in map_asset_paths:
-            fallback_asset = fallback_static_dir / map_asset_path.name
-            map_asset_path.write_bytes(fallback_asset.read_bytes())
-        print(
-            "MAPBOX_TOKEN is not set; copied existing map assets from "
-            f"{fallback_static_dir}."
-        )
-    elif all(path.exists() for path in map_asset_paths):
-        print(
-            "MAPBOX_TOKEN is not set; reusing existing map assets in " f"{path_static}."
-        )
-    else:
-        raise RuntimeError(mapbox_token_help)
+    # standard interactive map + images
+    collection.plot_map(
+        filepath=str(map_path),
+        linewidths=[8, 2],
+        width_to_height=3.0,
+        places=places,
+    )
+    collection.plot_map(
+        filepath=str(map_path.with_suffix(".png")),
+        linewidths=[16, 8],
+        height=500,
+        width_to_height=1.0,
+        places=places,
+    )
+    collection.plot_map(
+        filepath=str(path_static / f"{collection_filename}-map-thick.png"),
+        linewidths=[32, 16],
+        height=500,
+        width_to_height=1.0,
+        places=places,
+    )
+
+    # create a fullscreen HTML variant by post-processing the generated map HTML
+    try:
+        if map_path.exists():
+            html = map_path.read_text(encoding="utf-8")
+            m = re.search(
+                r'<div\s+id="([^"]+)"[^>]*class="plotly-graph-div"[^>]*>', html
+            )
+            if m:
+                gid = m.group(1)
+                # replace first plot container with full-viewport sizing
+                new_div = f'<div id="{gid}" class="plotly-graph-div" style="height:100vh; width:100vw;"></div>'
+                html2 = re.sub(
+                    r'<div\s+id="[^"]+"[^>]*class="plotly-graph-div"[^>]*>',
+                    new_div,
+                    html,
+                    count=1,
+                )
+                resize_script = (
+                    f"<script>\n"
+                    f"(function(){{\n"
+                    f'  var gd = document.getElementById("{gid}");\n'
+                    f"  function _resize(){{\n"
+                    f"    Plotly.relayout(gd, {{height: window.innerHeight, width: window.innerWidth}});\n"
+                    f"  }}\n"
+                    f'  window.addEventListener("resize", _resize);\n'
+                    f"  setTimeout(_resize, 100);\n"
+                    f"}})();\n"
+                    f"</script>\n"
+                )
+                if "</body>" in html2:
+                    html2 = html2.replace("</body>", resize_script + "</body>")
+                else:
+                    html2 += resize_script
+                map_full_path.write_text(html2, encoding="utf-8")
+            else:
+                # fallback: copy original html to fullscreen path
+                map_full_path.write_text(html, encoding="utf-8")
+        else:
+            print(
+                f"Warning: map HTML not found at {map_path}, skipping fullscreen export"
+            )
+    except Exception as e:
+        print(f"Warning: could not create fullscreen map HTML: {e}")
 
     collection.generate_astro(
         filepath=str(path_collection_astro),
