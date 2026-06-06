@@ -351,7 +351,7 @@ def main():
         import os
         import shutil
 
-        if os.path.exists("live-tracking.yaml"):
+        if site_root is not None and os.path.exists("live-tracking.yaml"):
             shutil.copy(
                 "live-tracking.yaml", site_root / "source" / "live-tracking.yaml"
             )

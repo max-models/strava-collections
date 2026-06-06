@@ -54,20 +54,20 @@ def build_strava_route_data(activity_id: int) -> dict[str, Any]:
         if isinstance(start, datetime) and isinstance(duration_secs, (int, float)):
             time_iso = (start + timedelta(seconds=float(duration_secs))).isoformat()
 
-        points.append(
-            {
-                "lat": lat,
-                "lon": lon,
-                "time": time_iso,
-                "distanceMeters": _stream_value_at(distance, index),
-                "durationSecs": duration_secs,
-                "elevation": _stream_value_at(altitude, index),
-                "speedMetersPerSec": _stream_value_at(speed, index),
-                "heartRateBeatsPerMin": _stream_value_at(heart_rate, index),
-                "cadenceCyclesPerMin": _stream_value_at(cadence, index),
-                "powerWatts": _stream_value_at(power, index),
-            }
-        )
+        point_data = {
+            "lat": lat,
+            "lon": lon,
+            "time": time_iso,
+            "distanceMeters": _stream_value_at(distance, index),
+            "durationSecs": duration_secs,
+            "elevation": _stream_value_at(altitude, index),
+            "speedMetersPerSec": _stream_value_at(speed, index),
+            "heartRateBeatsPerMin": _stream_value_at(heart_rate, index),
+            "cadenceCyclesPerMin": _stream_value_at(cadence, index),
+            "powerWatts": _stream_value_at(power, index),
+        }
+        # Remove None values to save space
+        points.append({k: v for k, v in point_data.items() if v is not None})
 
     if not points:
         return {"status": "empty"}
@@ -101,7 +101,7 @@ def main() -> None:
         activity_id: build_strava_route_data(int(activity_id))
         for activity_id in args.activity_ids
     }
-    print(json.dumps(payload))
+    print(json.dumps(payload, separators=(",", ":")))
 
 
 if __name__ == "__main__":
