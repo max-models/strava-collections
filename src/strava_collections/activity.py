@@ -1,5 +1,6 @@
 import os
 import pickle
+import sys
 from datetime import timedelta
 
 import fastrdp
@@ -19,6 +20,58 @@ from strava_collections.utils import (
 
 # CACHE_PATH = strava_collections.__path__[0]
 CACHE_PATH = os.getenv("STRAVA_CACHE_DIR", "cache")
+_AUTHENTICATED_CLIENT: Client | None = None
+_ROTATED_REFRESH_TOKEN: str | None = None
+
+
+def _reset_auth_state_for_testing() -> None:
+    global _AUTHENTICATED_CLIENT, _ROTATED_REFRESH_TOKEN
+    _AUTHENTICATED_CLIENT = None
+    _ROTATED_REFRESH_TOKEN = None
+
+
+def _required_strava_env(name: str) -> str:
+    value = os.getenv(name)
+    if value:
+        return value
+    raise RuntimeError(
+        f"Missing required environment variable {name}. "
+        "Run `python update_strava_tokens.py` and export the printed credentials."
+    )
+
+
+def get_authenticated_client() -> Client:
+    global _AUTHENTICATED_CLIENT, _ROTATED_REFRESH_TOKEN
+
+    if _AUTHENTICATED_CLIENT is not None:
+        return _AUTHENTICATED_CLIENT
+
+    client_id = _required_strava_env("STRAVA_CLIENT_ID")
+    client_secret = _required_strava_env("STRAVA_CLIENT_SECRET")
+    refresh_token = _ROTATED_REFRESH_TOKEN or _required_strava_env(
+        "STRAVA_REFRESH_TOKEN"
+    )
+
+    client = Client()
+    token_response = client.refresh_access_token(
+        client_id=client_id,
+        client_secret=client_secret,
+        refresh_token=refresh_token,
+    )
+    client.access_token = token_response["access_token"]
+
+    rotated_refresh_token = token_response["refresh_token"]
+    _ROTATED_REFRESH_TOKEN = rotated_refresh_token
+    _AUTHENTICATED_CLIENT = client
+
+    if rotated_refresh_token != refresh_token:
+        print(
+            "Strava rotated the refresh token. Update STRAVA_REFRESH_TOKEN to:\n"
+            f'export STRAVA_REFRESH_TOKEN="{rotated_refresh_token}"',
+            file=sys.stderr,
+        )
+
+    return client
 
 
 def embed_iframe(
@@ -66,21 +119,7 @@ class StravaActivity:
             self._photos = data["photos"]
         else:
             print(f"{self.activity_id} (downloaded)", end=", ")
-
-            # Load Strava credentials from environment
-            client_id = os.getenv("STRAVA_CLIENT_ID")
-            client_secret = os.getenv("STRAVA_CLIENT_SECRET")
-            refresh_token = os.getenv("STRAVA_REFRESH_TOKEN")
-
-            client = Client()
-
-            # Refresh access token
-            token_response = client.refresh_access_token(
-                client_id=client_id,
-                client_secret=client_secret,
-                refresh_token=refresh_token,
-            )
-            client.access_token = token_response["access_token"]
+            client = get_authenticated_client()
 
             self._activity_stream = client.get_activity_streams(activity_id=activity_id)
             self._activity = client.get_activity(activity_id=activity_id)

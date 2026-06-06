@@ -2,6 +2,9 @@ from datetime import datetime
 from pathlib import Path
 from types import SimpleNamespace
 
+import pytest
+
+import strava_collections.activity as activity_module
 from strava_collections.activity import StravaActivity
 from strava_collections.astro_page import markdown_to_body_html, render_collection_page
 from strava_collections.collection import StravaCollection
@@ -455,6 +458,75 @@ def test_activity_summary_gallery_images_keep_lightbox_class_and_accessibility()
     assert 'loading="lazy"' in markdown
     assert 'decoding="async"' in markdown
     assert 'alt="Day 1 photo 1"' in markdown
+
+
+def test_activity_download_reuses_rotated_refresh_token(monkeypatch, tmp_path, capsys):
+    activity_module._reset_auth_state_for_testing()
+
+    calls = {"refresh_tokens": [], "stream_ids": [], "activity_ids": []}
+
+    class FakeClient:
+        def refresh_access_token(self, client_id, client_secret, refresh_token):
+            calls["refresh_tokens"].append(refresh_token)
+            assert client_id == "client-id"
+            assert client_secret == "client-secret"
+            return {
+                "access_token": "access-token",
+                "refresh_token": "rotated-refresh-token",
+            }
+
+        def get_activity_streams(self, activity_id):
+            calls["stream_ids"].append(activity_id)
+            return {
+                "distance": SimpleNamespace(data=[0.0]),
+                "altitude": SimpleNamespace(data=[0.0]),
+            }
+
+        def get_activity(self, activity_id):
+            calls["activity_ids"].append(activity_id)
+            return SimpleNamespace(
+                id=activity_id,
+                name=f"Activity {activity_id}",
+                map=SimpleNamespace(polyline=""),
+                description="",
+                start_date_local=datetime(2025, 1, 1),
+                distance=0.0,
+                total_elevation_gain=0.0,
+                elapsed_time=0,
+            )
+
+    monkeypatch.setattr(activity_module, "CACHE_PATH", str(tmp_path))
+    monkeypatch.setattr(activity_module, "Client", FakeClient)
+    monkeypatch.setattr(
+        activity_module, "get_activity_photos_from_web", lambda *args, **kwargs: []
+    )
+    monkeypatch.setattr(
+        activity_module.StravaActivity, "dump", lambda self, filepath: None
+    )
+    monkeypatch.setenv("STRAVA_CLIENT_ID", "client-id")
+    monkeypatch.setenv("STRAVA_CLIENT_SECRET", "client-secret")
+    monkeypatch.setenv("STRAVA_REFRESH_TOKEN", "original-refresh-token")
+
+    StravaActivity(123, force_update=True)
+    StravaActivity(456, force_update=True)
+
+    captured = capsys.readouterr()
+    assert calls["refresh_tokens"] == ["original-refresh-token"]
+    assert calls["stream_ids"] == [123, 456]
+    assert calls["activity_ids"] == [123, 456]
+    assert 'export STRAVA_REFRESH_TOKEN="rotated-refresh-token"' in captured.err
+
+    activity_module._reset_auth_state_for_testing()
+
+
+def test_get_authenticated_client_requires_refresh_token(monkeypatch):
+    activity_module._reset_auth_state_for_testing()
+    monkeypatch.delenv("STRAVA_REFRESH_TOKEN", raising=False)
+
+    with pytest.raises(RuntimeError, match="STRAVA_REFRESH_TOKEN"):
+        activity_module.get_authenticated_client()
+
+    activity_module._reset_auth_state_for_testing()
 
 
 def test_collection_generate_astro_writes_astro_page(tmp_path):

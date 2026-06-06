@@ -22,8 +22,10 @@ token_response = client.exchange_code_for_token(
     code=code,
 )
 # The token response above contains both an access_token and a refresh token.
+# Strava rotates refresh tokens whenever access is refreshed, so replace your
+# stored STRAVA_REFRESH_TOKEN whenever the app prints a new one.
 access_token = token_response["access_token"]
-refresh_token = token_response["refresh_token"]  # You'll need this in 6 hours
+refresh_token = token_response["refresh_token"]
 
 print()
 print("Copy and paste these into your shell:")
