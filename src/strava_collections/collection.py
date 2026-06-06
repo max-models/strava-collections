@@ -68,15 +68,142 @@ def haversine_distance_km(
 
 
 def is_place_near_any_track(
-    place_lat: float, place_lon: float, track_coordinates: list[tuple[np.ndarray, np.ndarray]]
+    place_lat: float,
+    place_lon: float,
+    track_coordinates: list[tuple[np.ndarray, np.ndarray]],
 ) -> bool:
     for track_lats, track_lons in track_coordinates:
         if track_lats.size == 0:
             continue
-        distances_km = haversine_distance_km(place_lat, place_lon, track_lats, track_lons)
+        distances_km = haversine_distance_km(
+            place_lat, place_lon, track_lats, track_lons
+        )
         if float(np.min(distances_km)) <= PLACE_NEARBY_TRACK_THRESHOLD_KM:
             return True
     return False
+
+
+def zoom_center(
+    maxlon,
+    minlon,
+    maxlat,
+    minlat,
+    # lons: tuple = None,
+    # lats: tuple = None,
+    # lonlats: tuple = None,
+    # format: str = "lonlat",
+    projection: str = "mercator",
+    width_to_height: float = 3.0,
+) -> (float, dict):
+    """Finds optimal zoom and centering for a Plotly map subplot.
+    Must be passed (lons & lats) or lonlats.
+    Temporary solution awaiting official implementation, see:
+    https://github.com/plotly/plotly.js/issues/3434
+
+    Parameters
+    --------
+    lons: tuple, optional, longitude component of each location
+    lats: tuple, optional, latitude component of each location
+    lonlats: tuple, optional, gps locations
+    format: str, specifying the order of longitud and latitude dimensions,
+        expected values: 'lonlat' or 'latlon', only used if passed lonlats
+    projection: str, only accepting 'mercator' at the moment,
+        raises `NotImplementedError` if other is passed
+    width_to_height: float, expected ratio of final graph's with to height,
+        used to select the constrained axis.
+
+    Returns
+    --------
+    zoom: float, from 1 to 20
+    center: dict, gps position with 'lon' and 'lat' keys
+
+    >>> print(zoom_center((-109.031387, -103.385460),
+    ...     (25.587101, 31.784620)))
+    (5.75, {'lon': -106.208423, 'lat': 28.685861})
+    """
+    # if lons is None and lats is None:
+    #     if isinstance(lonlats, tuple):
+    #         lons, lats = zip(*lonlats)
+    #     else:
+    #         raise ValueError("Must pass lons & lats or lonlats")
+
+    # maxlon, minlon = max(lons), min(lons)
+    # maxlat, minlat = max(lats), min(lats)
+    center = {
+        "lon": round((maxlon + minlon) / 2, 6),
+        "lat": round((maxlat + minlat) / 2, 6),
+    }
+
+    # longitudinal range by zoom level (20 to 1)
+    # in degrees, if centered at equator
+    lon_zoom_range = np.array(
+        [
+            0.0007,
+            0.0014,
+            0.003,
+            0.006,
+            0.012,
+            0.024,
+            0.048,
+            0.096,
+            0.192,
+            0.3712,
+            0.768,
+            1.536,
+            3.072,
+            6.144,
+            11.8784,
+            23.7568,
+            47.5136,
+            98.304,
+            190.0544,
+            360.0,
+        ]
+    )
+    # print(
+    #     f"{width_to_height = } for mercator, {maxlat = } {minlat = } {maxlon = } {minlon = }"
+    # )
+    if projection == "mercator":
+        # margin = 1.2
+        # height = (maxlat - minlat) * margin * width_to_height
+        # width = (maxlon - minlon) * margin
+        # lon_zoom = np.interp(width, lon_zoom_range, range(20, 0, -1))
+        # lat_zoom = np.interp(height, lon_zoom_range, range(20, 0, -1))
+        # zoom = round(min(lon_zoom, lat_zoom), 2)
+
+        margin = 1.7
+
+        # Determine raw aspect ratio of the bounding box
+        bbox_width = maxlon - minlon
+        bbox_height = maxlat - minlat
+
+        # Apply margin
+        bbox_width *= margin
+        bbox_height *= margin
+
+        # Adjust dimensions so that the final figure has the desired width/height ratio
+        target_ratio = width_to_height
+        current_ratio = bbox_width / bbox_height
+        # print(f"{current_ratio = } {target_ratio = }")
+
+        if current_ratio > target_ratio:
+            # Too wide — increase height
+            # width_to_height = width / height <-> height = width / width_to_height
+            width = bbox_width
+            height = bbox_width / width_to_height
+        else:
+            # Too tall — increase width
+            # width_to_height = width / height <-> width = height * width_to_height
+            height = bbox_height
+            width = bbox_height * width_to_height
+        # print(width, height)
+        lon_zoom = np.interp(width, lon_zoom_range, range(20, 0, -1))
+        lat_zoom = np.interp(height, lon_zoom_range, range(20, 0, -1))
+        zoom = round(min(lon_zoom, lat_zoom), 2)
+    else:
+        raise NotImplementedError(f"{projection} projection is not implemented")
+    # print(f"{zoom = }"); exit()
+    return zoom, center
 
 
 class StravaCollection:
@@ -253,11 +380,13 @@ class StravaCollection:
                 place.get("name", f"Place {i+1}") for i, place in enumerate(places)
             ]
             place_colors = [
-                "green"
-                if is_place_near_any_track(
-                    place["lat"], place["lon"], track_coordinates=track_coordinates
+                (
+                    "green"
+                    if is_place_near_any_track(
+                        place["lat"], place["lon"], track_coordinates=track_coordinates
+                    )
+                    else "red"
                 )
-                else "red"
                 for place in places
             ]
 
@@ -356,9 +485,17 @@ class StravaCollection:
         include_table: bool = False,
     ):
         html_str = ""
+        # Provide a fullscreen map link alongside the embedded iframe. The fullscreen
+        # asset is post-processed by the generator as <collection>-map-fullscreen.html.
+        if mapfig_name.lower().endswith(".html"):
+            map_full_name = mapfig_name[:-5] + "-fullscreen.html"
+        else:
+            map_full_name = mapfig_name + "-fullscreen.html"
+
         html_str += f"""
 <div style="position: relative; width: 100%; height: 350px;">
-<iframe src="/_static/{mapfig_name}" style="width:100%; height:100%; border:none;"></iframe>
+  <a class="plotly-embed__fullscreen-btn" href="/_static/{map_full_name}" target="_blank" rel="noopener noreferrer" aria-label="Open fullscreen map">⤢ Fullscreen</a>
+  <iframe src="/_static/{mapfig_name}" style="width:100%; height:100%; border:none;"></iframe>
 </div>
 \n\n"""
 
@@ -534,126 +671,3 @@ class StravaCollection:
     @property
     def name(self):
         return self._name
-
-
-def zoom_center(
-    maxlon,
-    minlon,
-    maxlat,
-    minlat,
-    # lons: tuple = None,
-    # lats: tuple = None,
-    # lonlats: tuple = None,
-    # format: str = "lonlat",
-    projection: str = "mercator",
-    width_to_height: float = 3.0,
-) -> (float, dict):
-    """Finds optimal zoom and centering for a Plotly map subplot.
-    Must be passed (lons & lats) or lonlats.
-    Temporary solution awaiting official implementation, see:
-    https://github.com/plotly/plotly.js/issues/3434
-
-    Parameters
-    --------
-    lons: tuple, optional, longitude component of each location
-    lats: tuple, optional, latitude component of each location
-    lonlats: tuple, optional, gps locations
-    format: str, specifying the order of longitud and latitude dimensions,
-        expected values: 'lonlat' or 'latlon', only used if passed lonlats
-    projection: str, only accepting 'mercator' at the moment,
-        raises `NotImplementedError` if other is passed
-    width_to_height: float, expected ratio of final graph's with to height,
-        used to select the constrained axis.
-
-    Returns
-    --------
-    zoom: float, from 1 to 20
-    center: dict, gps position with 'lon' and 'lat' keys
-
-    >>> print(zoom_center((-109.031387, -103.385460),
-    ...     (25.587101, 31.784620)))
-    (5.75, {'lon': -106.208423, 'lat': 28.685861})
-    """
-    # if lons is None and lats is None:
-    #     if isinstance(lonlats, tuple):
-    #         lons, lats = zip(*lonlats)
-    #     else:
-    #         raise ValueError("Must pass lons & lats or lonlats")
-
-    # maxlon, minlon = max(lons), min(lons)
-    # maxlat, minlat = max(lats), min(lats)
-    center = {
-        "lon": round((maxlon + minlon) / 2, 6),
-        "lat": round((maxlat + minlat) / 2, 6),
-    }
-
-    # longitudinal range by zoom level (20 to 1)
-    # in degrees, if centered at equator
-    lon_zoom_range = np.array(
-        [
-            0.0007,
-            0.0014,
-            0.003,
-            0.006,
-            0.012,
-            0.024,
-            0.048,
-            0.096,
-            0.192,
-            0.3712,
-            0.768,
-            1.536,
-            3.072,
-            6.144,
-            11.8784,
-            23.7568,
-            47.5136,
-            98.304,
-            190.0544,
-            360.0,
-        ]
-    )
-    # print(
-    #     f"{width_to_height = } for mercator, {maxlat = } {minlat = } {maxlon = } {minlon = }"
-    # )
-    if projection == "mercator":
-        # margin = 1.2
-        # height = (maxlat - minlat) * margin * width_to_height
-        # width = (maxlon - minlon) * margin
-        # lon_zoom = np.interp(width, lon_zoom_range, range(20, 0, -1))
-        # lat_zoom = np.interp(height, lon_zoom_range, range(20, 0, -1))
-        # zoom = round(min(lon_zoom, lat_zoom), 2)
-
-        margin = 1.7
-
-        # Determine raw aspect ratio of the bounding box
-        bbox_width = maxlon - minlon
-        bbox_height = maxlat - minlat
-
-        # Apply margin
-        bbox_width *= margin
-        bbox_height *= margin
-
-        # Adjust dimensions so that the final figure has the desired width/height ratio
-        target_ratio = width_to_height
-        current_ratio = bbox_width / bbox_height
-        # print(f"{current_ratio = } {target_ratio = }")
-
-        if current_ratio > target_ratio:
-            # Too wide — increase height
-            # width_to_height = width / height <-> height = width / width_to_height
-            width = bbox_width
-            height = bbox_width / width_to_height
-        else:
-            # Too tall — increase width
-            # width_to_height = width / height <-> width = height * width_to_height
-            height = bbox_height
-            width = bbox_height * width_to_height
-        # print(width, height)
-        lon_zoom = np.interp(width, lon_zoom_range, range(20, 0, -1))
-        lat_zoom = np.interp(height, lon_zoom_range, range(20, 0, -1))
-        zoom = round(min(lon_zoom, lat_zoom), 2)
-    else:
-        raise NotImplementedError(f"{projection} projection is not implemented")
-    # print(f"{zoom = }"); exit()
-    return zoom, center
