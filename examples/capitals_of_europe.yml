@@ -82,9 +82,6 @@ places:
   - name: "Paris"
     lat: 48.8566
     lon: 2.3522
-  - name: "Geneva"
-    lat: 46.2044
-    lon: 6.1432
   - name: "Bern"
     lat: 46.9481
     lon: 7.4474
@@ -124,9 +121,6 @@ places:
   - name: "Athens"
     lat: 37.9838
     lon: 23.7275
-  - name: "Istanbul"
-    lat: 41.0082
-    lon: 28.9784
   - name: "Tirana"
     lat: 41.3275
     lon: 19.8187
