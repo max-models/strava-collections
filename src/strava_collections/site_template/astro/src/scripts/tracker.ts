@@ -42,6 +42,7 @@ interface PlannedRouteData {
 interface TrackerActivity {
   color: string;
   garminLivetrackUrl: string | null;
+  stravaActivityId: string | null;
   notes: string | null;
   routeData: GarminRouteData | null;
   plannedRouteData: PlannedRouteData | null;
@@ -65,6 +66,7 @@ interface RouteEntry {
   color: string;
   activityIndex: number;
   garminLivetrackUrl: string | null;
+  stravaActivityId: string | null;
   notes: string | null;
   routeData: GarminRouteOk;
   plannedRouteData: PlannedRouteData | null;
@@ -126,6 +128,7 @@ export async function setupTripTracker(payload: TrackerPayload): Promise<void> {
         color: activity.color,
         activityIndex: ai,
         garminLivetrackUrl: activity.garminLivetrackUrl,
+        stravaActivityId: activity.stravaActivityId,
         notes: activity.notes,
         routeData: activity.routeData as GarminRouteOk,
         plannedRouteData: activity.plannedRouteData,
@@ -813,11 +816,14 @@ function renderActivityList(collections: TrackerCollection[], selectedCollection
         (activity, ai) => {
           const entry = allRouteEntries.find((e) => e.collectionIndex === ci && e.activityIndex === ai);
           const gpxHref = entry ? buildGpxDownloadUrl(entry.routeData.points, `${col.name} #${ai + 1}`) : null;
-          const statusText = getActivityStatusLabel(activity.routeData, activity.garminLivetrackUrl);
+          const statusText = getActivityStatusLabel(activity.routeData, activity.garminLivetrackUrl, activity.stravaActivityId);
           const metrics = entry ? renderActivityMetrics(entry.routeData) : "";
           const notes = activity.notes ? `<p class="activity-notes">${escapeHtml(activity.notes)}</p>` : "";
           const garminLink = activity.garminLivetrackUrl
             ? `<a class="button-link" href="${escapeHtml(activity.garminLivetrackUrl)}" target="_blank" rel="noreferrer">Open in Garmin</a>`
+            : "";
+          const stravaLink = activity.stravaActivityId
+            ? `<a class="button-link" href="https://www.strava.com/activities/${encodeURIComponent(activity.stravaActivityId)}" target="_blank" rel="noreferrer">Open in Strava</a>`
             : "";
           const gpxLink = gpxHref
             ? `<a class="button-link button-link-secondary" href="${gpxHref}" download="${slugify(col.name)}-${ai + 1}.gpx">Download GPX</a>`
@@ -834,7 +840,7 @@ function renderActivityList(collections: TrackerCollection[], selectedCollection
             </div>
             ${notes}
             ${metrics}
-            <div class="activity-actions">${gpxLink}${garminLink}</div>
+            <div class="activity-actions">${gpxLink}${garminLink}${stravaLink}</div>
           </article>`;
         },
       ),
@@ -860,9 +866,13 @@ function renderActivityMetrics(routeData: GarminRouteOk): string {
     </div>`;
 }
 
-function getActivityStatusLabel(routeData: GarminRouteData | null, livetrackUrl: string | null): string {
-  if (!livetrackUrl) {
-    return "No Garmin session URL yet.";
+function getActivityStatusLabel(
+  routeData: GarminRouteData | null,
+  livetrackUrl: string | null,
+  stravaActivityId: string | null,
+): string {
+  if (!livetrackUrl && !stravaActivityId) {
+    return "No Garmin LiveTrack URL or Strava activity ID yet.";
   }
 
   if (!routeData) {
@@ -876,20 +886,26 @@ function getActivityStatusLabel(routeData: GarminRouteData | null, livetrackUrl:
   }
 
   if (routeData.status === "empty") {
-    return "Session exists but no route points are available yet.";
+    return livetrackUrl
+      ? "Session exists but no route points are available yet."
+      : "Strava activity exists but no route points are available yet.";
   }
 
-  return "Route extraction failed; Garmin fallback is still available.";
+  return livetrackUrl
+    ? "Route extraction failed; Garmin fallback is still available."
+    : "Route extraction failed; Strava fallback is still available.";
 }
 
 function buildPlaceholderCopy(collections: TrackerCollection[]): string {
-  const anyUrl = collections.some((col) => col.activities.some((a) => a.garminLivetrackUrl));
+  const anyUrl = collections.some((col) =>
+    col.activities.some((a) => a.garminLivetrackUrl || a.stravaActivityId),
+  );
 
   if (!anyUrl) {
-    return "Add Garmin LiveTrack URLs in <code>live-tracking.yaml</code> once the ride has started.";
+    return "Add Garmin LiveTrack URLs or Strava activity IDs in <code>live-tracking.yaml</code> once the ride has started.";
   }
 
-  return "The last build could not extract route data from Garmin. Use the Garmin links in the activity list as a fallback.";
+  return "The last build could not extract route data. Use the source links in the activity list as a fallback.";
 }
 
 function buildGpxDownloadUrl(points: GarminTrackPoint[], title: string): string {

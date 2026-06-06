@@ -2,7 +2,8 @@
 import Layout from "../layouts/Layout.astro";
 import "../styles/tracker.css";
 import "leaflet/dist/leaflet.css";
-import { readFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { load as loadYaml } from "js-yaml";
 import type { TripData } from "../data/trip";
@@ -129,6 +130,42 @@ async function loadRouteData(collections: TripData["collections"]): Promise<(Gar
       ),
     ),
   );
+}
+
+function loadStravaRouteData(collections: TripData["collections"]): (GarminRouteData | null)[][] {
+  const result = collections.map((collection) => collection.activities.map(() => null as GarminRouteData | null));
+  const requests = collections.flatMap((collection, collectionIndex) =>
+    collection.activities
+      .map((activity, activityIndex) => ({
+        collectionIndex,
+        activityIndex,
+        activityId: activity.stravaActivityId?.trim() ?? "",
+      }))
+      .filter((item) => item.activityId.length > 0),
+  );
+
+  if (requests.length === 0) {
+    return result;
+  }
+
+  const repoSrc = join(process.cwd(), "..", "..", "src");
+  const env = { ...process.env };
+  if (existsSync(repoSrc)) {
+    env.PYTHONPATH = env.PYTHONPATH ? `${repoSrc}:${env.PYTHONPATH}` : repoSrc;
+  }
+
+  const output = execFileSync(
+    "python3",
+    ["-m", "strava_collections.live_tracking_export", ...requests.map((request) => request.activityId)],
+    { cwd: process.cwd(), encoding: "utf-8", env },
+  );
+  const exported = JSON.parse(output) as Record<string, GarminRouteData | undefined>;
+
+  for (const request of requests) {
+    result[request.collectionIndex][request.activityIndex] = exported[request.activityId] ?? { status: "error" };
+  }
+
+  return result;
 }
 
 function parseTrackDataFromHtml(
@@ -305,7 +342,8 @@ function isSessionActive(session: GarminSessionData, lastReportedTime?: string):
   );
 }
 
-const routeData = await loadRouteData(tripData.collections);
+const garminRouteData = await loadRouteData(tripData.collections);
+const stravaRouteData = loadStravaRouteData(tripData.collections);
 
 let activityColorIndex = 0;
 const collectionsWithColors = tripData.collections.map((col, index) => ({
@@ -325,8 +363,9 @@ const trackerPayload = {
     activities: col.activities.map((activity, ai) => ({
       color: activity.color,
       garminLivetrackUrl: activity.garminLivetrackUrl ?? null,
+      stravaActivityId: activity.stravaActivityId ?? null,
       notes: activity.notes ?? null,
-      routeData: routeData[ci]?.[ai] ?? null,
+      routeData: garminRouteData[ci]?.[ai] ?? stravaRouteData[ci]?.[ai] ?? null,
       plannedRouteData: null,
     })),
   })),

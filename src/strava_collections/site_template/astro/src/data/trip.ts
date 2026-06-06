@@ -1,5 +1,6 @@
 export interface CollectionActivity {
   garminLivetrackUrl?: string | null;
+  stravaActivityId?: string | null;
   notes?: string;
   routeGpxFile?: string | null;
 }
