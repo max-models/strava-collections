@@ -78,14 +78,69 @@ const hydrationPattern = /self\.__next_f\.push\(\[1,"((?:\\.|[^"\\])*)"\]\)/gs;
 const yamlContent = readFileSync(join(process.cwd(), "../source/live-tracking.yaml"), "utf-8");
 const tripData = loadYaml(yamlContent) as TripData;
 
-function parseGpxPoints(gpxContent: string): Array<{ lat: number; lon: number }> {
-  const points: Array<{ lat: number; lon: number }> = [];
-  const trkptRegex = /<trkpt lat="([-0-9.]+)" lon="([-0-9.]+)"/g;
+function parseGpxPoints(gpxContent: string): GarminTrackPoint[] {
+  const points: GarminTrackPoint[] = [];
+  const trkptRegex = /<trkpt lat="([-0-9.]+)" lon="([-0-9.]+)">([\s\S]*?)<\/trkpt>/g;
   let match;
   while ((match = trkptRegex.exec(gpxContent)) !== null) {
-    points.push({ lat: parseFloat(match[1]), lon: parseFloat(match[2]) });
+    const lat = parseFloat(match[1]);
+    const lon = parseFloat(match[2]);
+    const inner = match[3];
+
+    const point: GarminTrackPoint = { lat, lon };
+
+    const eleMatch = /<ele>([-0-9.]+)<\/ele>/.exec(inner);
+    if (eleMatch) point.elevation = parseFloat(eleMatch[1]);
+
+    const timeMatch = /<time>(.*?)<\/time>/.exec(inner);
+    if (timeMatch) point.time = timeMatch[1];
+
+    const hrMatch = /<gpxtpx:hr>(\d+)<\/gpxtpx:hr>/.exec(inner);
+    if (hrMatch) point.heartRateBeatsPerMin = parseInt(hrMatch[1], 10);
+
+    const cadMatch = /<gpxtpx:cad>(\d+)<\/gpxtpx:cad>/.exec(inner);
+    if (cadMatch) point.cadenceCyclesPerMin = parseInt(cadMatch[1], 10);
+
+    const powerMatch = /<power>(\d+)<\/power>/.exec(inner);
+    if (powerMatch) point.powerWatts = parseInt(powerMatch[1], 10);
+
+    points.push(point);
   }
+
+  // Calculate cumulative distance and duration if possible
+  let totalDistance = 0;
+  let totalDuration = 0;
+  for (let i = 0; i < points.length; i++) {
+    if (i > 0) {
+      const p1 = points[i - 1];
+      const p2 = points[i];
+      
+      // Basic distance calculation (Haversine would be better but this is for UI)
+      const d = calculateDistance(p1.lat, p1.lon, p2.lat, p2.lon);
+      totalDistance += d;
+      
+      if (p1.time && p2.time) {
+        const dt = (new Date(p2.time).getTime() - new Date(p1.time).getTime()) / 1000;
+        if (dt > 0) totalDuration += dt;
+      }
+    }
+    points[i].distanceMeters = totalDistance;
+    points[i].durationSecs = totalDuration;
+  }
+
   return points;
+}
+
+function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371000; // Earth radius in meters
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
 }
 
 function loadPlannedRouteData(input: string | string[] | undefined | null): { points: Array<{ lat: number; lon: number }> } | null {
@@ -194,10 +249,31 @@ function loadStravaRouteData(collections: TripData["collections"]): (GarminRoute
     ["-m", "strava_collections.live_tracking_export", ...requests.map((request) => request.activityId)],
     { cwd: process.cwd(), encoding: "utf-8", env, maxBuffer: 10 * 1024 * 1024 },
   );
-  const exported = JSON.parse(output) as Record<string, GarminRouteData | undefined>;
+  const exported = JSON.parse(output) as Record<string, string | GarminRouteData>;
 
   for (const request of requests) {
-    result[request.collectionIndex][request.activityIndex] = exported[request.activityId] ?? { status: "error" };
+    const rawData = exported[request.activityId];
+    if (typeof rawData === "string") {
+      const points = parseGpxPoints(rawData);
+      if (points.length > 0) {
+        const last = points[points.length - 1];
+        result[request.collectionIndex][request.activityIndex] = {
+          status: "ok",
+          points,
+          summary: {
+            pointCount: points.length,
+            totalDistanceMeters: last.distanceMeters,
+            totalDurationSecs: last.durationSecs,
+            lastReportedTime: last.time,
+            isActive: false,
+          },
+        };
+      } else {
+        result[request.collectionIndex][request.activityIndex] = { status: "empty" };
+      }
+    } else {
+      result[request.collectionIndex][request.activityIndex] = rawData ?? { status: "error" };
+    }
   }
 
   return result;
