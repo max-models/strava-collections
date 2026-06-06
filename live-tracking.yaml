@@ -1,6 +1,8 @@
 collections:
-  - name: Villach to Zagreb
-    routeGpxFile: "Villach_to_Ljubljana_to_Zagreb.gpx"
+  - name: Nordic chase 2026
+    routeGpxFile:
+      - "NC26_CPH-OSL_Road.gpx"
+      - "temporary-strava-activities/routes/bergen_to_bodo.gpx"
     activities:
       - stravaActivityId: "18796354199"
         notes: First activity (from strava)

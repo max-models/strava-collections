@@ -351,10 +351,14 @@ def main():
         import os
         import shutil
 
-        if site_root is not None and os.path.exists("live-tracking.yaml"):
-            shutil.copy(
-                "live-tracking.yaml", site_root / "source" / "live-tracking.yaml"
-            )
+        if site_root is not None:
+            source_dest = site_root / "source"
+            if os.path.exists("live-tracking.yaml"):
+                shutil.copy("live-tracking.yaml", source_dest / "live-tracking.yaml")
+
+            for gpx_file in glob.glob("*.gpx"):
+                shutil.copy(gpx_file, source_dest / gpx_file)
+
             print_site_instructions(site_root)
         return
 
