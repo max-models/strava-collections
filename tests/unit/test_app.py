@@ -42,7 +42,8 @@ def test_main_uses_plotly_html_for_yaml_input(monkeypatch, tmp_path):
             calls.setdefault("activity_plot_elevation", []).append((filepath, kwargs))
 
     class FakeCollection:
-        def __init__(self, name, activity_ids, force_update=False):
+        def __init__(self, name, activity_ids, **kwargs):
+            force_update = kwargs.get("force_update", False)
             calls["name"] = name
             calls["activity_ids"] = activity_ids
             calls["force_update"] = force_update
@@ -100,7 +101,8 @@ def test_main_generates_map_assets_without_mapbox_token(monkeypatch, tmp_path):
             calls.setdefault("activity_plot_elevation", []).append((filepath, kwargs))
 
     class FakeCollection:
-        def __init__(self, name, activity_ids, force_update=False):
+        def __init__(self, name, activity_ids, **kwargs):
+            force_update = kwargs.get("force_update", False)
             self.activities = [FakeActivity()]
 
         def plot_map(self, filepath, **kwargs):
@@ -156,7 +158,8 @@ def test_main_accepts_multiple_yaml_inputs(monkeypatch, tmp_path):
             calls.setdefault("activity_plot_elevation", []).append((filepath, kwargs))
 
     class FakeCollection:
-        def __init__(self, name, activity_ids, force_update=False):
+        def __init__(self, name, activity_ids, **kwargs):
+            force_update = kwargs.get("force_update", False)
             calls["collections"].append((name, activity_ids, force_update))
             self.activities = [FakeActivity(activity_ids[0][0])]
 
@@ -201,7 +204,8 @@ def test_main_defaults_to_docs_site_output(monkeypatch, tmp_path, capsys):
             return None
 
     class FakeCollection:
-        def __init__(self, name, activity_ids, force_update=False):
+        def __init__(self, name, activity_ids, **kwargs):
+            force_update = kwargs.get("force_update", False)
             self.activities = [FakeActivity()]
 
         def plot_map(self, filepath, **kwargs):
@@ -258,7 +262,8 @@ def test_main_output_scaffolds_site_template(monkeypatch, tmp_path, capsys):
             return None
 
     class FakeCollection:
-        def __init__(self, name, activity_ids, force_update=False):
+        def __init__(self, name, activity_ids, **kwargs):
+            force_update = kwargs.get("force_update", False)
             self.activities = [FakeActivity()]
 
         def plot_map(self, filepath, **kwargs):
@@ -327,7 +332,8 @@ def test_main_output_generates_yaml_map_assets_without_mapbox_token(
             return None
 
     class FakeCollection:
-        def __init__(self, name, activity_ids, force_update=False):
+        def __init__(self, name, activity_ids, **kwargs):
+            force_update = kwargs.get("force_update", False)
             self.activities = [FakeActivity()]
 
         def plot_map(self, filepath, **kwargs):
@@ -385,7 +391,8 @@ def test_main_expands_globbed_yaml_inputs(monkeypatch, tmp_path):
             return None
 
     class FakeCollection:
-        def __init__(self, name, activity_ids, force_update=False):
+        def __init__(self, name, activity_ids, **kwargs):
+            force_update = kwargs.get("force_update", False)
             seen_names.append(name)
             self.activities = [FakeActivity(activity_ids[0][0])]
 
@@ -790,7 +797,8 @@ def test_main_parses_places_from_yaml(monkeypatch, tmp_path):
             return None
 
     class FakeCollection:
-        def __init__(self, name, activity_ids, force_update=False):
+        def __init__(self, name, activity_ids, **kwargs):
+            force_update = kwargs.get("force_update", False)
             self.activities = [FakeActivity()]
 
         def plot_map(self, filepath, **kwargs):

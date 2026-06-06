@@ -157,7 +157,7 @@ function loadStravaRouteData(collections: TripData["collections"]): (GarminRoute
   const output = execFileSync(
     "python3",
     ["-m", "strava_collections.live_tracking_export", ...requests.map((request) => request.activityId)],
-    { cwd: process.cwd(), encoding: "utf-8", env },
+    { cwd: process.cwd(), encoding: "utf-8", env, maxBuffer: 10 * 1024 * 1024 },
   );
   const exported = JSON.parse(output) as Record<string, GarminRouteData | undefined>;
 
