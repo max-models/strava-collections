@@ -36,12 +36,47 @@ tikz_palette = [
     "SaddleBrown",
     "Gray",
 ]
+# Plotly's MapLibre-backed `map` subplot no longer needs a Mapbox access token.
 mapbox_token = os.getenv("MAPBOX_TOKEN")
 mapbox_token_help = (
-    "MAPBOX_TOKEN is required to render Mapbox maps and export map images. "
-    "Create or copy a public token from https://console.mapbox.com/account/access-tokens/ "
-    'and run: export MAPBOX_TOKEN="pk..."'
+    "MAPBOX_TOKEN is no longer required for the default interactive map styles."
 )
+PLACE_MARKER_SIZE = 8
+PLACE_NEARBY_TRACK_THRESHOLD_KM = 20.0
+
+
+def haversine_distance_km(
+    lat1: float | np.ndarray,
+    lon1: float | np.ndarray,
+    lat2: float | np.ndarray,
+    lon2: float | np.ndarray,
+) -> np.ndarray:
+    lat1_rad = np.radians(lat1)
+    lon1_rad = np.radians(lon1)
+    lat2_rad = np.radians(lat2)
+    lon2_rad = np.radians(lon2)
+
+    dlat = lat2_rad - lat1_rad
+    dlon = lon2_rad - lon1_rad
+
+    a = (
+        np.sin(dlat / 2.0) ** 2
+        + np.cos(lat1_rad) * np.cos(lat2_rad) * np.sin(dlon / 2.0) ** 2
+    )
+    c = 2.0 * np.arctan2(np.sqrt(a), np.sqrt(1.0 - a))
+    return 6371.0 * c
+
+
+def is_place_near_any_track(
+    place_lat: float, place_lon: float, track_coordinates: list[tuple[np.ndarray, np.ndarray]]
+) -> bool:
+    for track_lats, track_lons in track_coordinates:
+        if track_lats.size == 0:
+            continue
+        distances_km = haversine_distance_km(place_lat, place_lon, track_lats, track_lons)
+        if float(np.min(distances_km)) <= PLACE_NEARBY_TRACK_THRESHOLD_KM:
+            return True
+    return False
 
 
 class StravaCollection:
@@ -155,6 +190,7 @@ class StravaCollection:
         maxlat, minlat = -9999, 9999
 
         color_index = 0
+        track_coordinates: list[tuple[np.ndarray, np.ndarray]] = []
 
         for activity in self.activities:
 
@@ -163,15 +199,16 @@ class StravaCollection:
 
             df = activity.to_dataframe()
 
+            if df.empty:
+                continue
+
             lons, lats = df["lon"], df["lat"]
+            track_coordinates.append((np.array(lats), np.array(lons)))
 
             maxlon = max(maxlon, max(lons))
             minlon = min(minlon, min(lons))
             maxlat = max(maxlat, max(lats))
             minlat = min(minlat, min(lats))
-
-            if df.empty:
-                continue
 
             # pick a line color from palette
             line_color = palette[color_index % len(palette)]
@@ -188,7 +225,7 @@ class StravaCollection:
             ]:
 
                 fig.add_trace(
-                    go.Scattermapbox(
+                    go.Scattermap(
                         lat=x_new,
                         lon=y_new,
                         mode="lines",
@@ -198,7 +235,7 @@ class StravaCollection:
                 )
 
             # fig.add_trace(
-            #     go.Scattermapbox(
+            #     go.Scattermap(
             #         lat=df["lat"],
             #         lon=df["lon"],
             #         mode="lines",
@@ -208,12 +245,20 @@ class StravaCollection:
             # )
             color_index += 1
 
-        # Add places as red markers
+        # Add places as markers, turning green if a track passes nearby.
         if places:
             place_lats = [place["lat"] for place in places]
             place_lons = [place["lon"] for place in places]
             place_names = [
                 place.get("name", f"Place {i+1}") for i, place in enumerate(places)
+            ]
+            place_colors = [
+                "green"
+                if is_place_near_any_track(
+                    place["lat"], place["lon"], track_coordinates=track_coordinates
+                )
+                else "red"
+                for place in places
             ]
 
             # Update bounds to include places
@@ -224,13 +269,13 @@ class StravaCollection:
                 minlon = min(minlon, min(place_lons))
 
             fig.add_trace(
-                go.Scattermapbox(
+                go.Scattermap(
                     lat=place_lats,
                     lon=place_lons,
                     mode="markers",
                     marker=dict(
-                        size=12,
-                        color="red",
+                        size=PLACE_MARKER_SIZE,
+                        color=place_colors,
                         opacity=0.8,
                     ),
                     text=place_names,
@@ -242,9 +287,6 @@ class StravaCollection:
         zoom, center = zoom_center(
             maxlon, minlon, maxlat, minlat, width_to_height=width_to_height
         )
-
-        if not mapbox_token:
-            raise RuntimeError(mapbox_token_help)
 
         styles = [
             "outdoors",
@@ -261,12 +303,11 @@ class StravaCollection:
             dict(
                 label=style.replace("-", " ").title(),
                 method="relayout",
-                args=["mapbox.style", style],
+                args=["map.style", style],
             )
             for style in styles
         ]
-        mapbox_layout = {
-            "accesstoken": mapbox_token,
+        map_layout = {
             "style": "outdoors",
             "center": center,
             "zoom": zoom,
@@ -278,7 +319,7 @@ class StravaCollection:
             showlegend=False,
             margin=dict(l=0, r=0, t=0, b=0),
             # title="Strava Activities",
-            mapbox=mapbox_layout,
+            map=map_layout,
             updatemenus=[
                 dict(
                     type="dropdown",
@@ -507,7 +548,7 @@ def zoom_center(
     projection: str = "mercator",
     width_to_height: float = 3.0,
 ) -> (float, dict):
-    """Finds optimal zoom and centering for a plotly mapbox.
+    """Finds optimal zoom and centering for a Plotly map subplot.
     Must be passed (lons & lats) or lonlats.
     Temporary solution awaiting official implementation, see:
     https://github.com/plotly/plotly.js/issues/3434

@@ -23,18 +23,10 @@ secret with the printed value after a run downloads new activities.
 
 ## Mapbox
 
-Map image export uses Plotly/Kaleido with Mapbox styles, so you also need a
-Mapbox access token.
+Map image export now uses Plotly's MapLibre-backed map traces, so a Mapbox
+access token is no longer required for the default styles.
 
-1. Open https://console.mapbox.com/account/access-tokens/
-2. Sign in or create a Mapbox account.
-3. Copy your `Default public token`, or create a new public token for this
-   project. Public Mapbox tokens start with `pk`.
-4. Export it before building collections:
-
-```
-export MAPBOX_TOKEN="pk..."
-```
+The existing `MAPBOX_TOKEN` environment variable can be left unset.
 
 # Build collection
 
