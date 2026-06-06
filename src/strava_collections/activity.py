@@ -170,51 +170,74 @@ class StravaActivity:
             self.dump(filepath=pickle_path)
         self._flip = flip
 
-    def to_gpx(self) -> str:
+    def to_gpx(self, rdp_epsilon: float | None = None) -> str:
         """Return activity as a GPX XML string."""
-        latlng = self.activity_stream.get("latlng")
-        if not latlng:
+        latlng_stream = self.activity_stream.get("latlng")
+        if not latlng_stream:
             return ""
 
+        latlng = np.array(latlng_stream.data)
         altitude = self.activity_stream.get("altitude")
         elapsed = self.activity_stream.get("time")
         heart_rate = self.activity_stream.get("heartrate")
         cadence = self.activity_stream.get("cadence")
         power = self.activity_stream.get("watts")
 
+        # Prepare arrays for simplification if needed
+        alt_data = np.array(altitude.data) if altitude else None
+        elapsed_data = np.array(elapsed.data) if elapsed else None
+        hr_data = np.array(heart_rate.data) if heart_rate else None
+        cad_data = np.array(cadence.data) if cadence else None
+        pwr_data = np.array(power.data) if power else None
+
+        if rdp_epsilon is not None:
+            # We only simplify based on lat/lon
+            indices = fastrdp.rdp_indices(latlng[:, 0], latlng[:, 1], rdp_epsilon)
+            latlng = latlng[indices]
+            if alt_data is not None:
+                alt_data = alt_data[indices]
+            if elapsed_data is not None:
+                elapsed_data = elapsed_data[indices]
+            if hr_data is not None:
+                hr_data = hr_data[indices]
+            if cad_data is not None:
+                cad_data = cad_data[indices]
+            if pwr_data is not None:
+                pwr_data = pwr_data[indices]
+
         start = self.activity.start_date_local or self.activity.start_date
         name = self.activity.name or f"Activity {self.activity_id}"
-        
+
         trkpts = []
-        for index, point in enumerate(latlng.data):
-            lat, lon = point
-            
+        for index in range(len(latlng)):
+            lat, lon = latlng[index]
+
             inner = []
-            if altitude:
-                inner.append(f"<ele>{altitude.data[index]:.2f}</ele>")
-            
-            if isinstance(start, datetime) and elapsed:
-                time_val = start + timedelta(seconds=float(elapsed.data[index]))
+            if alt_data is not None:
+                inner.append(f"<ele>{alt_data[index]:.2f}</ele>")
+
+            if isinstance(start, datetime) and elapsed_data is not None:
+                time_val = start + timedelta(seconds=float(elapsed_data[index]))
                 inner.append(f"<time>{time_val.isoformat()}Z</time>")
-            
+
             extensions = []
-            if heart_rate or cadence:
+            if hr_data is not None or cad_data is not None:
                 ext = ["<gpxtpx:TrackPointExtension>"]
-                if heart_rate:
-                    ext.append(f"<gpxtpx:hr>{heart_rate.data[index]}</gpxtpx:hr>")
-                if cadence:
-                    ext.append(f"<gpxtpx:cad>{cadence.data[index]}</gpxtpx:cad>")
+                if hr_data is not None:
+                    ext.append(f"<gpxtpx:hr>{int(hr_data[index])}</gpxtpx:hr>")
+                if cad_data is not None:
+                    ext.append(f"<gpxtpx:cad>{int(cad_data[index])}</gpxtpx:cad>")
                 ext.append("</gpxtpx:TrackPointExtension>")
                 extensions.append("\n".join(ext))
-            
-            if power:
-                extensions.append(f"<power>{power.data[index]}</power>")
-                
+
+            if pwr_data is not None:
+                extensions.append(f"<power>{int(pwr_data[index])}</power>")
+
             if extensions:
                 inner.append("<extensions>")
                 inner.extend(extensions)
                 inner.append("</extensions>")
-                
+
             inner_str = "".join(inner)
             trkpts.append(f'      <trkpt lat="{lat}" lon="{lon}">{inner_str}</trkpt>')
 
@@ -329,7 +352,7 @@ class StravaActivity:
             go.Scatter(
                 x=df["lon"],
                 y=df["lat"],
-                mode="lines+markers",
+                mode="lines",
                 name=self.activity.name or f"Activity {self.activity.id}",
             )
         )

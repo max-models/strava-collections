@@ -24,7 +24,7 @@ def build_strava_route_data(activity_id: int) -> str | dict[str, Any]:
     try:
         with redirect_stdout(StringIO()):
             activity = StravaActivity(activity_id=activity_id)
-        gpx = activity.to_gpx()
+        gpx = activity.to_gpx(rdp_epsilon=0.0001)
         if not gpx:
             return {"status": "empty"}
         return gpx

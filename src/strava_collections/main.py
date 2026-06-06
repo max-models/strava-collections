@@ -355,6 +355,30 @@ def main():
             source_dest = site_root / "source"
             if os.path.exists("live-tracking.yaml"):
                 shutil.copy("live-tracking.yaml", source_dest / "live-tracking.yaml")
+                # Also copy referenced GPX files in live-tracking.yaml
+                with open("live-tracking.yaml", "r", encoding="utf-8") as f:
+                    try:
+                        lt_data = yaml.safe_load(f)
+                        for col in lt_data.get("collections", []):
+                            # Collection-level GPX
+                            gpx_files = col.get("routeGpxFile", [])
+                            if isinstance(gpx_files, str):
+                                gpx_files = [gpx_files]
+                            # Activity-level GPX
+                            for activity in col.get("activities", []):
+                                act_gpx = activity.get("routeGpxFile", [])
+                                if isinstance(act_gpx, str):
+                                    gpx_files.append(act_gpx)
+                                else:
+                                    gpx_files.extend(act_gpx)
+
+                            for gf in gpx_files:
+                                if os.path.exists(gf):
+                                    dest = source_dest / gf
+                                    dest.parent.mkdir(parents=True, exist_ok=True)
+                                    shutil.copy(gf, dest)
+                    except Exception as e:
+                        print(f"Warning: could not parse live-tracking.yaml for GPX syncing: {e}")
 
             for gpx_file in glob.glob("*.gpx"):
                 shutil.copy(gpx_file, source_dest / gpx_file)
