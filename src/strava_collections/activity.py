@@ -146,6 +146,7 @@ class StravaActivity:
         flip: bool = False,
         force_update: bool = False,
         photos_size: int = 640,
+        verbose: bool = False,
     ):
         self._activity_id = activity_id
         os.makedirs(name=CACHE_PATH, exist_ok=True)

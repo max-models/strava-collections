@@ -95,6 +95,7 @@ def generate_collection(
     fallback_static_dir: Path | None,
     args,
     places: list[dict] | None = None,
+    verbose: bool = False,
 ) -> None:
     collection_filename = "collection-" + collection_name.lower().replace(" ", "-")
     activity_ids_flip = parse_activity_ids(activity_ids)
@@ -103,6 +104,7 @@ def generate_collection(
         name=collection_name,
         activity_ids=activity_ids_flip,
         force_update=args.force_update,
+        verbose=verbose,
     )
 
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -135,6 +137,7 @@ def generate_collection(
                     / f"activity-{activity.activity_id}.{elevation_extension}"
                 ),
                 backend=args.backend,
+                verbose=verbose,
             )
 
     collection.plot_elevation(filepath=str(elev_path), backend=args.backend)
@@ -145,6 +148,7 @@ def generate_collection(
         linewidths=[8, 2],
         width_to_height=3.0,
         places=places,
+        verbose=verbose,
     )
     collection.plot_map(
         filepath=str(map_path.with_suffix(".png")),
@@ -152,6 +156,7 @@ def generate_collection(
         height=500,
         width_to_height=1.0,
         places=places,
+        verbose=verbose,
     )
     collection.plot_map(
         filepath=str(path_static / f"{collection_filename}-map-thick.png"),
@@ -159,6 +164,7 @@ def generate_collection(
         height=500,
         width_to_height=1.0,
         places=places,
+        verbose=verbose,
     )
 
     # create a fullscreen HTML variant by post-processing the generated map HTML
@@ -219,7 +225,9 @@ def generate_collection(
         print(f"Removed legacy markdown page at {legacy_markdown_path}")
 
 
-def generate_collection_from_yaml(input_path: str, args) -> Path | None:
+def generate_collection_from_yaml(
+    input_path: str, args, verbose: bool = False
+) -> Path | None:
     with open(input_path, "r", encoding="utf-8") as f:
         data = yaml.safe_load(f)
 
@@ -231,6 +239,7 @@ def generate_collection_from_yaml(input_path: str, args) -> Path | None:
         fallback_static_dir=Path(data["output_dir"]).resolve() / "_static",
         args=args,
         places=data.get("places"),
+        verbose=verbose,
     )
     return site_root
 
@@ -298,7 +307,39 @@ def main():
         help="Generate and embed each activity elevation plot in the collection page.",
     )
 
+    parser.add_argument(
+        "--download",
+        action="store_true",
+        help="Download Strava activity streams to JSON",
+    )
+
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="Enable verbose output",
+    )
+
     args = parser.parse_args()
+
+    if args.download:
+        import json
+        from pathlib import Path
+
+        from strava_collections.activity import StravaActivity
+
+        for aid in args.ids:
+            act = StravaActivity(int(aid))
+            stream = act._activity_stream
+            data = {}
+            for k, v in stream.items():
+                data[k] = v.data
+            out_path = Path("docs/source") / f"strava_{aid}.json"
+            out_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(out_path, "w") as f:
+                json.dump(data, f)
+            print(f"Downloaded {aid} to {out_path}")
+        return
 
     site_root: Path | None = None
     if args.input:
@@ -307,6 +348,13 @@ def main():
             site_root = generate_collection_from_yaml(input_path=input_path, args=args)
         if site_root is not None:
             sync_site(site_root)
+        import os
+        import shutil
+
+        if os.path.exists("live-tracking.yaml"):
+            shutil.copy(
+                "live-tracking.yaml", site_root / "source" / "live-tracking.yaml"
+            )
             print_site_instructions(site_root)
         return
 
@@ -320,6 +368,13 @@ def main():
     )
     if site_root is not None:
         sync_site(site_root)
+        import os
+        import shutil
+
+        if os.path.exists("live-tracking.yaml"):
+            shutil.copy(
+                "live-tracking.yaml", site_root / "source" / "live-tracking.yaml"
+            )
         print_site_instructions(site_root)
 
 
