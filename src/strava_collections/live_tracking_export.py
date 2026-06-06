@@ -89,8 +89,12 @@ def build_strava_route_data(activity_id: int) -> dict[str, Any]:
 def main() -> None:
     import argparse
 
-    parser = argparse.ArgumentParser(description="Export Strava activity routes for live tracking.")
-    parser.add_argument("activity_ids", nargs="+", help="One or more Strava activity IDs")
+    parser = argparse.ArgumentParser(
+        description="Export Strava activity routes for live tracking."
+    )
+    parser.add_argument(
+        "activity_ids", nargs="+", help="One or more Strava activity IDs"
+    )
     args = parser.parse_args()
 
     payload = {

@@ -225,7 +225,9 @@ def generate_collection(
         print(f"Removed legacy markdown page at {legacy_markdown_path}")
 
 
-def generate_collection_from_yaml(input_path: str, args, verbose: bool = False) -> Path | None:
+def generate_collection_from_yaml(
+    input_path: str, args, verbose: bool = False
+) -> Path | None:
     with open(input_path, "r", encoding="utf-8") as f:
         data = yaml.safe_load(f)
 
