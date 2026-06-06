@@ -1,9 +1,46 @@
-import type { GarminRouteData, GarminRouteOk, GarminTrackPoint } from "../lib/garmin";
-import type { PlannedRouteData } from "../lib/gpx";
+interface GarminTrackPoint {
+  lat: number;
+  lon: number;
+  time?: string;
+  distanceMeters?: number;
+  durationSecs?: number;
+  elevation?: number;
+  speedMetersPerSec?: number;
+  heartRateBeatsPerMin?: number;
+  cadenceCyclesPerMin?: number;
+  powerWatts?: number;
+}
+
+interface GarminRouteSummary {
+  totalDistanceMeters?: number;
+  totalDurationSecs?: number;
+  lastReportedTime?: string;
+  pointCount: number;
+  isActive: boolean;
+}
+
+interface GarminRouteOk {
+  status: "ok";
+  points: GarminTrackPoint[];
+  summary: GarminRouteSummary;
+}
+
+interface GarminRouteEmpty {
+  status: "empty";
+}
+
+interface GarminRouteError {
+  status: "error";
+}
+
+type GarminRouteData = GarminRouteOk | GarminRouteEmpty | GarminRouteError;
+
+interface PlannedRouteData {
+  points: Array<{ lat: number; lon: number }>;
+}
 
 interface TrackerActivity {
   color: string;
-  garminConnectUrl: string | null;
   garminLivetrackUrl: string | null;
   notes: string | null;
   routeData: GarminRouteData | null;
@@ -27,7 +64,6 @@ interface RouteEntry {
   activityLabel: string;
   color: string;
   activityIndex: number;
-  garminConnectUrl: string | null;
   garminLivetrackUrl: string | null;
   notes: string | null;
   routeData: GarminRouteOk;
@@ -89,7 +125,7 @@ export async function setupTripTracker(payload: TrackerPayload): Promise<void> {
         activityLabel: `${col.name} #${ai + 1}`,
         color: activity.color,
         activityIndex: ai,
-        livetrackUrl: activity.livetrackUrl,
+        garminLivetrackUrl: activity.garminLivetrackUrl,
         notes: activity.notes,
         routeData: activity.routeData as GarminRouteOk,
         plannedRouteData: activity.plannedRouteData,
@@ -777,11 +813,11 @@ function renderActivityList(collections: TrackerCollection[], selectedCollection
         (activity, ai) => {
           const entry = allRouteEntries.find((e) => e.collectionIndex === ci && e.activityIndex === ai);
           const gpxHref = entry ? buildGpxDownloadUrl(entry.routeData.points, `${col.name} #${ai + 1}`) : null;
-          const statusText = getActivityStatusLabel(activity.routeData, activity.livetrackUrl);
+          const statusText = getActivityStatusLabel(activity.routeData, activity.garminLivetrackUrl);
           const metrics = entry ? renderActivityMetrics(entry.routeData) : "";
           const notes = activity.notes ? `<p class="activity-notes">${escapeHtml(activity.notes)}</p>` : "";
-          const garminLink = activity.livetrackUrl
-            ? `<a class="button-link" href="${escapeHtml(activity.livetrackUrl)}" target="_blank" rel="noreferrer">Open in Garmin</a>`
+          const garminLink = activity.garminLivetrackUrl
+            ? `<a class="button-link" href="${escapeHtml(activity.garminLivetrackUrl)}" target="_blank" rel="noreferrer">Open in Garmin</a>`
             : "";
           const gpxLink = gpxHref
             ? `<a class="button-link button-link-secondary" href="${gpxHref}" download="${slugify(col.name)}-${ai + 1}.gpx">Download GPX</a>`
@@ -847,10 +883,10 @@ function getActivityStatusLabel(routeData: GarminRouteData | null, livetrackUrl:
 }
 
 function buildPlaceholderCopy(collections: TrackerCollection[]): string {
-  const anyUrl = collections.some((col) => col.activities.some((a) => a.garminConnectUrl || a.garminLivetrackUrl));
+  const anyUrl = collections.some((col) => col.activities.some((a) => a.garminLivetrackUrl));
 
   if (!anyUrl) {
-    return "Add Garmin Connect or LiveTrack URLs in <code>collections.yaml</code> once the ride has started.";
+    return "Add Garmin LiveTrack URLs in <code>live-tracking.yaml</code> once the ride has started.";
   }
 
   return "The last build could not extract route data from Garmin. Use the Garmin links in the activity list as a fallback.";

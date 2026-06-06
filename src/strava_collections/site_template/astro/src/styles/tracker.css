@@ -1,12 +1,39 @@
 :root {
+  color-scheme: light;
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --surface-muted: #f1f5f9;
+  --border: rgba(148, 163, 184, 0.28);
+  --text: #0f172a;
+  --muted: #475569;
+  --accent: #2563eb;
+  --success: #059669;
+  --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+  --live-card-border: rgba(248, 113, 113, 0.35);
+  --live-card-bg: rgba(254, 226, 226, 0.8);
+  --graph-button-bg: rgba(148, 163, 184, 0.1);
+  --graph-button-active-bg: rgba(59, 130, 246, 0.12);
+  --graph-line: rgba(148, 163, 184, 0.3);
+  --graph-label: #64748b;
+}
+
+[data-theme="dark"] {
   color-scheme: dark;
   --bg: #0f172a;
   --surface: #1e293b;
+  --surface-muted: rgba(148, 163, 184, 0.08);
   --border: rgba(148, 163, 184, 0.18);
   --text: #e2e8f0;
   --muted: #94a3b8;
   --accent: #60a5fa;
   --success: #34d399;
+  --shadow: none;
+  --live-card-border: rgba(239, 68, 68, 0.35);
+  --live-card-bg: rgba(127, 29, 29, 0.25);
+  --graph-button-bg: rgba(148, 163, 184, 0.08);
+  --graph-button-active-bg: rgba(59, 130, 246, 0.22);
+  --graph-line: rgba(148, 163, 184, 0.15);
+  --graph-label: #94a3b8;
 }
 
 * {
@@ -28,7 +55,7 @@ a {
 code {
   font-family: ui-monospace, monospace;
   font-size: 0.9em;
-  background: var(--surface);
+  background: var(--surface-muted);
   padding: 0.1em 0.35em;
   border-radius: 4px;
 }
@@ -59,6 +86,8 @@ code {
   border-radius: 12px;
   overflow: hidden;
   border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: var(--shadow);
 }
 
 .map-canvas {
@@ -103,7 +132,7 @@ code {
   padding: 0.4rem 0.9rem;
   border-radius: 999px;
   border: 1.5px solid var(--col-color, var(--accent));
-  background: rgba(148, 163, 184, 0.08);
+  background: var(--surface-muted);
   color: var(--text);
   font-size: 0.875rem;
   font-weight: 600;
@@ -128,7 +157,7 @@ code {
 }
 
 .collection-btn[aria-selected="true"] {
-  background: rgba(96, 165, 250, 0.12);
+  background: rgba(37, 99, 235, 0.1);
 }
 
 /* ── Stats grid ── */
@@ -145,6 +174,7 @@ code {
   border-radius: 8px;
   border: 1px solid var(--border);
   background: var(--surface);
+  box-shadow: var(--shadow);
 }
 
 .stat-label {
@@ -169,8 +199,9 @@ code {
 .live-stat-card {
   padding: 0.85rem 1rem;
   border-radius: 8px;
-  border: 1px solid rgba(239, 68, 68, 0.35);
-  background: rgba(127, 29, 29, 0.25);
+  border: 1px solid var(--live-card-border);
+  background: var(--live-card-bg);
+  box-shadow: var(--shadow);
 }
 
 .live-stat-card h3 {
@@ -215,7 +246,7 @@ code {
 
 .graph-toggle-button {
   border: 1px solid var(--border);
-  background: rgba(148, 163, 184, 0.08);
+  background: var(--graph-button-bg);
   color: var(--text);
   border-radius: 999px;
   padding: 0.35rem 0.75rem;
@@ -226,7 +257,7 @@ code {
 
 .graph-toggle-button.is-active {
   border-color: rgba(96, 165, 250, 0.75);
-  background: rgba(59, 130, 246, 0.22);
+  background: var(--graph-button-active-bg);
 }
 
 #graph-canvas {
@@ -238,6 +269,7 @@ code {
   border-radius: 8px;
   border: 1px solid var(--border);
   background: var(--surface);
+  box-shadow: var(--shadow);
 }
 
 .graph-card--full {
@@ -274,13 +306,13 @@ code {
 
 .graph-grid-line,
 .graph-axis {
-  stroke: rgba(148, 163, 184, 0.15);
+  stroke: var(--graph-line);
   stroke-width: 1;
 }
 
 .graph-label,
 .graph-legend-text {
-  fill: #94a3b8;
+  fill: var(--graph-label);
   font-size: 11px;
   font-family: system-ui, sans-serif;
 }
@@ -298,6 +330,7 @@ code {
   border-radius: 8px;
   border: 1px solid var(--border);
   background: var(--surface);
+  box-shadow: var(--shadow);
 }
 
 .activity-card__header {
@@ -385,7 +418,7 @@ code {
 }
 
 .theme-toggle:hover {
-  background: rgba(148, 163, 184, 0.1);
+  background: var(--surface-muted);
 }
 
 .site-header {
@@ -442,4 +475,3 @@ code {
     min-height: 340px;
   }
 }
-

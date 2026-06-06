@@ -1,5 +1,4 @@
 export interface CollectionActivity {
-  garminConnectUrl?: string | null;
   garminLivetrackUrl?: string | null;
   notes?: string;
   routeGpxFile?: string | null;

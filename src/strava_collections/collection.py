@@ -212,6 +212,7 @@ class StravaCollection:
         name: str,
         activity_ids: list[tuple],
         force_update: bool = False,
+        verbose: bool = False,
     ) -> None:
         self._name = name
 
@@ -221,6 +222,7 @@ class StravaCollection:
             StravaActivity(
                 *(activity_id),
                 force_update=force_update,
+                verbose=verbose,
             )
             for activity_id in activity_ids
         ]
