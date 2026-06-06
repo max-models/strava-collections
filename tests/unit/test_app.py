@@ -2,9 +2,15 @@ from datetime import datetime
 from pathlib import Path
 from types import SimpleNamespace
 
+import pytest
+
+import strava_collections.activity as activity_module
 from strava_collections.activity import StravaActivity
 from strava_collections.astro_page import markdown_to_body_html, render_collection_page
-from strava_collections.collection import StravaCollection
+from strava_collections.collection import (
+    PLACE_MARKER_SIZE,
+    StravaCollection,
+)
 from strava_collections.main import elevation_extension_for_backend, main
 from strava_collections.site_sync import sync_collections
 from strava_collections.site_template import build_site_paths, ensure_site_template
@@ -71,7 +77,7 @@ def test_main_uses_plotly_html_for_yaml_input(monkeypatch, tmp_path):
     assert not legacy_markdown.exists()
 
 
-def test_main_reuses_existing_map_assets_without_mapbox_token(monkeypatch, tmp_path):
+def test_main_generates_map_assets_without_mapbox_token(monkeypatch, tmp_path):
     yaml_path = tmp_path / "taiwan.yml"
     yaml_path.write_text(
         "\n".join(
@@ -84,11 +90,6 @@ def test_main_reuses_existing_map_assets_without_mapbox_token(monkeypatch, tmp_p
         ),
         encoding="utf-8",
     )
-
-    static_dir = tmp_path / "_static"
-    static_dir.mkdir()
-    for suffix in ("map.html", "map.png", "map-thick.png"):
-        (static_dir / f"collection-taiwan-{suffix}").write_text("", encoding="utf-8")
 
     calls = {}
 
@@ -120,7 +121,10 @@ def test_main_reuses_existing_map_assets_without_mapbox_token(monkeypatch, tmp_p
 
     main()
 
-    assert "plot_map" not in calls
+    assert len(calls["plot_map"]) == 3
+    assert calls["plot_map"][0][0].endswith("collection-taiwan-map.html")
+    assert calls["plot_map"][1][0].endswith("collection-taiwan-map.png")
+    assert calls["plot_map"][2][0].endswith("collection-taiwan-map-thick.png")
     assert calls["plot_elevation"][0].endswith("collection-taiwan-elev.html")
     assert calls["generate_astro"][0].endswith("collection-taiwan.astro")
 
@@ -291,7 +295,9 @@ def test_main_output_scaffolds_site_template(monkeypatch, tmp_path, capsys):
     assert "  npm run build:from-generated" in stdout
 
 
-def test_main_output_reuses_yaml_map_assets_without_mapbox_token(monkeypatch, tmp_path):
+def test_main_output_generates_yaml_map_assets_without_mapbox_token(
+    monkeypatch, tmp_path
+):
     legacy_output = tmp_path / "legacy-source"
     legacy_static = legacy_output / "_static"
     legacy_static.mkdir(parents=True)
@@ -325,7 +331,7 @@ def test_main_output_reuses_yaml_map_assets_without_mapbox_token(monkeypatch, tm
             self.activities = [FakeActivity()]
 
         def plot_map(self, filepath, **kwargs):
-            raise AssertionError("plot_map should not run when fallback assets exist")
+            Path(filepath).write_text(Path(filepath).name, encoding="utf-8")
 
         def plot_elevation(self, filepath, **kwargs):
             return None
@@ -346,13 +352,13 @@ def test_main_output_reuses_yaml_map_assets_without_mapbox_token(monkeypatch, tm
     generated_static = tmp_path / "site" / "source" / "_static"
     assert (generated_static / "collection-taiwan-map.html").read_text(
         encoding="utf-8"
-    ) == "map.html"
+    ) == "collection-taiwan-map.html"
     assert (generated_static / "collection-taiwan-map.png").read_text(
         encoding="utf-8"
-    ) == "map.png"
+    ) == "collection-taiwan-map.png"
     assert (generated_static / "collection-taiwan-map-thick.png").read_text(
         encoding="utf-8"
-    ) == "map-thick.png"
+    ) == "collection-taiwan-map-thick.png"
 
 
 def test_main_expands_globbed_yaml_inputs(monkeypatch, tmp_path):
@@ -455,6 +461,75 @@ def test_activity_summary_gallery_images_keep_lightbox_class_and_accessibility()
     assert 'loading="lazy"' in markdown
     assert 'decoding="async"' in markdown
     assert 'alt="Day 1 photo 1"' in markdown
+
+
+def test_activity_download_reuses_rotated_refresh_token(monkeypatch, tmp_path, capsys):
+    activity_module._reset_auth_state_for_testing()
+
+    calls = {"refresh_tokens": [], "stream_ids": [], "activity_ids": []}
+
+    class FakeClient:
+        def refresh_access_token(self, client_id, client_secret, refresh_token):
+            calls["refresh_tokens"].append(refresh_token)
+            assert client_id == "client-id"
+            assert client_secret == "client-secret"
+            return {
+                "access_token": "access-token",
+                "refresh_token": "rotated-refresh-token",
+            }
+
+        def get_activity_streams(self, activity_id):
+            calls["stream_ids"].append(activity_id)
+            return {
+                "distance": SimpleNamespace(data=[0.0]),
+                "altitude": SimpleNamespace(data=[0.0]),
+            }
+
+        def get_activity(self, activity_id):
+            calls["activity_ids"].append(activity_id)
+            return SimpleNamespace(
+                id=activity_id,
+                name=f"Activity {activity_id}",
+                map=SimpleNamespace(polyline=""),
+                description="",
+                start_date_local=datetime(2025, 1, 1),
+                distance=0.0,
+                total_elevation_gain=0.0,
+                elapsed_time=0,
+            )
+
+    monkeypatch.setattr(activity_module, "CACHE_PATH", str(tmp_path))
+    monkeypatch.setattr(activity_module, "Client", FakeClient)
+    monkeypatch.setattr(
+        activity_module, "get_activity_photos_from_web", lambda *args, **kwargs: []
+    )
+    monkeypatch.setattr(
+        activity_module.StravaActivity, "dump", lambda self, filepath: None
+    )
+    monkeypatch.setenv("STRAVA_CLIENT_ID", "client-id")
+    monkeypatch.setenv("STRAVA_CLIENT_SECRET", "client-secret")
+    monkeypatch.setenv("STRAVA_REFRESH_TOKEN", "original-refresh-token")
+
+    StravaActivity(123, force_update=True)
+    StravaActivity(456, force_update=True)
+
+    captured = capsys.readouterr()
+    assert calls["refresh_tokens"] == ["original-refresh-token"]
+    assert calls["stream_ids"] == [123, 456]
+    assert calls["activity_ids"] == [123, 456]
+    assert 'export STRAVA_REFRESH_TOKEN="rotated-refresh-token"' in captured.err
+
+    activity_module._reset_auth_state_for_testing()
+
+
+def test_get_authenticated_client_requires_refresh_token(monkeypatch):
+    activity_module._reset_auth_state_for_testing()
+    monkeypatch.delenv("STRAVA_REFRESH_TOKEN", raising=False)
+
+    with pytest.raises(RuntimeError, match="STRAVA_REFRESH_TOKEN"):
+        activity_module.get_authenticated_client()
+
+    activity_module._reset_auth_state_for_testing()
 
 
 def test_collection_generate_astro_writes_astro_page(tmp_path):
@@ -741,3 +816,31 @@ def test_main_parses_places_from_yaml(monkeypatch, tmp_path):
     for call in plot_map_calls:
         assert "places" in call
         assert call["places"] == [{"name": "Taipei", "lat": 25.0330, "lon": 121.5654}]
+
+
+def test_plot_map_colors_places_green_when_track_is_within_20km(monkeypatch):
+    class DataFrameActivity:
+        def __init__(self, coords):
+            self.no_map = False
+            self._coords = coords
+
+        def to_dataframe(self):
+            return __import__("pandas").DataFrame(self._coords, columns=["lat", "lon"])
+
+    collection = StravaCollection.__new__(StravaCollection)
+    collection._activities = [
+        DataFrameActivity([(52.52, 13.405), (52.6, 13.5)]),
+    ]
+
+    monkeypatch.setattr("strava_collections.collection.mapbox_token", "test-token")
+
+    fig = collection.plot_map(
+        places=[
+            {"name": "Berlin", "lat": 52.52, "lon": 13.405},
+            {"name": "Paris", "lat": 48.8566, "lon": 2.3522},
+        ]
+    )
+
+    marker_trace = fig.data[-1]
+    assert marker_trace.marker.size == PLACE_MARKER_SIZE
+    assert list(marker_trace.marker.color) == ["green", "red"]

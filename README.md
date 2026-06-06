@@ -15,20 +15,18 @@ python update_strava_tokens.py
 The script prints commands you can copy and paste to export
 `STRAVA_REFRESH_TOKEN` and `STRAVA_ACCESS_TOKEN`.
 
+Strava refresh tokens rotate when the app refreshes access. `strava-collections`
+now refreshes once per run and prints the replacement
+`STRAVA_REFRESH_TOKEN` to stderr whenever Strava rotates it. Save that new token
+before the next uncached download. In GitHub Actions, update the repository
+secret with the printed value after a run downloads new activities.
+
 ## Mapbox
 
-Map image export uses Plotly/Kaleido with Mapbox styles, so you also need a
-Mapbox access token.
+Map image export now uses Plotly's MapLibre-backed map traces, so a Mapbox
+access token is no longer required for the default styles.
 
-1. Open https://console.mapbox.com/account/access-tokens/
-2. Sign in or create a Mapbox account.
-3. Copy your `Default public token`, or create a new public token for this
-   project. Public Mapbox tokens start with `pk`.
-4. Export it before building collections:
-
-```
-export MAPBOX_TOKEN="pk..."
-```
+The existing `MAPBOX_TOKEN` environment variable can be left unset.
 
 # Build collection
 

@@ -1,5 +1,6 @@
 import os
 import pickle
+import sys
 from datetime import timedelta
 
 import fastrdp
@@ -19,6 +20,58 @@ from strava_collections.utils import (
 
 # CACHE_PATH = strava_collections.__path__[0]
 CACHE_PATH = os.getenv("STRAVA_CACHE_DIR", "cache")
+_AUTHENTICATED_CLIENT: Client | None = None
+_ROTATED_REFRESH_TOKEN: str | None = None
+
+
+def _reset_auth_state_for_testing() -> None:
+    global _AUTHENTICATED_CLIENT, _ROTATED_REFRESH_TOKEN
+    _AUTHENTICATED_CLIENT = None
+    _ROTATED_REFRESH_TOKEN = None
+
+
+def _required_strava_env(name: str) -> str:
+    value = os.getenv(name)
+    if value:
+        return value
+    raise RuntimeError(
+        f"Missing required environment variable {name}. "
+        "Run `python update_strava_tokens.py` and export the printed credentials."
+    )
+
+
+def get_authenticated_client() -> Client:
+    global _AUTHENTICATED_CLIENT, _ROTATED_REFRESH_TOKEN
+
+    if _AUTHENTICATED_CLIENT is not None:
+        return _AUTHENTICATED_CLIENT
+
+    client_id = _required_strava_env("STRAVA_CLIENT_ID")
+    client_secret = _required_strava_env("STRAVA_CLIENT_SECRET")
+    refresh_token = _ROTATED_REFRESH_TOKEN or _required_strava_env(
+        "STRAVA_REFRESH_TOKEN"
+    )
+
+    client = Client()
+    token_response = client.refresh_access_token(
+        client_id=client_id,
+        client_secret=client_secret,
+        refresh_token=refresh_token,
+    )
+    client.access_token = token_response["access_token"]
+
+    rotated_refresh_token = token_response["refresh_token"]
+    _ROTATED_REFRESH_TOKEN = rotated_refresh_token
+    _AUTHENTICATED_CLIENT = client
+
+    if rotated_refresh_token != refresh_token:
+        print(
+            "Strava rotated the refresh token. Update STRAVA_REFRESH_TOKEN to:\n"
+            f'export STRAVA_REFRESH_TOKEN="{rotated_refresh_token}"',
+            file=sys.stderr,
+        )
+
+    return client
 
 
 def embed_iframe(
@@ -44,6 +97,46 @@ def embed_image(
 <img src="{src}" alt="{alt}" style="width:100%; height:{height}; aspect-ratio:{aspect_ratio}; object-fit:contain; display:block;" />\n\n"""
 
 
+def get_icon_link(
+    src,
+    href=None,
+):
+    """Return an HTML <img> tag, optionally wrapped in a link."""
+
+    if href:
+        img_tag = f'<img src="{src}" class="icon">'
+        return (
+            f'<a href="{href}" class="icon-link" target="_blank" rel="noopener">'
+            + f"{img_tag}"
+            + "</a>"
+        )
+    else:
+        return f'<img src="{src}" class="static-icon">'
+
+    # <a href="https://www.strava.com/activities/9327605554" class="icon-link" target="_blank" rel="noopener">
+    # <img src="https://cdn.worldvectorlogo.com/logos/strava-2.svg" class="icon">
+    # </a>
+
+
+def get_activity_photos_from_web(activity_id, access_token, size=5000):
+    # https://communityhub.strava.com/t5/developer-discussions/download-all-photos-of-my-own-activities/m-p/11262
+    # Construct the URL manually
+    url = f"https://www.strava.com/api/v3/activities/{activity_id}/photos?size={size}"
+
+    # Headers including the OAuth token for authentication
+    headers = {"Authorization": f"Bearer {access_token}"}
+
+    # Making the GET request to Strava API
+    response = requests.get(url, headers=headers)
+
+    # Check if the request was successful
+    if response.status_code == 200:
+        photos = response.json()  # The photos data in JSON format
+        return photos
+    else:
+        print("Error:", response.status_code, response.text)
+
+
 class StravaActivity:
     """Wrapper around stravalib's DetailedActivity with convenience methods."""
 
@@ -66,21 +159,7 @@ class StravaActivity:
             self._photos = data["photos"]
         else:
             print(f"{self.activity_id} (downloaded)", end=", ")
-
-            # Load Strava credentials from environment
-            client_id = os.getenv("STRAVA_CLIENT_ID")
-            client_secret = os.getenv("STRAVA_CLIENT_SECRET")
-            refresh_token = os.getenv("STRAVA_REFRESH_TOKEN")
-
-            client = Client()
-
-            # Refresh access token
-            token_response = client.refresh_access_token(
-                client_id=client_id,
-                client_secret=client_secret,
-                refresh_token=refresh_token,
-            )
-            client.access_token = token_response["access_token"]
+            client = get_authenticated_client()
 
             self._activity_stream = client.get_activity_streams(activity_id=activity_id)
             self._activity = client.get_activity(activity_id=activity_id)
@@ -322,43 +401,3 @@ class StravaActivity:
     def __getattr__(self, name):
         """Delegate attribute access to the underlying DetailedActivity."""
         return getattr(self.activity, name)
-
-
-def get_icon_link(
-    src,
-    href=None,
-):
-    """Return an HTML <img> tag, optionally wrapped in a link."""
-
-    if href:
-        img_tag = f'<img src="{src}" class="icon">'
-        return (
-            f'<a href="{href}" class="icon-link" target="_blank" rel="noopener">'
-            + f"{img_tag}"
-            + "</a>"
-        )
-    else:
-        return f'<img src="{src}" class="static-icon">'
-
-    # <a href="https://www.strava.com/activities/9327605554" class="icon-link" target="_blank" rel="noopener">
-    # <img src="https://cdn.worldvectorlogo.com/logos/strava-2.svg" class="icon">
-    # </a>
-
-
-def get_activity_photos_from_web(activity_id, access_token, size=5000):
-    # https://communityhub.strava.com/t5/developer-discussions/download-all-photos-of-my-own-activities/m-p/11262
-    # Construct the URL manually
-    url = f"https://www.strava.com/api/v3/activities/{activity_id}/photos?size={size}"
-
-    # Headers including the OAuth token for authentication
-    headers = {"Authorization": f"Bearer {access_token}"}
-
-    # Making the GET request to Strava API
-    response = requests.get(url, headers=headers)
-
-    # Check if the request was successful
-    if response.status_code == 200:
-        photos = response.json()  # The photos data in JSON format
-        return photos
-    else:
-        print("Error:", response.status_code, response.text)
