@@ -1,0 +1,8 @@
+name: "Build all collections"
+description: "Wrapper action for building all collections"
+runs:
+  using: "composite"
+  steps:
+    - name: Loop over all collections and build
+      shell: bash
+      run: strava-collections -i 'examples/bavarian-alps-traverse.yml'
