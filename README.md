@@ -15,6 +15,12 @@ python update_strava_tokens.py
 The script prints commands you can copy and paste to export
 `STRAVA_REFRESH_TOKEN` and `STRAVA_ACCESS_TOKEN`.
 
+Strava refresh tokens rotate when the app refreshes access. `strava-collections`
+now refreshes once per run and prints the replacement
+`STRAVA_REFRESH_TOKEN` to stderr whenever Strava rotates it. Save that new token
+before the next uncached download. In GitHub Actions, update the repository
+secret with the printed value after a run downloads new activities.
+
 ## Mapbox
 
 Map image export uses Plotly/Kaleido with Mapbox styles, so you also need a
