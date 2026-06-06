@@ -477,7 +477,10 @@ def test_activity_download_reuses_rotated_refresh_token(monkeypatch, tmp_path, c
 
         def get_activity_streams(self, activity_id):
             calls["stream_ids"].append(activity_id)
-            return {"distance": SimpleNamespace(data=[0.0]), "altitude": SimpleNamespace(data=[0.0])}
+            return {
+                "distance": SimpleNamespace(data=[0.0]),
+                "altitude": SimpleNamespace(data=[0.0]),
+            }
 
         def get_activity(self, activity_id):
             calls["activity_ids"].append(activity_id)
@@ -494,8 +497,12 @@ def test_activity_download_reuses_rotated_refresh_token(monkeypatch, tmp_path, c
 
     monkeypatch.setattr(activity_module, "CACHE_PATH", str(tmp_path))
     monkeypatch.setattr(activity_module, "Client", FakeClient)
-    monkeypatch.setattr(activity_module, "get_activity_photos_from_web", lambda *args, **kwargs: [])
-    monkeypatch.setattr(activity_module.StravaActivity, "dump", lambda self, filepath: None)
+    monkeypatch.setattr(
+        activity_module, "get_activity_photos_from_web", lambda *args, **kwargs: []
+    )
+    monkeypatch.setattr(
+        activity_module.StravaActivity, "dump", lambda self, filepath: None
+    )
     monkeypatch.setenv("STRAVA_CLIENT_ID", "client-id")
     monkeypatch.setenv("STRAVA_CLIENT_SECRET", "client-secret")
     monkeypatch.setenv("STRAVA_REFRESH_TOKEN", "original-refresh-token")

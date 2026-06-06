@@ -48,7 +48,9 @@ def get_authenticated_client() -> Client:
 
     client_id = _required_strava_env("STRAVA_CLIENT_ID")
     client_secret = _required_strava_env("STRAVA_CLIENT_SECRET")
-    refresh_token = _ROTATED_REFRESH_TOKEN or _required_strava_env("STRAVA_REFRESH_TOKEN")
+    refresh_token = _ROTATED_REFRESH_TOKEN or _required_strava_env(
+        "STRAVA_REFRESH_TOKEN"
+    )
 
     client = Client()
     token_response = client.refresh_access_token(
