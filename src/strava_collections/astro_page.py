@@ -53,6 +53,9 @@ TAG_RE = re.compile(r"<[^>]+>")
 WHITESPACE_RE = re.compile(r"\s+")
 
 
+METADATA_FROM_ASTRO_RE = re.compile(r"const metadata = (?P<json>\{.*?\});", re.DOTALL)
+
+
 def strip_frontmatter(text: str) -> str:
     return FRONTMATTER_RE.sub("", text, count=1)
 
@@ -76,6 +79,13 @@ def title_from_astro(source_text: str) -> str:
     if not match:
         raise ValueError("Could not extract title from Astro source")
     return json.loads(match.group("literal"))
+
+
+def metadata_from_astro(source_text: str) -> dict:
+    match = METADATA_FROM_ASTRO_RE.search(source_text)
+    if not match:
+        return {}
+    return json.loads(match.group("json"))
 
 
 def load_local_plotly_asset(asset_path: Path) -> str:
@@ -151,7 +161,6 @@ def wrap_gallery_images(markup: str) -> str:
 def prepare_collection_markup(markup: str, asset_dir: Path) -> str:
     prepared = strip_legacy_lightbox(markup)
     prepared = promote_description_titles(prepared)
-    prepared = inline_local_plotly_iframes(prepared, asset_dir=asset_dir)
     prepared = wrap_gallery_images(prepared)
     return prepared
 
@@ -222,18 +231,41 @@ def body_html_to_astro_markup(body_html: str) -> tuple[str, list[dict[str, str]]
     return inline_scripts_for_astro(markup), headings
 
 
-def render_collection_page(title: str, body_html: str) -> str:
+def render_collection_page(
+    title: str, body_html: str, metadata: dict | None = None
+) -> str:
     markup, headings = body_html_to_astro_markup(body_html)
+    metadata_json = json.dumps(metadata or {}, indent=2)
     return (
         "---\n"
-        "import CollectionPage from '../../components/CollectionPage.astro';\n\n"
+        "import CollectionPage from '../../components/CollectionPage.astro';\n"
+        "import Map from '../../components/Map.astro';\n"
+        "import { loadStravaRouteData, loadPlannedRouteData } from '../../scripts/data-helpers';\n\n"
         f"const title = {json.dumps(title)};\n"
         f"const headings = {json.dumps(headings, indent=2)};\n"
+        f"const metadata = {metadata_json};\n"
         "const base = import.meta.env.BASE_URL.endsWith('/')\n"
         "  ? import.meta.env.BASE_URL\n"
-        "  : `${import.meta.env.BASE_URL}/`;\n"
+        "  : `${import.meta.env.BASE_URL}/`;\n\n"
+        "// Prepare map data\n"
+        "const palette = ['#636EFA', '#EF553B', '#00CC96', '#AB63FA', '#FFA15A', '#19D3F3', '#FF6692', '#B6E880', '#FF97FF', '#FECB52'];\n"
+        "const stravaRouteData = loadStravaRouteData(metadata.activities || []);\n"
+        "const trackerPayload = {\n"
+        "  collections: [{\n"
+        "    name: title,\n"
+        "    color: '#fc4c02',\n"
+        "    plannedRouteData: loadPlannedRouteData(metadata.routeGpxFile),\n"
+        "    activities: (metadata.activities || []).map((act, i) => ({\n"
+        "      ...act,\n"
+        "      color: palette[i % palette.length],\n"
+        "      routeData: stravaRouteData[i],\n"
+        "      plannedRouteData: loadPlannedRouteData(act.routeGpxFile),\n"
+        "    }))\n"
+        "  }]\n"
+        "};\n"
         "---\n\n"
         "<CollectionPage title={title} headings={headings}>\n"
-        f"{markup}\n"
+        "  <Map payload={trackerPayload} />\n"
+        f"  {markup}\n"
         "</CollectionPage>\n"
     )

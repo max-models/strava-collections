@@ -1,0 +1,8 @@
+collection_name: "Villach to Zagreb"
+output_dir: "docs/source/"
+routeGpxFile: "Villach_to_Ljubljana_to_Zagreb.gpx"
+activities:
+  - stravaActivityId: "18796354199"
+    notes: First activity (from strava)
+  - garminLivetrackUrl: "https://livetrack.garmin.com/session/19e97698-b449-8624-b05a-7942e797fb00/token/5C552D8176DABA2497316FF881E69"
+    notes: Second activity (live)

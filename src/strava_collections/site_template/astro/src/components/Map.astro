@@ -1,0 +1,92 @@
+---
+import 'leaflet/dist/leaflet.css';
+
+interface Props {
+  containerId?: string;
+  className?: string;
+  payload?: any;      // The unified tracker payload structure
+  autoInit?: boolean; // Whether to initialize the map automatically
+}
+
+const { 
+  containerId = "collection-map", 
+  className = "collection-map-canvas",
+  payload,
+  autoInit = true
+} = Astro.props;
+
+const serializeDataForScript = (value: unknown): string =>
+  JSON.stringify(value).replace(/</g, "\u003c").replace(/>/g, "\u003e").replace(/&/g, "\u0026");
+---
+
+<div id={containerId} class={className} data-auto-init={String(autoInit)}></div>
+
+<script id="map-data" type="application/json" set:html={serializeDataForScript(payload)}></script>
+
+<script>
+  import { setupMap, type MapTrack } from "../scripts/map-renderer";
+
+  async function initializeMap() {
+    const dataEl = document.getElementById("map-data");
+    const container = document.querySelector('[data-auto-init]');
+    if (container?.getAttribute('data-auto-init') !== 'true') return;
+    if (!dataEl?.textContent) return;
+    
+    const payload = JSON.parse(dataEl.textContent);
+    if (!payload?.collections) return;
+
+    // Map the tracker payload structure to MapRenderer format
+    const allTracks: MapTrack[] = [];
+    const allPlanned: MapTrack[] = [];
+
+    payload.collections.forEach(col => {
+      if (col.plannedRouteData) {
+        allPlanned.push({
+          name: `${col.name} (Planned)`,
+          points: col.plannedRouteData.points,
+          color: "#64748b",
+          isPlanned: true
+        });
+      }
+
+      col.activities.forEach(act => {
+        if (act.plannedRouteData) {
+          allPlanned.push({
+            name: `Activity Planned`,
+            points: act.plannedRouteData.points,
+            color: "#64748b",
+            isPlanned: true
+          });
+        }
+        
+        if (act.routeData?.status === "ok") {
+          allTracks.push({
+            name: act.notes || "Activity",
+            points: act.routeData.points,
+            color: act.color
+          });
+        }
+      });
+    });
+
+    setupMap({
+      containerId: "collection-map",
+      tracks: allTracks,
+      plannedRoutes: allPlanned
+    });
+  }
+
+  // Handle both initial load and view transitions if enabled
+  initializeMap();
+  document.addEventListener('astro:after-swap', initializeMap);
+</script>
+
+<style>
+  .collection-map-canvas {
+    height: 450px;
+    width: 100%;
+    border-radius: 12px;
+    z-index: 1;
+    border: 1px solid #e2e8f0;
+  }
+</style>

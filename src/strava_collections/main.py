@@ -1,6 +1,9 @@
 import argparse
 import glob
+import os
 import re
+import subprocess
+import sys
 from pathlib import Path
 
 import yaml
@@ -39,20 +42,26 @@ def resolve_input_paths(input_patterns: list[str]) -> list[str]:
     return resolved_paths
 
 
-def parse_activity_ids(activity_ids: list[str]) -> list[tuple[int, bool]]:
-    activity_ids_flip = []
-    for activity_id in activity_ids:
-        normalized = activity_id.replace("https://www.strava.com/activities/", "")
+def parse_single_strava_id(activity_id: str) -> tuple[int, bool]:
+    normalized = activity_id.replace("https://www.strava.com/activities/", "")
 
-        if normalized.lower().endswith("f"):
-            flip = True
-            parsed_id = int(normalized[:-1])
-        else:
-            flip = False
-            parsed_id = int(normalized)
-        activity_ids_flip.append((parsed_id, flip))
+    if normalized.lower().endswith("f"):
+        return (int(normalized[:-1]), True)
+    return (int(normalized), False)
 
-    return activity_ids_flip
+
+def parse_activity_inputs(activities: list[str | dict]) -> list[dict]:
+    parsed = []
+    for item in activities:
+        if isinstance(item, str):
+            parsed.append({"strava_id": parse_single_strava_id(item)})
+        elif isinstance(item, dict):
+            # Map various ID keys to our internal strava_id
+            sid = item.get("stravaActivityId") or item.get("id")
+            if sid:
+                item["strava_id"] = parse_single_strava_id(str(sid))
+            parsed.append(item)
+    return parsed
 
 
 def resolve_output_directory(
@@ -90,24 +99,55 @@ def print_site_instructions(site_root: Path) -> None:
 def generate_collection(
     *,
     collection_name: str,
-    activity_ids: list[str],
+    activities: list[str | dict],
     output_dir: Path,
     fallback_static_dir: Path | None,
     args,
     places: list[dict] | None = None,
     verbose: bool = False,
+    description: str | None = None,
+    route_gpx_file: str | list[str] | None = None,
+    garmin_livetrack_url: str | None = None,
 ) -> None:
     collection_filename = "collection-" + collection_name.lower().replace(" ", "-")
-    activity_ids_flip = parse_activity_ids(activity_ids)
+    parsed_activities = parse_activity_inputs(activities)
 
     collection = StravaCollection(
         name=collection_name,
-        activity_ids=activity_ids_flip,
+        activities=parsed_activities,
         force_update=args.force_update,
         verbose=verbose,
+        description=description,
+        route_gpx_file=route_gpx_file,
+        garmin_livetrack_url=garmin_livetrack_url,
     )
 
     output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Sync GPX files
+    import shutil
+
+    gpx_to_sync = []
+    if isinstance(route_gpx_file, str):
+        gpx_to_sync.append(route_gpx_file)
+    elif isinstance(route_gpx_file, list):
+        gpx_to_sync.extend(route_gpx_file)
+
+    for activity in parsed_activities:
+        act_gpx = activity.get("routeGpxFile")
+        if isinstance(act_gpx, str):
+            gpx_to_sync.append(act_gpx)
+        elif isinstance(act_gpx, list):
+            gpx_to_sync.extend(act_gpx)
+
+    for gf in gpx_to_sync:
+        if os.path.exists(gf):
+            dest = output_dir / gf
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy(gf, dest)
+            if verbose:
+                print(f"Synced GPX asset: {gf}")
+
     path_static = output_dir / "_static"
     path_static.mkdir(parents=True, exist_ok=True)
 
@@ -142,14 +182,10 @@ def generate_collection(
 
     collection.plot_elevation(filepath=str(elev_path), backend=args.backend)
 
-    # standard interactive map + images
-    collection.plot_map(
-        filepath=str(map_path),
-        linewidths=[8, 2],
-        width_to_height=3.0,
-        places=places,
-        verbose=verbose,
-    )
+    # Export GPX assets for each activity
+    collection.generate_gpx_assets(path_static, verbose=verbose)
+
+    # We still plot the map as a PNG for thumbnails/socials
     collection.plot_map(
         filepath=str(map_path.with_suffix(".png")),
         linewidths=[16, 8],
@@ -166,50 +202,6 @@ def generate_collection(
         places=places,
         verbose=verbose,
     )
-
-    # create a fullscreen HTML variant by post-processing the generated map HTML
-    try:
-        if map_path.exists():
-            html = map_path.read_text(encoding="utf-8")
-            m = re.search(
-                r'<div\s+id="([^"]+)"[^>]*class="plotly-graph-div"[^>]*>', html
-            )
-            if m:
-                gid = m.group(1)
-                # replace first plot container with full-viewport sizing
-                new_div = f'<div id="{gid}" class="plotly-graph-div" style="height:100vh; width:100vw;"></div>'
-                html2 = re.sub(
-                    r'<div\s+id="[^"]+"[^>]*class="plotly-graph-div"[^>]*>',
-                    new_div,
-                    html,
-                    count=1,
-                )
-                resize_script = (
-                    f"<script>\n"
-                    f"(function(){{\n"
-                    f'  var gd = document.getElementById("{gid}");\n'
-                    f"  function _resize(){{\n"
-                    f"    Plotly.relayout(gd, {{height: window.innerHeight, width: window.innerWidth}});\n"
-                    f"  }}\n"
-                    f'  window.addEventListener("resize", _resize);\n'
-                    f"  setTimeout(_resize, 100);\n"
-                    f"}})();\n"
-                    f"</script>\n"
-                )
-                if "</body>" in html2:
-                    html2 = html2.replace("</body>", resize_script + "</body>")
-                else:
-                    html2 += resize_script
-                map_full_path.write_text(html2, encoding="utf-8")
-            else:
-                # fallback: copy original html to fullscreen path
-                map_full_path.write_text(html, encoding="utf-8")
-        else:
-            print(
-                f"Warning: map HTML not found at {map_path}, skipping fullscreen export"
-            )
-    except Exception as e:
-        print(f"Warning: could not create fullscreen map HTML: {e}")
 
     collection.generate_astro(
         filepath=str(path_collection_astro),
@@ -234,12 +226,15 @@ def generate_collection_from_yaml(
     output_dir, site_root = resolve_output_directory(args, data.get("output_dir"))
     generate_collection(
         collection_name=data["collection_name"],
-        activity_ids=data["activity_ids"],
+        activities=data.get("activities") or data.get("activity_ids", []),
         output_dir=output_dir,
-        fallback_static_dir=Path(data["output_dir"]).resolve() / "_static",
+        fallback_static_dir=Path(data.get("output_dir", ".")).resolve() / "_static",
         args=args,
         places=data.get("places"),
         verbose=verbose,
+        description=data.get("description"),
+        route_gpx_file=data.get("routeGpxFile"),
+        garmin_livetrack_url=data.get("garminLivetrackUrl"),
     )
     return site_root
 
@@ -314,6 +309,12 @@ def main():
     )
 
     parser.add_argument(
+        "--serve",
+        action="store_true",
+        help="Install dependencies and start the development server",
+    )
+
+    parser.add_argument(
         "-v",
         "--verbose",
         action="store_true",
@@ -346,26 +347,17 @@ def main():
         input_paths = resolve_input_paths(args.input)
         for input_path in input_paths:
             site_root = generate_collection_from_yaml(input_path=input_path, args=args)
-        if site_root is not None:
-            sync_site(site_root)
-        import os
-        import shutil
-
-        if site_root is not None and os.path.exists("live-tracking.yaml"):
-            shutil.copy(
-                "live-tracking.yaml", site_root / "source" / "live-tracking.yaml"
-            )
-            print_site_instructions(site_root)
-        return
-
-    output_dir, site_root = resolve_output_directory(args)
-    generate_collection(
-        collection_name=args.collection,
-        activity_ids=args.ids,
-        output_dir=output_dir,
-        fallback_static_dir=None,
-        args=args,
-    )
+    else:
+        output_dir, site_root = resolve_output_directory(args)
+        generate_collection(
+            collection_name=args.collection,
+            activities=args.ids,
+            output_dir=output_dir,
+            fallback_static_dir=None,
+            args=args,
+        )
+    if args.verbose:
+        print(f"Generated collection with activities: {args.ids}")
     if site_root is not None:
         sync_site(site_root)
         import os
@@ -376,6 +368,20 @@ def main():
                 "live-tracking.yaml", site_root / "source" / "live-tracking.yaml"
             )
         print_site_instructions(site_root)
+
+    if args.serve and site_root is not None:
+        astro_dir = site_root / "astro"
+        print(f"\n🚀 Starting development server in {astro_dir}...")
+        try:
+            # Install dependencies
+            subprocess.run(["npm", "ci"], cwd=astro_dir, check=True)
+            # Start dev server
+            subprocess.run(["npm", "run", "dev"], cwd=astro_dir, check=True)
+        except KeyboardInterrupt:
+            print("\n👋 Server stopped.")
+        except Exception as e:
+            print(f"❌ Error starting server: {e}")
+            sys.exit(1)
 
 
 if __name__ == "__main__":

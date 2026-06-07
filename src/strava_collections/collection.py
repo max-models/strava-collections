@@ -210,22 +210,32 @@ class StravaCollection:
     def __init__(
         self,
         name: str,
-        activity_ids: list[tuple],
+        activities: list[dict],
         force_update: bool = False,
+        description: str | None = None,
+        route_gpx_file: str | list[str] | None = None,
+        garmin_livetrack_url: str | None = None,
         verbose: bool = False,
     ) -> None:
         self._name = name
+        self._description = description
+        self._route_gpx_file = route_gpx_file
+        self._garmin_livetrack_url = garmin_livetrack_url
 
-        self._activity_ids = activity_ids
+        self._activity_defs = activities
         print(f"Loading collection '{self.name}':")
-        self._activities = [
-            StravaActivity(
-                *(activity_id),
-                force_update=force_update,
-                verbose=verbose,
-            )
-            for activity_id in activity_ids
-        ]
+        self._activities = []
+        for act_def in activities:
+            if "strava_id" in act_def:
+                parsed_id, flip = act_def["strava_id"]
+                self._activities.append(
+                    StravaActivity(
+                        parsed_id,
+                        flip=flip,
+                        force_update=force_update,
+                        verbose=verbose,
+                    )
+                )
         print()
         tot_elevation_gaion = 0.0
         for activity in self.activities:
@@ -487,19 +497,6 @@ class StravaCollection:
         include_table: bool = False,
     ):
         html_str = ""
-        # Provide a fullscreen map link alongside the embedded iframe. The fullscreen
-        # asset is post-processed by the generator as <collection>-map-fullscreen.html.
-        if mapfig_name.lower().endswith(".html"):
-            map_full_name = mapfig_name[:-5] + "-fullscreen.html"
-        else:
-            map_full_name = mapfig_name + "-fullscreen.html"
-
-        html_str += f"""
-<div style="position: relative; width: 100%; height: 350px;">
-  <a class="plotly-embed__fullscreen-btn" href="/_static/{map_full_name}" target="_blank" rel="noopener noreferrer" aria-label="Open fullscreen map">⤢ Fullscreen</a>
-  <iframe src="/_static/{mapfig_name}" style="width:100%; height:100%; border:none;"></iframe>
-</div>
-\n\n"""
 
         collection_elevation_src = f"/_static/{elevfig_name}"
         if elevfig_name.lower().endswith(".html"):
@@ -595,6 +592,35 @@ class StravaCollection:
         if verbose:
             print(f"Saved markdown page to {filepath}")
 
+    @property
+    def activity_defs(self):
+        return self._activity_defs
+
+    @property
+    def route_gpx_file(self):
+        return self._route_gpx_file
+
+    @property
+    def garmin_livetrack_url(self):
+        return self._garmin_livetrack_url
+
+    def generate_gpx_assets(
+        self,
+        output_dir: Path,
+        rdp_epsilon: float = 0.0001,
+        verbose: bool = False,
+    ):
+        """Export GPX files for all activities to the output directory."""
+        output_dir.mkdir(parents=True, exist_ok=True)
+        for activity in self.activities:
+            if activity.no_map:
+                continue
+            gpx_path = output_dir / f"activity-{activity.activity_id}.gpx"
+            gpx_content = activity.to_gpx(rdp_epsilon=rdp_epsilon)
+            gpx_path.write_text(gpx_content, encoding="utf-8")
+            if verbose:
+                print(f"Saved GPX asset to: {gpx_path}")
+
     def generate_astro(
         self,
         filepath: str,
@@ -616,9 +642,15 @@ class StravaCollection:
             include_table=include_table,
         )
         asset_dir = Path(filepath).parent / "_static"
+        metadata = {
+            "activities": self.activity_defs,
+            "routeGpxFile": self.route_gpx_file,
+            "garminLivetrackUrl": self.garmin_livetrack_url,
+        }
         page_source = render_collection_page(
             title=self.name,
             body_html=prepare_collection_markup(body_html, asset_dir=asset_dir),
+            metadata=metadata,
         )
 
         if prettify:

@@ -42,12 +42,15 @@ def test_main_uses_plotly_html_for_yaml_input(monkeypatch, tmp_path):
             calls.setdefault("activity_plot_elevation", []).append((filepath, kwargs))
 
     class FakeCollection:
-        def __init__(self, name, activity_ids, **kwargs):
+        def __init__(self, name, activities, **kwargs):
             force_update = kwargs.get("force_update", False)
             calls["name"] = name
-            calls["activity_ids"] = activity_ids
+            calls["activities"] = activities
             calls["force_update"] = force_update
             self.activities = [FakeActivity()]
+
+        def generate_gpx_assets(self, output_dir, **kwargs):
+            return None
 
         def plot_map(self, filepath, **kwargs):
             calls.setdefault("plot_map", []).append((filepath, kwargs))
@@ -101,9 +104,12 @@ def test_main_generates_map_assets_without_mapbox_token(monkeypatch, tmp_path):
             calls.setdefault("activity_plot_elevation", []).append((filepath, kwargs))
 
     class FakeCollection:
-        def __init__(self, name, activity_ids, **kwargs):
+        def __init__(self, name, activities, **kwargs):
             force_update = kwargs.get("force_update", False)
             self.activities = [FakeActivity()]
+
+        def generate_gpx_assets(self, output_dir, **kwargs):
+            return None
 
         def plot_map(self, filepath, **kwargs):
             calls.setdefault("plot_map", []).append((filepath, kwargs))
@@ -123,10 +129,9 @@ def test_main_generates_map_assets_without_mapbox_token(monkeypatch, tmp_path):
 
     main()
 
-    assert len(calls["plot_map"]) == 3
-    assert calls["plot_map"][0][0].endswith("collection-taiwan-map.html")
-    assert calls["plot_map"][1][0].endswith("collection-taiwan-map.png")
-    assert calls["plot_map"][2][0].endswith("collection-taiwan-map-thick.png")
+    assert len(calls["plot_map"]) == 2
+    assert calls["plot_map"][0][0].endswith("collection-taiwan-map.png")
+    assert calls["plot_map"][1][0].endswith("collection-taiwan-map-thick.png")
     assert calls["plot_elevation"][0].endswith("collection-taiwan-elev.html")
     assert calls["generate_astro"][0].endswith("collection-taiwan.astro")
 
@@ -158,10 +163,14 @@ def test_main_accepts_multiple_yaml_inputs(monkeypatch, tmp_path):
             calls.setdefault("activity_plot_elevation", []).append((filepath, kwargs))
 
     class FakeCollection:
-        def __init__(self, name, activity_ids, **kwargs):
+        def __init__(self, name, activities, **kwargs):
             force_update = kwargs.get("force_update", False)
-            calls["collections"].append((name, activity_ids, force_update))
-            self.activities = [FakeActivity(activity_ids[0][0])]
+            calls["collections"].append((name, activities, force_update))
+            # activities is now a list of dicts with 'strava_id' key
+            self.activities = [FakeActivity(activities[0]["strava_id"][0])]
+
+        def generate_gpx_assets(self, output_dir, **kwargs):
+            return None
 
         def plot_map(self, filepath, **kwargs):
             calls.setdefault("plot_map", []).append((filepath, kwargs))
@@ -187,8 +196,8 @@ def test_main_accepts_multiple_yaml_inputs(monkeypatch, tmp_path):
     main()
 
     assert calls["collections"] == [
-        ("Taiwan", [(123, False)], False),
-        ("Japan", [(456, False)], False),
+        ("Taiwan", [{"strava_id": (123, False)}], False),
+        ("Japan", [{"strava_id": (456, False)}], False),
     ]
     assert calls["generate_astro"][0][0].endswith("collection-taiwan.astro")
     assert calls["generate_astro"][1][0].endswith("collection-japan.astro")
@@ -204,9 +213,12 @@ def test_main_defaults_to_docs_site_output(monkeypatch, tmp_path, capsys):
             return None
 
     class FakeCollection:
-        def __init__(self, name, activity_ids, **kwargs):
+        def __init__(self, name, activities, **kwargs):
             force_update = kwargs.get("force_update", False)
             self.activities = [FakeActivity()]
+
+        def generate_gpx_assets(self, output_dir, **kwargs):
+            return None
 
         def plot_map(self, filepath, **kwargs):
             return None
@@ -262,9 +274,12 @@ def test_main_output_scaffolds_site_template(monkeypatch, tmp_path, capsys):
             return None
 
     class FakeCollection:
-        def __init__(self, name, activity_ids, **kwargs):
+        def __init__(self, name, activities, **kwargs):
             force_update = kwargs.get("force_update", False)
             self.activities = [FakeActivity()]
+
+        def generate_gpx_assets(self, output_dir, **kwargs):
+            return None
 
         def plot_map(self, filepath, **kwargs):
             return None
@@ -332,9 +347,12 @@ def test_main_output_generates_yaml_map_assets_without_mapbox_token(
             return None
 
     class FakeCollection:
-        def __init__(self, name, activity_ids, **kwargs):
+        def __init__(self, name, activities, **kwargs):
             force_update = kwargs.get("force_update", False)
             self.activities = [FakeActivity()]
+
+        def generate_gpx_assets(self, output_dir, **kwargs):
+            return None
 
         def plot_map(self, filepath, **kwargs):
             Path(filepath).write_text(Path(filepath).name, encoding="utf-8")
@@ -356,9 +374,6 @@ def test_main_output_generates_yaml_map_assets_without_mapbox_token(
     main()
 
     generated_static = tmp_path / "site" / "source" / "_static"
-    assert (generated_static / "collection-taiwan-map.html").read_text(
-        encoding="utf-8"
-    ) == "collection-taiwan-map.html"
     assert (generated_static / "collection-taiwan-map.png").read_text(
         encoding="utf-8"
     ) == "collection-taiwan-map.png"
@@ -391,10 +406,13 @@ def test_main_expands_globbed_yaml_inputs(monkeypatch, tmp_path):
             return None
 
     class FakeCollection:
-        def __init__(self, name, activity_ids, **kwargs):
+        def __init__(self, name, activities, **kwargs):
             force_update = kwargs.get("force_update", False)
             seen_names.append(name)
-            self.activities = [FakeActivity(activity_ids[0][0])]
+            self.activities = [FakeActivity(activities[0]["strava_id"][0])]
+
+        def generate_gpx_assets(self, output_dir, **kwargs):
+            return None
 
         def plot_map(self, filepath, **kwargs):
             return None
@@ -543,6 +561,9 @@ def test_collection_generate_astro_writes_astro_page(tmp_path):
     collection = StravaCollection.__new__(StravaCollection)
     collection._name = "Taiwan"
     collection._activities = []
+    collection._activity_defs = []
+    collection._route_gpx_file = None
+    collection._garmin_livetrack_url = None
     static_dir = tmp_path / "_static"
     static_dir.mkdir()
     for asset_name in ("collection-taiwan-map.html", "collection-taiwan-elev.html"):
@@ -569,48 +590,16 @@ def test_collection_generate_astro_writes_astro_page(tmp_path):
 
     assert "CollectionPage.astro" in astro_page
     assert 'const title = "Taiwan";' in astro_page
-    assert "Plotly.newPlot" in astro_page
+    assert "import Map from" in astro_page
+    assert "import { loadStravaRouteData" in astro_page
+    assert "const trackerPayload =" in astro_page
+    assert "<Map payload={trackerPayload} />" in astro_page
     assert "bodyHtml" not in astro_page
     assert "<CollectionPage title={title} headings={headings}>" in astro_page
-    assert "<script is:inline>" in astro_page
-    assert "<iframe " not in astro_page
-    assert 'src="/_static/collection-taiwan-map.html"' not in astro_page
+    assert "<iframe src={`${base}_static/collection-taiwan-elev.html`}" in astro_page
 
 
-def test_generate_astro_inlines_plotly_and_wraps_gallery(tmp_path):
-    markdown = """# Taiwan
-
-<div class="gallery"><img src="/_static/photo.jpg" class="lightbox-trigger"></div>
-
-<div id="lightbox" class="lightbox">
-  <img id="lightbox-img" src="" alt="Full Image">
-</div>
-<script>
-document.querySelectorAll('.gallery img').forEach(img => {
-  img.addEventListener('click', event => {
-    event.preventDefault();
-  });
-});
-</script>
-"""
-
-    body_html = markdown_to_body_html(markdown, asset_dir=tmp_path / "_static")
-    page = render_collection_page(title="Taiwan", body_html=body_html)
-
-    assert 'id="lightbox"' not in body_html
-    assert "querySelectorAll('.gallery img')" not in body_html
-    assert 'class="gallery"' in body_html
-    assert 'class="glightbox"' in body_html
-    assert 'data-gallery="collection-gallery-0"' in body_html
-    assert "CollectionPage.astro" in page
-    assert 'const title = "Taiwan";' in page
-    assert "const headings = [" in page
-    assert "bodyHtml" not in page
-    assert "<CollectionPage title={title} headings={headings}>" in page
-    assert "href={`${base}_static/photo.jpg`}" in page
-
-
-def test_markdown_to_body_html_inlines_local_plotly_assets(tmp_path):
+def test_markdown_to_body_html_keeps_local_plotly_assets_as_iframes(tmp_path):
     static_dir = tmp_path / "_static"
     static_dir.mkdir(parents=True)
     (static_dir / "activity-123.html").write_text(
@@ -639,10 +628,10 @@ def test_markdown_to_body_html_inlines_local_plotly_assets(tmp_path):
 
     converted = markdown_to_body_html(markdown, asset_dir=static_dir)
 
-    assert "<iframe " not in converted
-    assert 'class="plotly-embed plotly-embed--chart"' in converted
-    assert 'id="plot-123"' in converted
-    assert 'Plotly.newPlot("plot-123", [], {});' in converted
+    assert '<iframe src="/_static/activity-123.html"' in converted
+    assert 'class="plotly-embed plotly-embed--chart"' not in converted
+    assert 'id="plot-123"' not in converted
+    assert 'Plotly.newPlot("plot-123", [], {});' not in converted
     assert "cdn.plot.ly" not in converted
     assert "window.PlotlyConfig" not in converted
 
@@ -797,9 +786,12 @@ def test_main_parses_places_from_yaml(monkeypatch, tmp_path):
             return None
 
     class FakeCollection:
-        def __init__(self, name, activity_ids, **kwargs):
+        def __init__(self, name, activities, **kwargs):
             force_update = kwargs.get("force_update", False)
             self.activities = [FakeActivity()]
+
+        def generate_gpx_assets(self, output_dir, **kwargs):
+            return None
 
         def plot_map(self, filepath, **kwargs):
             plot_map_calls.append(kwargs)
@@ -820,7 +812,7 @@ def test_main_parses_places_from_yaml(monkeypatch, tmp_path):
 
     main()
 
-    assert len(plot_map_calls) == 3
+    assert len(plot_map_calls) == 2
     for call in plot_map_calls:
         assert "places" in call
         assert call["places"] == [{"name": "Taipei", "lat": 25.0330, "lon": 121.5654}]

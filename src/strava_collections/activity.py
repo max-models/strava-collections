@@ -1,7 +1,7 @@
 import os
 import pickle
 import sys
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 import fastrdp
 import numpy as np
@@ -170,11 +170,102 @@ class StravaActivity:
             self.dump(filepath=pickle_path)
         self._flip = flip
 
-    def add_elevation_to_fig(self, fig, distance_traveled=0.0, color="black"):
+    def to_gpx(self, rdp_epsilon: float | None = None) -> str:
+        """Return activity as a GPX XML string."""
+        latlng_stream = self.activity_stream.get("latlng")
+        if not latlng_stream:
+            return ""
+
+        latlng = np.array(latlng_stream.data)
+        altitude = self.activity_stream.get("altitude")
+        elapsed = self.activity_stream.get("time")
+        heart_rate = self.activity_stream.get("heartrate")
+        cadence = self.activity_stream.get("cadence")
+        power = self.activity_stream.get("watts")
+
+        # Prepare arrays for simplification if needed
+        alt_data = np.array(altitude.data) if altitude else None
+        elapsed_data = np.array(elapsed.data) if elapsed else None
+        hr_data = np.array(heart_rate.data) if heart_rate else None
+        cad_data = np.array(cadence.data) if cadence else None
+        pwr_data = np.array(power.data) if power else None
+
+        if rdp_epsilon is not None:
+            # We only simplify based on lat/lon
+            indices = fastrdp.rdp_index(latlng[:, 0], latlng[:, 1], rdp_epsilon)
+            latlng = latlng[indices]
+            if alt_data is not None:
+                alt_data = alt_data[indices]
+            if elapsed_data is not None:
+                elapsed_data = elapsed_data[indices]
+            if hr_data is not None:
+                hr_data = hr_data[indices]
+            if cad_data is not None:
+                cad_data = cad_data[indices]
+            if pwr_data is not None:
+                pwr_data = pwr_data[indices]
+
+        start = self.activity.start_date_local or self.activity.start_date
+        name = self.activity.name or f"Activity {self.activity_id}"
+
+        trkpts = []
+        for index in range(len(latlng)):
+            lat, lon = latlng[index]
+
+            inner = []
+            if alt_data is not None:
+                inner.append(f"<ele>{alt_data[index]:.2f}</ele>")
+
+            if isinstance(start, datetime) and elapsed_data is not None:
+                time_val = start + timedelta(seconds=float(elapsed_data[index]))
+                inner.append(f"<time>{time_val.isoformat()}Z</time>")
+
+            extensions = []
+            if hr_data is not None or cad_data is not None:
+                ext = ["<gpxtpx:TrackPointExtension>"]
+                if hr_data is not None:
+                    ext.append(f"<gpxtpx:hr>{int(hr_data[index])}</gpxtpx:hr>")
+                if cad_data is not None:
+                    ext.append(f"<gpxtpx:cad>{int(cad_data[index])}</gpxtpx:cad>")
+                ext.append("</gpxtpx:TrackPointExtension>")
+                extensions.append("\n".join(ext))
+
+            if pwr_data is not None:
+                extensions.append(f"<power>{int(pwr_data[index])}</power>")
+
+            if extensions:
+                inner.append("<extensions>")
+                inner.extend(extensions)
+                inner.append("</extensions>")
+
+            inner_str = "".join(inner)
+            trkpts.append(f'      <trkpt lat="{lat}" lon="{lon}">{inner_str}</trkpt>')
+
+        trkpts_str = "\n".join(trkpts)
+
+        return f"""<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="strava-collections" 
+  xmlns="http://www.topografix.com/GPX/1/1"
+  xmlns:gpxtpx="http://www.garmin.com/xmlschemas/TrackPointExtension/v1">
+  <trk>
+    <name>{name}</name>
+    <trkseg>
+{trkpts_str}
+    </trkseg>
+  </trk>
+</gpx>"""
+
+    def add_elevation_to_fig(
+        self,
+        fig,
+        distance_traveled=0.0,
+        color="black",
+        rdp_epsilon=0.1,
+    ):
 
         distance = np.array(self.activity_stream["distance"].data) * 1e-3
         elev = np.array(self.activity_stream["altitude"].data)
-        distance, elev = fastrdp.rdp(distance, elev, epsilon=0.1)
+        distance, elev = fastrdp.rdp(distance, elev, epsilon=rdp_epsilon)
 
         if self.flip:
             dmax = distance[-1]
@@ -202,6 +293,7 @@ class StravaActivity:
         height=200,
         config=None,
         backend="plotly",
+        rdp_epsilon=0.1,
         verbose: bool = False,
     ):
         """Plot the activity elevation profile with maxplotlib."""
@@ -210,7 +302,7 @@ class StravaActivity:
 
         distance = np.array(self.activity_stream["distance"].data) * 1e-3
         elev = np.array(self.activity_stream["altitude"].data)
-        distance, elev = fastrdp.rdp(distance, elev, epsilon=0.1)
+        distance, elev = fastrdp.rdp(distance, elev, epsilon=rdp_epsilon)
 
         if self.flip:
             dmax = distance[-1]

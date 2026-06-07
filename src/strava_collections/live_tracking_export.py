@@ -20,70 +20,16 @@ def _stream_value_at(values: list[Any] | None, index: int) -> Any | None:
     return values[index]
 
 
-def build_strava_route_data(activity_id: int) -> dict[str, Any]:
+def build_strava_route_data(activity_id: int) -> str | dict[str, Any]:
     try:
         with redirect_stdout(StringIO()):
             activity = StravaActivity(activity_id=activity_id)
+        gpx = activity.to_gpx(rdp_epsilon=0.0001)
+        if not gpx:
+            return {"status": "empty"}
+        return gpx
     except Exception:
         return {"status": "error"}
-
-    latlng = _stream_values(activity, "latlng")
-    if not latlng:
-        return {"status": "empty"}
-
-    altitude = _stream_values(activity, "altitude")
-    distance = _stream_values(activity, "distance")
-    elapsed = _stream_values(activity, "time")
-    speed = _stream_values(activity, "velocity_smooth")
-    heart_rate = _stream_values(activity, "heartrate")
-    cadence = _stream_values(activity, "cadence")
-    power = _stream_values(activity, "watts")
-
-    start = activity.activity.start_date_local or activity.activity.start_date
-    points: list[dict[str, Any]] = []
-
-    for index, point in enumerate(latlng):
-        if not isinstance(point, (list, tuple)) or len(point) != 2:
-            continue
-        lat, lon = point
-        if not isinstance(lat, (int, float)) or not isinstance(lon, (int, float)):
-            continue
-
-        duration_secs = _stream_value_at(elapsed, index)
-        time_iso = None
-        if isinstance(start, datetime) and isinstance(duration_secs, (int, float)):
-            time_iso = (start + timedelta(seconds=float(duration_secs))).isoformat()
-
-        point_data = {
-            "lat": lat,
-            "lon": lon,
-            "time": time_iso,
-            "distanceMeters": _stream_value_at(distance, index),
-            "durationSecs": duration_secs,
-            "elevation": _stream_value_at(altitude, index),
-            "speedMetersPerSec": _stream_value_at(speed, index),
-            "heartRateBeatsPerMin": _stream_value_at(heart_rate, index),
-            "cadenceCyclesPerMin": _stream_value_at(cadence, index),
-            "powerWatts": _stream_value_at(power, index),
-        }
-        # Remove None values to save space
-        points.append({k: v for k, v in point_data.items() if v is not None})
-
-    if not points:
-        return {"status": "empty"}
-
-    last = points[-1]
-    return {
-        "status": "ok",
-        "points": points,
-        "summary": {
-            "pointCount": len(points),
-            "totalDistanceMeters": last.get("distanceMeters"),
-            "totalDurationSecs": last.get("durationSecs"),
-            "lastReportedTime": last.get("time"),
-            "isActive": False,
-        },
-    }
 
 
 def main() -> None:
