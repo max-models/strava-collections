@@ -596,7 +596,7 @@ def test_collection_generate_astro_writes_astro_page(tmp_path):
     assert "<Map payload={trackerPayload} />" in astro_page
     assert "bodyHtml" not in astro_page
     assert "<CollectionPage title={title} headings={headings}>" in astro_page
-    assert '<iframe src={`${base}_static/collection-taiwan-elev.html`}' in astro_page
+    assert "<iframe src={`${base}_static/collection-taiwan-elev.html`}" in astro_page
 
 
 def test_markdown_to_body_html_keeps_local_plotly_assets_as_iframes(tmp_path):

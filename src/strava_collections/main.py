@@ -1,10 +1,11 @@
 import argparse
 import glob
+import os
 import re
 import subprocess
 import sys
 from pathlib import Path
-import os
+
 import yaml
 
 from strava_collections.collection import (
@@ -122,22 +123,23 @@ def generate_collection(
     )
 
     output_dir.mkdir(parents=True, exist_ok=True)
-    
+
     # Sync GPX files
     import shutil
+
     gpx_to_sync = []
     if isinstance(route_gpx_file, str):
         gpx_to_sync.append(route_gpx_file)
     elif isinstance(route_gpx_file, list):
         gpx_to_sync.extend(route_gpx_file)
-    
+
     for activity in parsed_activities:
         act_gpx = activity.get("routeGpxFile")
         if isinstance(act_gpx, str):
             gpx_to_sync.append(act_gpx)
         elif isinstance(act_gpx, list):
             gpx_to_sync.extend(act_gpx)
-            
+
     for gf in gpx_to_sync:
         if os.path.exists(gf):
             dest = output_dir / gf

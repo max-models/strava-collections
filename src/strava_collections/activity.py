@@ -242,7 +242,7 @@ class StravaActivity:
             trkpts.append(f'      <trkpt lat="{lat}" lon="{lon}">{inner_str}</trkpt>')
 
         trkpts_str = "\n".join(trkpts)
-        
+
         return f"""<?xml version="1.0" encoding="UTF-8"?>
 <gpx version="1.1" creator="strava-collections" 
   xmlns="http://www.topografix.com/GPX/1/1"
@@ -255,7 +255,13 @@ class StravaActivity:
   </trk>
 </gpx>"""
 
-    def add_elevation_to_fig(self, fig, distance_traveled=0.0, color="black", rdp_epsilon=0.1,):
+    def add_elevation_to_fig(
+        self,
+        fig,
+        distance_traveled=0.0,
+        color="black",
+        rdp_epsilon=0.1,
+    ):
 
         distance = np.array(self.activity_stream["distance"].data) * 1e-3
         elev = np.array(self.activity_stream["altitude"].data)
