@@ -110,6 +110,8 @@ let trackerCollections: TrackerCollection[] = [];
 let activeCollectionIndex: number | null = null;
 let activeGraphMetric: GraphMetricConfig["key"] = "speed";
 
+import { setupMap, type MapTrack } from "./map-renderer";
+
 export async function setupTripTracker(payload: TrackerPayload): Promise<void> {
   const { collections } = payload;
   trackerCollections = collections;
@@ -148,7 +150,7 @@ export async function setupTripTracker(payload: TrackerPayload): Promise<void> {
 
   const mapShell = getElement<HTMLDivElement>("map-shell");
   const placeholder = getElement<HTMLDivElement>("map-placeholder");
-  const mapElement = getElement<HTMLDivElement>("main-map");
+  const mapElement = getElement<HTMLDivElement>("collection-map");
 
   if (mapShell && placeholder && mapElement) {
     await renderMap({ mapShell, placeholder, mapElement, collections });
@@ -181,121 +183,54 @@ async function renderMap(options: {
     return;
   }
 
-  const Leaflet = await import("leaflet");
+  // Use the common map renderer
+  const allTracks: MapTrack[] = [];
+  const allPlanned: MapTrack[] = [];
 
-  if (!leafletState) {
-    const map = Leaflet.map(mapElement, {
-      zoomControl: true,
-      scrollWheelZoom: true,
-    });
+  collections.forEach((col, ci) => {
+    if (!visibleCollections.has(ci)) return;
 
-    Leaflet.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-      maxZoom: 19,
-    }).addTo(map);
-
-    const collectionGroups = new Map<number, import("leaflet").FeatureGroup>();
-
-    leafletState = {
-      map,
-      tileLayer: Leaflet.tileLayer(""),
-      collectionGroups,
-    };
-  }
-
-  // rebuild collection groups
-  leafletState.collectionGroups.forEach((group) => group.remove());
-  leafletState.collectionGroups.clear();
-
-  const bounds = Leaflet.latLngBounds([]);
-
-  for (let ci = 0; ci < collections.length; ci++) {
-    const col = collections[ci];
-    let group = leafletState.collectionGroups.get(ci);
-    if (!group) {
-      group = Leaflet.featureGroup().addTo(leafletState.map);
-      leafletState.collectionGroups.set(ci, group);
-    }
-
-    if (col.plannedRouteData && col.plannedRouteData.points.length > 1) {
-      const plannedLatLngs = col.plannedRouteData.points.map((p) => [p.lat, p.lon] as [number, number]);
-      const poly = Leaflet.polyline(plannedLatLngs, {
+    if (col.plannedRouteData) {
+      allPlanned.push({
+        name: col.name,
+        points: col.plannedRouteData.points,
         color: "#64748b",
-        weight: 6,
-        opacity: 0.4,
-      }).addTo(group);
-      Leaflet.polyline(plannedLatLngs, {
-        color: "#ffffff",
-        weight: 2,
-        opacity: 0.8,
-        dashArray: "12 12",
-      }).addTo(group);
-      if (visibleCollections.has(ci)) {
-        bounds.extend(poly.getBounds());
-      }
+        isPlanned: true
+      });
     }
 
-    for (let ai = 0; ai < col.activities.length; ai++) {
-      const activity = col.activities[ai];
-
-      if (activity.plannedRouteData && activity.plannedRouteData.points.length > 1) {
-        const plannedLatLngs = activity.plannedRouteData.points.map((p) => [p.lat, p.lon] as [number, number]);
-        const poly = Leaflet.polyline(plannedLatLngs, {
+    col.activities.forEach(act => {
+      if (act.plannedRouteData) {
+        allPlanned.push({
+          name: "Planned Activity",
+          points: act.plannedRouteData.points,
           color: "#64748b",
-          weight: 6,
-          opacity: 0.4,
-        }).addTo(group);
-        Leaflet.polyline(plannedLatLngs, {
-          color: "#ffffff",
-          weight: 2,
-          opacity: 0.8,
-          dashArray: "12 12",
-        }).addTo(group);
-        if (visibleCollections.has(ci)) {
-          bounds.extend(poly.getBounds());
-        }
+          isPlanned: true
+        });
       }
-
-      if (activity.routeData?.status === "ok" && activity.routeData.points.length > 0) {
-        const latLngs = activity.routeData.points.map((p) => [p.lat, p.lon] as [number, number]);
-        const poly = Leaflet.polyline(latLngs, { color: activity.color, weight: 5, opacity: 0.9 }).addTo(group);
-
-        const lastLatLng = latLngs.at(-1);
-        if (lastLatLng) {
-          Leaflet.circleMarker(lastLatLng, {
-            radius: 6,
-            color: "#ffffff",
-            weight: 2,
-            fillColor: activity.color,
-            fillOpacity: 1,
-          }).addTo(group);
-        }
-
-        if (visibleCollections.has(ci)) {
-          bounds.extend(poly.getBounds());
-        }
+      
+      if (act.routeData?.status === "ok") {
+        allTracks.push({
+          name: act.notes || "Activity",
+          points: act.routeData.points,
+          color: act.color
+        });
       }
-    }
-  }
-
-  // hide collections that are toggled off
-  leafletState.collectionGroups.forEach((group, ci) => {
-    if (!visibleCollections.has(ci)) {
-      group.remove();
-    }
+    });
   });
 
-  if (allVisible.length > 0 && allVisible.every((e) => e.routeData.points.length === 1)) {
-    const firstPoint = allVisible[0].routeData.points[0];
-    leafletState.map.setView([firstPoint.lat, firstPoint.lon], 11);
-  } else if (bounds.isValid()) {
-    // Zoom out a bit more by default (maxZoom 11 instead of 13) and center on bounds
-    leafletState.map.fitBounds(bounds, { padding: [72, 72], maxZoom: 11 });
+  const map = setupMap({
+    containerId: "collection-map",
+    tracks: allTracks,
+    plannedRoutes: allPlanned
+  });
 
-    // If we have live data, ensure we are focused on the latest position
+  if (!map) return;
+
+  // If we have live data, ensure we are focused on the latest position
+  if (allVisible.length > 0) {
     const latestEntries = allVisible.filter(e => e.routeData.points.length > 0);
     if (latestEntries.length > 0) {
-      // Find the most recently updated activity
       const newest = latestEntries.sort((a, b) => {
         const tA = a.routeData.summary.lastReportedTime ? new Date(a.routeData.summary.lastReportedTime).getTime() : 0;
         const tB = b.routeData.summary.lastReportedTime ? new Date(b.routeData.summary.lastReportedTime).getTime() : 0;
@@ -304,7 +239,7 @@ async function renderMap(options: {
       
       const lastPoint = newest.routeData.points.at(-1);
       if (lastPoint) {
-        leafletState.map.panTo([lastPoint.lat, lastPoint.lon]);
+        map.panTo([lastPoint.lat, lastPoint.lon]);
       }
     }
   }
@@ -315,10 +250,6 @@ async function renderMap(options: {
   updateMapStats(allVisible);
   renderLiveStats(allVisible);
   renderGraphs(allVisible);
-
-  requestAnimationFrame(() => {
-    leafletState?.map.invalidateSize();
-  });
 }
 
 function getVisibleRouteEntries(): RouteEntry[] {

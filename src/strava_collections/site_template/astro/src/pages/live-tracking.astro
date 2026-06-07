@@ -1,12 +1,11 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import Map from "../components/Map.astro";
 import "../styles/tracker.css";
 import "leaflet/dist/leaflet.css";
-import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
-import { load as loadYaml } from "js-yaml";
-import type { TripData } from "../data/trip";
+import { collections } from "../generated/collections";
+import type { CollectionMetadata, GarminRouteData, GarminTrackPoint } from "../data/trip";
+import { loadStravaRouteData, loadPlannedRouteData, loadGarminRouteData } from "../scripts/data-helpers";
 
 interface GarminHydratedQuery {
   queryKey?: unknown[];
@@ -44,239 +43,25 @@ interface GarminTrackPointSource {
   };
 }
 
-interface GarminTrackPoint {
-  lat: number;
-  lon: number;
-  time?: string;
-  distanceMeters?: number;
-  durationSecs?: number;
-  elevation?: number;
-  speedMetersPerSec?: number;
-  heartRateBeatsPerMin?: number;
-  cadenceCyclesPerMin?: number;
-  powerWatts?: number;
-}
-
-interface GarminRouteSummary {
-  totalDistanceMeters?: number;
-  totalDurationSecs?: number;
-  lastReportedTime?: string;
-  pointCount: number;
-  isActive: boolean;
-}
-
-type GarminRouteData =
-  | {
-      status: "ok";
-      points: GarminTrackPoint[];
-      summary: GarminRouteSummary;
-    }
-  | { status: "empty" }
-  | { status: "error" };
-
 const hydrationPattern = /self\.__next_f\.push\(\[1,"((?:\\.|[^"\\])*)"\]\)/gs;
-const yamlContent = readFileSync(join(process.cwd(), "../source/live-tracking.yaml"), "utf-8");
-const tripData = loadYaml(yamlContent) as TripData;
-
-function parseGpxPoints(gpxContent: string): GarminTrackPoint[] {
-  const points: GarminTrackPoint[] = [];
-  const trkptRegex = /<trkpt lat="([-0-9.]+)" lon="([-0-9.]+)">([\s\S]*?)<\/trkpt>/g;
-  let match;
-  while ((match = trkptRegex.exec(gpxContent)) !== null) {
-    const lat = parseFloat(match[1]);
-    const lon = parseFloat(match[2]);
-    const inner = match[3];
-
-    const point: GarminTrackPoint = { lat, lon };
-
-    const eleMatch = /<ele>([-0-9.]+)<\/ele>/.exec(inner);
-    if (eleMatch) point.elevation = parseFloat(eleMatch[1]);
-
-    const timeMatch = /<time>(.*?)<\/time>/.exec(inner);
-    if (timeMatch) point.time = timeMatch[1];
-
-    const hrMatch = /<gpxtpx:hr>(\d+)<\/gpxtpx:hr>/.exec(inner);
-    if (hrMatch) point.heartRateBeatsPerMin = parseInt(hrMatch[1], 10);
-
-    const cadMatch = /<gpxtpx:cad>(\d+)<\/gpxtpx:cad>/.exec(inner);
-    if (cadMatch) point.cadenceCyclesPerMin = parseInt(cadMatch[1], 10);
-
-    const powerMatch = /<power>(\d+)<\/power>/.exec(inner);
-    if (powerMatch) point.powerWatts = parseInt(powerMatch[1], 10);
-
-    points.push(point);
-  }
-
-  // Calculate cumulative distance and duration if possible
-  let totalDistance = 0;
-  let totalDuration = 0;
-  for (let i = 0; i < points.length; i++) {
-    if (i > 0) {
-      const p1 = points[i - 1];
-      const p2 = points[i];
-      
-      // Basic distance calculation (Haversine would be better but this is for UI)
-      const d = calculateDistance(p1.lat, p1.lon, p2.lat, p2.lon);
-      totalDistance += d;
-      
-      if (p1.time && p2.time) {
-        const dt = (new Date(p2.time).getTime() - new Date(p1.time).getTime()) / 1000;
-        if (dt > 0) totalDuration += dt;
-      }
-    }
-    points[i].distanceMeters = totalDistance;
-    points[i].durationSecs = totalDuration;
-  }
-
-  return points;
-}
-
-function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 6371000; // Earth radius in meters
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = 
-    Math.sin(dLat/2) * Math.sin(dLat/2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-    Math.sin(dLon/2) * Math.sin(dLon/2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  return R * c;
-}
-
-function loadPlannedRouteData(input: string | string[] | undefined | null): { points: Array<{ lat: number; lon: number }> } | null {
-  if (!input) return null;
-  const filenames = Array.isArray(input) ? input : [input];
-  const allPoints: Array<{ lat: number; lon: number }> = [];
-
-  for (const filename of filenames) {
-    // Try both local directory and ../source
-    const possiblePaths = [join(process.cwd(), "../source", filename), join(process.cwd(), filename)];
-    let found = false;
-    for (const p of possiblePaths) {
-      if (existsSync(p)) {
-        const content = readFileSync(p, "utf-8");
-        const points = parseGpxPoints(content);
-        if (points.length > 0) {
-          allPoints.push(...points);
-          found = true;
-          break;
-        }
-      }
-    }
-  }
-
-  return allPoints.length > 0 ? { points: allPoints } : null;
-}
 
 const collectionPalette = ["#2563eb", "#7c3aed", "#059669", "#dc2626", "#ea580c", "#0891b2", "#9333ea"];
 const activityPalette = ["#22c55e", "#f97316", "#a855f7", "#06b6d4", "#ef4444", "#84cc16", "#eab308", "#3b82f6"];
 
 const getCollectionColor = (index: number): string => collectionPalette[index % collectionPalette.length];
 const getActivityColor = (index: number): string => activityPalette[index % activityPalette.length];
-const serializeDataForScript = (value: unknown): string =>
-  JSON.stringify(value).replace(/</g, "\\u003c").replace(/>/g, "\\u003e").replace(/&/g, "\\u0026");
 
 const parseLivetrackUrl = (url: string): boolean =>
   /\/session\/([a-z0-9-]+)\/token\/([a-z0-9]+)/i.test(url);
 
-async function loadRouteData(collections: TripData["collections"]): Promise<(GarminRouteData | null)[][]> {
+async function loadAllCollectionRouteData(collectionList: typeof collections): Promise<(GarminRouteData | null)[][]> {
   return Promise.all(
-    collections.map((collection) =>
-      Promise.all(
-        collection.activities.map(async (activity) => {
-          if (!activity.garminLivetrackUrl || !parseLivetrackUrl(activity.garminLivetrackUrl)) {
-            return null;
-          }
-
-          try {
-            const response = await fetch(activity.garminLivetrackUrl);
-            if (!response.ok) {
-              return { status: "error" } as const;
-            }
-
-            const html = await response.text();
-            const parsed = parseTrackDataFromHtml(html);
-            if ("errorDetail" in parsed) {
-              return { status: "error" } as const;
-            }
-
-            const points = parsed.points
-              .map((point) => normalizeTrackPoint(point))
-              .filter((point): point is GarminTrackPoint => point !== null);
-
-            if (points.length === 0) {
-              return { status: "empty" } as const;
-            }
-
-            return {
-              status: "ok",
-              points,
-              summary: buildRouteSummary(points, parsed.session),
-            } as const;
-          } catch {
-            return { status: "error" } as const;
-          }
-        }),
-      ),
-    ),
+    collectionList.map((collection) => {
+      const metadata = (collection.metadata || {}) as CollectionMetadata;
+      const activities = metadata.activities || [];
+      return loadGarminRouteData(activities, metadata);
+    }),
   );
-}
-
-function loadStravaRouteData(collections: TripData["collections"]): (GarminRouteData | null)[][] {
-  const result = collections.map((collection) => collection.activities.map(() => null as GarminRouteData | null));
-  const requests = collections.flatMap((collection, collectionIndex) =>
-    collection.activities
-      .map((activity, activityIndex) => ({
-        collectionIndex,
-        activityIndex,
-        activityId: activity.stravaActivityId?.trim() ?? "",
-      }))
-      .filter((item) => item.activityId.length > 0),
-  );
-
-  if (requests.length === 0) {
-    return result;
-  }
-
-  const repoSrc = join(process.cwd(), "..", "..", "src");
-  const env = { ...process.env };
-  if (existsSync(repoSrc)) {
-    env.PYTHONPATH = env.PYTHONPATH ? `${repoSrc}:${env.PYTHONPATH}` : repoSrc;
-  }
-
-  const output = execFileSync(
-    "python3",
-    ["-m", "strava_collections.live_tracking_export", ...requests.map((request) => request.activityId)],
-    { cwd: process.cwd(), encoding: "utf-8", env, maxBuffer: 10 * 1024 * 1024 },
-  );
-  const exported = JSON.parse(output) as Record<string, string | GarminRouteData>;
-
-  for (const request of requests) {
-    const rawData = exported[request.activityId];
-    if (typeof rawData === "string") {
-      const points = parseGpxPoints(rawData);
-      if (points.length > 0) {
-        const last = points[points.length - 1];
-        result[request.collectionIndex][request.activityIndex] = {
-          status: "ok",
-          points,
-          summary: {
-            pointCount: points.length,
-            totalDistanceMeters: last.distanceMeters,
-            totalDurationSecs: last.durationSecs,
-            lastReportedTime: last.time,
-            isActive: false,
-          },
-        };
-      } else {
-        result[request.collectionIndex][request.activityIndex] = { status: "empty" };
-      }
-    } else {
-      result[request.collectionIndex][request.activityIndex] = rawData ?? { status: "error" };
-    }
-  }
-
-  return result;
 }
 
 function parseTrackDataFromHtml(
@@ -338,92 +123,53 @@ function parseTrackDataFromHtml(
 
 function collectQueries(value: unknown): GarminHydratedQuery[] {
   const out: GarminHydratedQuery[] = [];
-
   const visit = (node: unknown): void => {
-    if (!node) {
-      return;
-    }
+    if (!node) return;
     if (Array.isArray(node)) {
       node.forEach(visit);
       return;
     }
-    if (typeof node !== "object") {
-      return;
-    }
-
+    if (typeof node !== "object") return;
     const maybeQuery = node as GarminHydratedQuery;
-    if (Array.isArray(maybeQuery.queryKey)) {
-      out.push(maybeQuery);
-    }
-
+    if (Array.isArray(maybeQuery.queryKey)) out.push(maybeQuery);
     Object.values(node as Record<string, unknown>).forEach(visit);
   };
-
   visit(value);
   return out;
 }
 
 function asTrackPages(value: unknown): Array<{ trackPoints?: GarminTrackPointSource[] }> {
-  if (!value || typeof value !== "object" || !("pages" in value)) {
-    return [];
-  }
-
+  if (!value || typeof value !== "object" || !("pages" in value)) return [];
   const pages = (value as { pages?: unknown[] }).pages;
   return Array.isArray(pages) ? (pages as Array<{ trackPoints?: GarminTrackPointSource[] }>) : [];
 }
 
 function asSessionData(value: unknown): GarminSessionData {
-  if (!value || typeof value !== "object") {
-    return {};
-  }
-
+  if (!value || typeof value !== "object") return {};
   return value as GarminSessionData;
 }
 
 function normalizeTrackPoint(point: GarminTrackPointSource): GarminTrackPoint | null {
   const lat = point.position?.lat;
   const lon = point.position?.lon;
-
-  if (typeof lat !== "number" || typeof lon !== "number") {
-    return null;
-  }
-
+  if (typeof lat !== "number" || typeof lon !== "number") return null;
   return {
     lat,
     lon,
     elevation: typeof point.altitude === "number" ? point.altitude : undefined,
-    speedMetersPerSec:
-      typeof point.speedMetersPerSec === "number"
-        ? point.speedMetersPerSec
-        : typeof point.speed === "number"
-          ? point.speed
-          : undefined,
-    heartRateBeatsPerMin:
-      typeof point.heartRateBeatsPerMin === "number" && point.heartRateBeatsPerMin > 0
-        ? point.heartRateBeatsPerMin
-        : undefined,
+    speedMetersPerSec: typeof point.speedMetersPerSec === "number" ? point.speedMetersPerSec : typeof point.speed === "number" ? point.speed : undefined,
+    heartRateBeatsPerMin: typeof point.heartRateBeatsPerMin === "number" && point.heartRateBeatsPerMin > 0 ? point.heartRateBeatsPerMin : undefined,
     cadenceCyclesPerMin: typeof point.cadenceCyclesPerMin === "number" ? point.cadenceCyclesPerMin : undefined,
     powerWatts: typeof point.powerWatts === "number" ? point.powerWatts : undefined,
     time: point.dateTime ?? point.reportedTime,
-    distanceMeters:
-      typeof point.totalDistanceMeters === "number"
-        ? point.totalDistanceMeters
-        : typeof point.distanceMeters === "number"
-          ? point.distanceMeters
-          : undefined,
-    durationSecs:
-      typeof point.totalDurationSecs === "number"
-        ? point.totalDurationSecs
-        : typeof point.durationSecs === "number"
-          ? point.durationSecs
-          : undefined,
+    distanceMeters: typeof point.totalDistanceMeters === "number" ? point.totalDistanceMeters : typeof point.distanceMeters === "number" ? point.distanceMeters : undefined,
+    durationSecs: typeof point.totalDurationSecs === "number" ? point.totalDurationSecs : typeof point.durationSecs === "number" ? point.durationSecs : undefined,
   };
 }
 
-function buildRouteSummary(points: GarminTrackPoint[], session: GarminSessionData): GarminRouteSummary {
+function buildRouteSummary(points: GarminTrackPoint[], session: GarminSessionData): { totalDistanceMeters?: number; totalDurationSecs?: number; lastReportedTime?: string; pointCount: number; isActive: boolean } {
   const lastPoint = points.at(-1);
   const lastReportedTime = lastPoint?.time;
-
   return {
     pointCount: points.length,
     totalDistanceMeters: lastPoint?.distanceMeters,
@@ -438,48 +184,45 @@ function isSessionActive(session: GarminSessionData, lastReportedTime?: string):
   const startMs = session.start ? Date.parse(session.start) : Number.NaN;
   const endMs = session.end ? Date.parse(session.end) : Number.NaN;
   const lastReportedMs = lastReportedTime ? Date.parse(lastReportedTime) : Number.NaN;
-
-  if ([startMs, endMs, lastReportedMs].some((value) => Number.isNaN(value))) {
-    return false;
-  }
-
+  if ([startMs, endMs, lastReportedMs].some((value) => Number.isNaN(value))) return false;
   const frequencySecs = typeof session.postTrackPointFrequency === "number" ? session.postTrackPointFrequency : 15;
   const freshnessWindowMs = Math.max(frequencySecs * 8_000, 10 * 60_000);
-
-  return (
-    extractedAtMs >= startMs &&
-    extractedAtMs <= endMs + freshnessWindowMs &&
-    extractedAtMs - lastReportedMs <= freshnessWindowMs
-  );
+  return (extractedAtMs >= startMs && extractedAtMs <= endMs + freshnessWindowMs && extractedAtMs - lastReportedMs <= freshnessWindowMs);
 }
 
-const garminRouteData = await loadRouteData(tripData.collections);
-const stravaRouteData = loadStravaRouteData(tripData.collections);
+const garminRouteData = await loadAllCollectionRouteData(collections);
+const stravaRouteData = collections.map(col => loadStravaRouteData((col.metadata as CollectionMetadata).activities || []));
 
 let activityColorIndex = 0;
-const collectionsWithColors = tripData.collections.map((col, index) => ({
-  ...col,
-  color: getCollectionColor(index),
-  activities: col.activities.map((activity) => ({
-    ...activity,
-    color: getActivityColor(activityColorIndex++),
-  })),
-}));
-
 const trackerPayload = {
-  collections: collectionsWithColors.map((col, ci) => ({
-    name: col.name,
-    color: col.color,
-    plannedRouteData: loadPlannedRouteData(col.routeGpxFile),
-    activities: col.activities.map((activity, ai) => ({
-      color: activity.color,
-      garminLivetrackUrl: activity.garminLivetrackUrl ?? null,
-      stravaActivityId: activity.stravaActivityId ?? null,
-      notes: activity.notes ?? null,
-      routeData: garminRouteData[ci]?.[ai] ?? stravaRouteData[ci]?.[ai] ?? null,
-      plannedRouteData: loadPlannedRouteData(activity.routeGpxFile),
-    })),
-  })),
+  collections: collections
+    .filter((col) => col.metadata && ((col.metadata as CollectionMetadata).activities || (col.metadata as CollectionMetadata).garminLivetrackUrl || (col.metadata as CollectionMetadata).routeGpxFile))
+    .map((col, ci) => {
+      const metadata = (col.metadata || {}) as CollectionMetadata;
+      const activities = (metadata.activities || []).map((activity, ai) => {
+        let activityId = activity.stravaActivityId;
+        if (!activityId && activity.strava_id) {
+          activityId = String(activity.strava_id[0]);
+        }
+        const url = activity.garminLivetrackUrl || (activity === (metadata.activities || [])[(metadata.activities || []).length - 1] ? metadata.garminLivetrackUrl : null);
+        
+        return {
+          color: getActivityColor(activityColorIndex++),
+          garminLivetrackUrl: url ?? null,
+          stravaActivityId: activityId ?? null,
+          notes: activity.notes ?? null,
+          routeData: garminRouteData[ci]?.[ai] ?? stravaRouteData[ci]?.[ai] ?? null,
+          plannedRouteData: loadPlannedRouteData(activity.routeGpxFile),
+        };
+      });
+
+      return {
+        name: col.title,
+        color: getCollectionColor(ci),
+        plannedRouteData: loadPlannedRouteData(metadata.routeGpxFile),
+        activities,
+      };
+    }),
 };
 ---
 
@@ -491,11 +234,11 @@ const trackerPayload = {
 
     <main>
       <div id="map-shell" class="map-shell hidden">
-        <div id="main-map" class="map-canvas" aria-label="Route map"></div>
+        <Map payload={trackerPayload} className="map-canvas" autoInit={false} />
       </div>
 
       <div id="map-placeholder" class="empty-state">
-        Add Garmin LiveTrack URLs in <code>live-tracking.yaml</code> once the ride has started.
+        Add Garmin LiveTrack URLs in metadata once the ride has started.
       </div>
 
       <div id="collection-controls" class="collection-controls hidden" role="tablist" aria-label="Collections"></div>
@@ -531,38 +274,11 @@ const trackerPayload = {
     </main>
   </div>
 
-  <script id="tracker-data" type="application/json" set:html={serializeDataForScript(trackerPayload)}></script>
   <script>
     import { setupTripTracker } from "../scripts/tracker";
-
-    const tripDataElement = document.getElementById("tracker-data");
-
+    const tripDataElement = document.getElementById("map-data");
     if (tripDataElement?.textContent) {
       void setupTripTracker(JSON.parse(tripDataElement.textContent));
     }
-
-    const themeToggle = document.getElementById("theme-toggle");
-    const sunIcon = document.getElementById("sun-icon");
-    const moonIcon = document.getElementById("moon-icon");
-
-    function updateThemeIcons(theme: string) {
-      if (theme === "dark") {
-        sunIcon?.classList.remove("hidden");
-        moonIcon?.classList.add("hidden");
-      } else {
-        sunIcon?.classList.add("hidden");
-        moonIcon?.classList.remove("hidden");
-      }
-    }
-
-    const currentTheme = document.documentElement.getAttribute("data-theme") || "light";
-    updateThemeIcons(currentTheme);
-
-    themeToggle?.addEventListener("click", () => {
-      const theme = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
-      document.documentElement.setAttribute("data-theme", theme);
-      localStorage.setItem("theme", theme);
-      updateThemeIcons(theme);
-    });
   </script>
 </Layout>

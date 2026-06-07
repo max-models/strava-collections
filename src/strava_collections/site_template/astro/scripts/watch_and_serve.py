@@ -1,4 +1,5 @@
 import signal
+import shutil
 import subprocess
 import sys
 import time
@@ -29,12 +30,23 @@ def run_sync() -> None:
     sync_site(SITE_ROOT)
 
 
+def clear_vite_dependency_cache() -> None:
+    vite_cache_dir = PATHS.astro_dir / "node_modules" / ".vite"
+    if vite_cache_dir.exists():
+        shutil.rmtree(vite_cache_dir)
+
+
 def main() -> int:
     run_sync()
+    clear_vite_dependency_cache()
     previous_snapshot = snapshot_source_tree()
 
+    astro_command = ["npm", "run", "astro:dev"]
+    if len(sys.argv) > 1:
+        astro_command.extend(["--", *sys.argv[1:]])
+
     astro_process = subprocess.Popen(
-        ["npm", "run", "astro:dev"],
+        astro_command,
         cwd=PATHS.astro_dir,
     )
 

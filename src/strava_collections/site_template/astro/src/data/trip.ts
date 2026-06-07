@@ -1,16 +1,13 @@
 export interface CollectionActivity {
   garminLivetrackUrl?: string | null;
   stravaActivityId?: string | null;
+  strava_id?: [number, boolean] | null;
   notes?: string;
   routeGpxFile?: string | string[] | null;
 }
 
-export interface Collection {
-  name: string;
+export interface CollectionMetadata {
+  activities?: CollectionActivity[];
   routeGpxFile?: string | string[] | null;
-  activities: CollectionActivity[];
-}
-
-export interface TripData {
-  collections: Collection[];
+  garminLivetrackUrl?: string | null;
 }

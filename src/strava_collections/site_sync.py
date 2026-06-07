@@ -4,6 +4,7 @@ from pathlib import Path
 
 from strava_collections.astro_page import (
     markdown_to_body_html,
+    metadata_from_astro,
     render_collection_page,
     route_slug_from_filename,
     title_from_astro,
@@ -19,12 +20,13 @@ def display_path(path: Path, root: Path) -> str:
         return str(path)
 
 
-def render_collections_manifest(collections: list[dict[str, str]]) -> str:
+def render_collections_manifest(collections: list[dict]) -> str:
     return (
         "export type CollectionSummary = {\n"
         "  title: string;\n"
         "  slug: string;\n"
         "  fileSlug: string;\n"
+        "  metadata?: any;\n"
         "};\n\n"
         f"export const collections: CollectionSummary[] = {json.dumps(collections, indent=2)};\n"
     )
@@ -50,8 +52,10 @@ def sync_collections(paths: SitePaths) -> None:
         synced_filenames.add(target_filename)
         source_text = source_file.read_text(encoding="utf-8")
 
+        metadata = {}
         if source_type == "astro":
             title = title_from_astro(source_text)
+            metadata = metadata_from_astro(source_text)
             target_file.write_text(source_text, encoding="utf-8")
         else:
             title = title_from_markdown(source_text)
@@ -66,6 +70,7 @@ def sync_collections(paths: SitePaths) -> None:
                 "title": title,
                 "slug": route_slug,
                 "fileSlug": file_slug,
+                "metadata": metadata,
             }
         )
         print(f"Synced collection page: {display_path(target_file, paths.site_root)}")

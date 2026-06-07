@@ -192,7 +192,7 @@ class StravaActivity:
 
         if rdp_epsilon is not None:
             # We only simplify based on lat/lon
-            indices = fastrdp.rdp_indices(latlng[:, 0], latlng[:, 1], rdp_epsilon)
+            indices = fastrdp.rdp_index(latlng[:, 0], latlng[:, 1], rdp_epsilon)
             latlng = latlng[indices]
             if alt_data is not None:
                 alt_data = alt_data[indices]
