@@ -3,282 +3,77 @@ import Layout from "../layouts/Layout.astro";
 import Map from "../components/Map.astro";
 import "../styles/tracker.css";
 import "leaflet/dist/leaflet.css";
-import { collections } from "../generated/collections";
-import type { CollectionMetadata, GarminRouteData, GarminTrackPoint } from "../data/trip";
-import { loadStravaRouteData, loadPlannedRouteData, loadGarminRouteData } from "../scripts/data-helpers";
+import { loadGarminRouteData, loadPlannedRouteData } from "../scripts/data-helpers";
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import yaml from 'js-yaml';
 
-interface GarminHydratedQuery {
-  queryKey?: unknown[];
-  state?: {
-    data?: unknown;
-  };
-}
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-interface GarminSessionData {
-  start?: string;
-  end?: string;
-  postTrackPointFrequency?: number;
-  position?: {
-    lat?: number;
-    lon?: number;
-  };
-}
-
-interface GarminTrackPointSource {
-  dateTime?: string;
-  reportedTime?: string;
-  altitude?: number;
-  speed?: number;
-  speedMetersPerSec?: number;
-  heartRateBeatsPerMin?: number;
-  cadenceCyclesPerMin?: number;
-  powerWatts?: number;
-  totalDurationSecs?: number;
-  durationSecs?: number;
-  totalDistanceMeters?: number;
-  distanceMeters?: number;
-  position?: {
-    lat?: number;
-    lon?: number;
-  };
-}
-
-const hydrationPattern = /self\.__next_f\.push\(\[1,"((?:\\.|[^"\\])*)"\]\)/gs;
-
-const collectionPalette = ["#2563eb", "#7c3aed", "#059669", "#dc2626", "#ea580c", "#0891b2", "#9333ea"];
-const activityPalette = ["#22c55e", "#f97316", "#a855f7", "#06b6d4", "#ef4444", "#84cc16", "#eab308", "#3b82f6"];
-
-const getCollectionColor = (index: number): string => collectionPalette[index % collectionPalette.length];
-const getActivityColor = (index: number): string => activityPalette[index % activityPalette.length];
-
-const parseLivetrackUrl = (url: string): boolean =>
-  /\/session\/([a-z0-9-]+)\/token\/([a-z0-9]+)/i.test(url);
-
-async function loadAllCollectionRouteData(collectionList: typeof collections): Promise<(GarminRouteData | null)[][]> {
-  return Promise.all(
-    collectionList.map((collection) => {
-      const metadata = (collection.metadata || {}) as CollectionMetadata;
-      const activities = metadata.activities || [];
-      return loadGarminRouteData(activities, metadata);
-    }),
-  );
-}
-
-function parseTrackDataFromHtml(
-  html: string,
-): { points: GarminTrackPointSource[]; session: GarminSessionData } | { errorDetail: string } {
-  let trackQuery: GarminHydratedQuery | undefined;
-  let sessionQuery: GarminHydratedQuery | undefined;
-
-  for (const match of html.matchAll(hydrationPattern)) {
-    try {
-      const decoded = JSON.parse(`"${match[1]}"`) as string;
-
-      for (const line of decoded.split("\n")) {
-        const payloadSeparator = line.indexOf(":");
-        if (payloadSeparator === -1) {
-          continue;
-        }
-
-        const payloadRaw = line.slice(payloadSeparator + 1);
-        if (!payloadRaw.startsWith("{") && !payloadRaw.startsWith("[")) {
-          continue;
-        }
-
-        const payload = JSON.parse(payloadRaw) as unknown;
-        const queries = collectQueries(payload);
-
-        if (!trackQuery) {
-          trackQuery = queries.find((query) => query.queryKey?.at(-1) === "track-points");
-        }
-        if (!sessionQuery) {
-          sessionQuery = queries.find(
-            (query) => Array.isArray(query.queryKey) && query.queryKey[0] === "session" && query.queryKey.length === 3,
-          );
-        }
-      }
-    } catch {
-      continue;
-    }
+function findLiveTrackingYaml(startDir: string): string {
+  let curr = startDir;
+  while (curr !== path.dirname(curr)) {
+    const p = path.join(curr, 'live-tracking.yaml');
+    if (fs.existsSync(p)) return p;
+    curr = path.dirname(curr);
   }
-
-  if (sessionQuery) {
-    const session = asSessionData(sessionQuery.state?.data);
-    const trackPages = trackQuery ? asTrackPages(trackQuery.state?.data) : [];
-    const points = trackPages.flatMap((page) => page.trackPoints ?? []);
-
-    if (points.length === 0 && session.position?.lat && session.position?.lon) {
-      points.push({
-        position: session.position,
-        dateTime: session.end || session.start,
-        reportedTime: session.end || session.start,
-      });
-    }
-
-    return { points, session };
-  }
-
-  return { errorDetail: "Could not find Garmin hydration session data." };
+  throw new Error('Could not find live-tracking.yaml in any parent directory');
 }
 
-function collectQueries(value: unknown): GarminHydratedQuery[] {
-  const out: GarminHydratedQuery[] = [];
-  const visit = (node: unknown): void => {
-    if (!node) return;
-    if (Array.isArray(node)) {
-      node.forEach(visit);
-      return;
-    }
-    if (typeof node !== "object") return;
-    const maybeQuery = node as GarminHydratedQuery;
-    if (Array.isArray(maybeQuery.queryKey)) out.push(maybeQuery);
-    Object.values(node as Record<string, unknown>).forEach(visit);
-  };
-  visit(value);
-  return out;
-}
+const liveTrackingPath = findLiveTrackingYaml(__dirname);
+const rootPath = path.dirname(liveTrackingPath);
+const liveTrackingConfig = yaml.load(fs.readFileSync(liveTrackingPath, 'utf8')) as { collections: any[] };
 
-function asTrackPages(value: unknown): Array<{ trackPoints?: GarminTrackPointSource[] }> {
-  if (!value || typeof value !== "object" || !("pages" in value)) return [];
-  const pages = (value as { pages?: unknown[] }).pages;
-  return Array.isArray(pages) ? (pages as Array<{ trackPoints?: GarminTrackPointSource[] }>) : [];
-}
+const collection = liveTrackingConfig.collections[0];
+const garminActivity = collection.activities.find((a: any) => a.garminLivetrackUrl);
+const garminUrl = garminActivity?.garminLivetrackUrl;
+const routeData = garminUrl ? await loadGarminRouteData([garminActivity], {}) : null;
 
-function asSessionData(value: unknown): GarminSessionData {
-  if (!value || typeof value !== "object") return {};
-  return value as GarminSessionData;
-}
+// Load planned route data from GPX files
+const gpxFiles = collection.routeGpxFile || [];
+const absoluteGpxPaths = (Array.isArray(gpxFiles) ? gpxFiles : [gpxFiles]).map(f => path.join(rootPath, f));
+const plannedRouteData = loadPlannedRouteData(absoluteGpxPaths);
 
-function normalizeTrackPoint(point: GarminTrackPointSource): GarminTrackPoint | null {
-  const lat = point.position?.lat;
-  const lon = point.position?.lon;
-  if (typeof lat !== "number" || typeof lon !== "number") return null;
-  return {
-    lat,
-    lon,
-    elevation: typeof point.altitude === "number" ? point.altitude : undefined,
-    speedMetersPerSec: typeof point.speedMetersPerSec === "number" ? point.speedMetersPerSec : typeof point.speed === "number" ? point.speed : undefined,
-    heartRateBeatsPerMin: typeof point.heartRateBeatsPerMin === "number" && point.heartRateBeatsPerMin > 0 ? point.heartRateBeatsPerMin : undefined,
-    cadenceCyclesPerMin: typeof point.cadenceCyclesPerMin === "number" ? point.cadenceCyclesPerMin : undefined,
-    powerWatts: typeof point.powerWatts === "number" ? point.powerWatts : undefined,
-    time: point.dateTime ?? point.reportedTime,
-    distanceMeters: typeof point.totalDistanceMeters === "number" ? point.totalDistanceMeters : typeof point.distanceMeters === "number" ? point.distanceMeters : undefined,
-    durationSecs: typeof point.totalDurationSecs === "number" ? point.totalDurationSecs : typeof point.durationSecs === "number" ? point.durationSecs : undefined,
-  };
-}
-
-function buildRouteSummary(points: GarminTrackPoint[], session: GarminSessionData): { totalDistanceMeters?: number; totalDurationSecs?: number; lastReportedTime?: string; pointCount: number; isActive: boolean } {
-  const lastPoint = points.at(-1);
-  const lastReportedTime = lastPoint?.time;
-  return {
-    pointCount: points.length,
-    totalDistanceMeters: lastPoint?.distanceMeters,
-    totalDurationSecs: lastPoint?.durationSecs,
-    lastReportedTime,
-    isActive: isSessionActive(session, lastReportedTime),
-  };
-}
-
-function isSessionActive(session: GarminSessionData, lastReportedTime?: string): boolean {
-  const extractedAtMs = Date.now();
-  const startMs = session.start ? Date.parse(session.start) : Number.NaN;
-  const endMs = session.end ? Date.parse(session.end) : Number.NaN;
-  const lastReportedMs = lastReportedTime ? Date.parse(lastReportedTime) : Number.NaN;
-  if ([startMs, endMs, lastReportedMs].some((value) => Number.isNaN(value))) return false;
-  const frequencySecs = typeof session.postTrackPointFrequency === "number" ? session.postTrackPointFrequency : 15;
-  const freshnessWindowMs = Math.max(frequencySecs * 8_000, 10 * 60_000);
-  return (extractedAtMs >= startMs && extractedAtMs <= endMs + freshnessWindowMs && extractedAtMs - lastReportedMs <= freshnessWindowMs);
-}
-
-const garminRouteData = await loadAllCollectionRouteData(collections);
-const stravaRouteData = collections.map(col => loadStravaRouteData((col.metadata as CollectionMetadata).activities || []));
-
-let activityColorIndex = 0;
 const trackerPayload = {
-  collections: collections
-    .filter((col) => col.metadata && ((col.metadata as CollectionMetadata).activities || (col.metadata as CollectionMetadata).garminLivetrackUrl || (col.metadata as CollectionMetadata).routeGpxFile))
-    .map((col, ci) => {
-      const metadata = (col.metadata || {}) as CollectionMetadata;
-      const activities = (metadata.activities || []).map((activity, ai) => {
-        let activityId = activity.stravaActivityId;
-        if (!activityId && activity.strava_id) {
-          activityId = String(activity.strava_id[0]);
+  collections: [
+    {
+      name: collection.name,
+      plannedRouteData,
+      activities: [
+        {
+          color: "#2563eb",
+          garminLivetrackUrl: garminUrl,
+          routeData: routeData?.[0] ?? null,
         }
-        const url = activity.garminLivetrackUrl || (activity === (metadata.activities || [])[(metadata.activities || []).length - 1] ? metadata.garminLivetrackUrl : null);
-        
-        return {
-          color: getActivityColor(activityColorIndex++),
-          garminLivetrackUrl: url ?? null,
-          stravaActivityId: activityId ?? null,
-          notes: activity.notes ?? null,
-          routeData: garminRouteData[ci]?.[ai] ?? stravaRouteData[ci]?.[ai] ?? null,
-          plannedRouteData: loadPlannedRouteData(activity.routeGpxFile),
-        };
-      });
-
-      return {
-        name: col.title,
-        color: getCollectionColor(ci),
-        plannedRouteData: loadPlannedRouteData(metadata.routeGpxFile),
-        activities,
-      };
-    }),
+      ]
+    }
+  ]
 };
 ---
 
 <Layout title="Live Tracking">
   <div class="page-shell">
     <header class="site-header">
-      <h1>follow-my-garmin</h1>
+      <h1>Live Tracking</h1>
     </header>
 
     <main>
-      <div id="map-shell" class="map-shell hidden">
-        <Map payload={trackerPayload} className="map-canvas" autoInit={false} />
-      </div>
-
-      <div id="map-placeholder" class="empty-state">
-        Add Garmin LiveTrack URLs in metadata once the ride has started.
-      </div>
-
-      <div id="collection-controls" class="collection-controls hidden" role="tablist" aria-label="Collections"></div>
-
-      <div id="map-stats" class="map-stats hidden">
-        <div class="stat-card">
-          <span class="stat-label">Total distance</span>
-          <strong id="stat-distance">-</strong>
+      {garminUrl ? (
+        <>
+          <div class="map-shell">
+            <Map payload={trackerPayload} className="map-canvas" autoInit={true} />
+          </div>
+          <div class="garmin-link">
+            <a href={garminUrl} target="_blank" rel="noopener noreferrer">View on Garmin LiveTrack</a>
+          </div>
+        </>
+      ) : (
+        <div class="empty-state">
+          No active live tracking found.
         </div>
-        <div class="stat-card">
-          <span class="stat-label">Total duration</span>
-          <strong id="stat-duration">-</strong>
-        </div>
-        <div class="stat-card">
-          <span class="stat-label">Last update</span>
-          <strong id="stat-updated">-</strong>
-        </div>
-        <div class="stat-card">
-          <span class="stat-label">Track points</span>
-          <strong id="stat-points">-</strong>
-        </div>
-      </div>
-
-      <section id="live-stats" class="live-stats hidden" aria-label="Live activity metrics"></section>
-
-      <section id="route-graphs" class="graphs hidden" aria-labelledby="graphs-heading">
-        <h2 id="graphs-heading" class="graphs-heading">Speed</h2>
-        <div id="graph-switcher" class="graph-switcher" role="tablist" aria-label="Metric graph selector"></div>
-        <div id="graph-canvas"></div>
-      </section>
-
-      <div id="activity-list" class="activity-list hidden"></div>
+      )}
     </main>
   </div>
-
-  <script>
-    import { setupTripTracker } from "../scripts/tracker";
-    const tripDataElement = document.getElementById("map-data");
-    if (tripDataElement?.textContent) {
-      void setupTripTracker(JSON.parse(tripDataElement.textContent));
-    }
-  </script>
 </Layout>

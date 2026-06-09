@@ -185,6 +185,16 @@ def generate_collection(
     # Export GPX assets for each activity
     collection.generate_gpx_assets(path_static, verbose=verbose)
 
+    # Export map as html
+    collection.plot_map(
+        filepath=str(map_full_path),
+        linewidths=[4, 2],
+        height=800,
+        width_to_height=1.0,
+        places=places,
+        verbose=verbose,
+    )
+
     # We still plot the map as a PNG for thumbnails/socials
     collection.plot_map(
         filepath=str(map_path.with_suffix(".png")),
