@@ -80,9 +80,18 @@ const trackerPayload = {
 
 <Layout title="Live Tracking">
   <div class="max-w-4xl mx-auto px-4 py-8">
-    <header class="mb-8">
-      <h1 class="text-3xl font-bold text-slate-900 tracking-tight">Live Tracking</h1>
-      <p class="text-slate-500 mt-2 text-lg">Follow the journey in real-time.</p>
+    <header class="mb-8 flex items-center justify-between">
+      <div>
+        <h1 class="text-3xl font-bold text-slate-900 tracking-tight">Live Tracking</h1>
+        <p class="text-slate-500 mt-2 text-lg">Follow the journey in real-time.</p>
+      </div>
+      <button 
+        id="refresh-button"
+        class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-lg text-sm font-semibold text-white hover:bg-blue-700 transition-all shadow-md active:scale-95"
+      >
+        <svg id="refresh-icon" class="mr-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+        Refresh Data
+      </button>
     </header>
 
     <main class="space-y-6">
@@ -107,4 +116,15 @@ const trackerPayload = {
       </div>
     </main>
   </div>
+
+  <script>
+    const refreshBtn = document.getElementById('refresh-button');
+    const refreshIcon = document.getElementById('refresh-icon');
+    if (refreshBtn && refreshIcon) {
+      refreshBtn.addEventListener('click', () => {
+        refreshIcon.classList.add('animate-spin');
+        window.location.reload();
+      });
+    }
+  </script>
 </Layout>
