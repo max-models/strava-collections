@@ -1,9 +1,8 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import Map from "../components/Map.astro";
-import "../styles/tracker.css";
 import "leaflet/dist/leaflet.css";
-import { loadGarminRouteData, loadPlannedRouteData } from "../scripts/data-helpers";
+import { loadPlannedRouteData } from "../scripts/data-helpers";
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -27,25 +26,51 @@ const rootPath = path.dirname(liveTrackingPath);
 const liveTrackingConfig = yaml.load(fs.readFileSync(liveTrackingPath, 'utf8')) as { collections: any[] };
 
 const collection = liveTrackingConfig.collections[0];
-const garminActivity = collection.activities.find((a: any) => a.garminLivetrackUrl);
-const garminUrl = garminActivity?.garminLivetrackUrl;
-const routeData = garminUrl ? await loadGarminRouteData([garminActivity], {}) : null;
 
-// Load planned route data from GPX files
-const gpxFiles = collection.routeGpxFile || [];
-const absoluteGpxPaths = (Array.isArray(gpxFiles) ? gpxFiles : [gpxFiles]).map(f => path.join(rootPath, f));
-const plannedRouteData = loadPlannedRouteData(absoluteGpxPaths);
+// Fetch live tracking data from Worker API
+let livePoints: any[] = [];
+try {
+  const response = await fetch('https://bitter-silence-3781.max-lindqvist.workers.dev/history');
+  if (response.ok) {
+    const history = await response.json() as Array<{ key: string, data: { lat: number, lon: number, tst: number } }>;
+    livePoints = history
+      .sort((a, b) => a.data.tst - b.data.tst)
+      .map(entry => ({
+        lat: entry.data.lat,
+        lon: entry.data.lon,
+        time: new Date(entry.data.tst * 1000).toISOString()
+      }))
+      .filter(p => typeof p.lat === 'number' && typeof p.lon === 'number' && p.lat !== 0 && p.lon !== 0);
+  }
+} catch (e) {
+  console.error("Failed to fetch live tracking history:", e);
+}
+
+const routeData = livePoints.length > 0 ? {
+  status: "ok" as const,
+  points: livePoints,
+  summary: {
+    pointCount: livePoints.length,
+    isActive: true,
+    lastReportedTime: livePoints.at(-1)?.time
+  }
+} : null;
+
+// Load planned route data from GPX files using the robust helper
+const plannedRouteData = loadPlannedRouteData(collection.routeGpxFile);
 
 const trackerPayload = {
   collections: [
     {
       name: collection.name,
+      color: "#2563eb",
       plannedRouteData,
       activities: [
         {
           color: "#2563eb",
-          garminLivetrackUrl: garminUrl,
-          routeData: routeData?.[0] ?? null,
+          routeData: routeData,
+          notes: "Live Progress",
+          plannedRouteData: null
         }
       ]
     }
@@ -54,26 +79,32 @@ const trackerPayload = {
 ---
 
 <Layout title="Live Tracking">
-  <div class="page-shell">
-    <header class="site-header">
-      <h1>Live Tracking</h1>
+  <div class="max-w-4xl mx-auto px-4 py-8">
+    <header class="mb-8">
+      <h1 class="text-3xl font-bold text-slate-900 tracking-tight">Live Tracking</h1>
+      <p class="text-slate-500 mt-2 text-lg">Follow the journey in real-time.</p>
     </header>
 
-    <main>
-      {garminUrl ? (
-        <>
-          <div class="map-shell">
-            <Map payload={trackerPayload} className="map-canvas" autoInit={true} />
-          </div>
-          <div class="garmin-link">
-            <a href={garminUrl} target="_blank" rel="noopener noreferrer">View on Garmin LiveTrack</a>
-          </div>
-        </>
-      ) : (
-        <div class="empty-state">
-          No active live tracking found.
+    <main class="space-y-6">
+      <div class="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
+        <Map payload={trackerPayload} />
+      </div>
+
+      <div class="flex items-center justify-between p-5 bg-slate-50 rounded-2xl border border-slate-200 shadow-sm">
+        <div class="flex flex-col">
+          <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Data Source</span>
+          <code class="text-sm text-slate-600 mt-1">max-lindqvist.workers.dev</code>
         </div>
-      )}
+        <a 
+          href="https://bitter-silence-3781.max-lindqvist.workers.dev/history" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          class="inline-flex items-center px-4 py-2 bg-white border border-slate-300 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-50 hover:border-slate-400 transition-all shadow-sm"
+        >
+          Raw API Feed
+          <svg class="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+        </a>
+      </div>
     </main>
   </div>
 </Layout>
