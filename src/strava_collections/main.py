@@ -399,7 +399,7 @@ def main():
             # Start dev server
             npm_command = ["npm", "run", "dev"]
             if args.host:
-                npm_command.append("-- --host")
+                npm_command.extend(["--", "--host"])
             subprocess.run(npm_command, cwd=astro_dir, check=True)
         except KeyboardInterrupt:
             print("\n👋 Server stopped.")
