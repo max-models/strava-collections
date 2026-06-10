@@ -1,5 +1,11 @@
 collections:
   - name: Nordic chase 2026
+    customText: |
+      <p>Live tracking for my June bike trip</p>
+      <ul>
+        <li><strong>Route 1:</strong> Nordic Chase 2026 - Copenhagen to Oslo</li>
+        <li><strong>Route 2:</strong> Bergen to Bodö</li>
+      </ul>
     routeGpxFile:
       - "temporary-strava-activities/routes/NC26_CPH-OSL_Road.gpx"
       - "temporary-strava-activities/routes/bergen_to_bodo.gpx"

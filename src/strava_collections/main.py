@@ -325,6 +325,12 @@ def main():
     )
 
     parser.add_argument(
+        "--host",
+        action="store_true",
+        help="Host the development server",
+    )
+
+    parser.add_argument(
         "-v",
         "--verbose",
         action="store_true",
@@ -368,6 +374,11 @@ def main():
         )
     if args.verbose:
         print(f"Generated collection with activities: {args.ids}")
+
+    if site_root is None:
+        print("No site generated since no output directory was specified.")
+        return
+
     if site_root is not None:
         sync_site(site_root)
         import os
@@ -386,7 +397,10 @@ def main():
             # Install dependencies
             subprocess.run(["npm", "ci"], cwd=astro_dir, check=True)
             # Start dev server
-            subprocess.run(["npm", "run", "dev"], cwd=astro_dir, check=True)
+            npm_command = ["npm", "run", "dev"]
+            if args.host:
+                npm_command.append("-- --host")
+            subprocess.run(npm_command, cwd=astro_dir, check=True)
         except KeyboardInterrupt:
             print("\n👋 Server stopped.")
         except Exception as e:

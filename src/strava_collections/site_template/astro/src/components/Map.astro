@@ -15,8 +15,10 @@ const {
   autoInit = true
 } = Astro.props;
 
-const serializeDataForScript = (value: unknown): string =>
-  JSON.stringify(value).replace(/</g, "\u003c").replace(/>/g, "\u003e").replace(/&/g, "\u0026");
+const serializeDataForScript = (value: unknown): string => {
+  const json = JSON.stringify(value || {});
+  return json.replace(/</g, "\u003c").replace(/>/g, "\u003e").replace(/&/g, "\u0026");
+};
 ---
 
 <div id={containerId} class={className} data-auto-init={String(autoInit)}></div>

@@ -72,7 +72,7 @@ export function setupMap(options: MapOptions) {
   });
 
   if (bounds.isValid()) {
-    map.fitBounds(bounds, { padding: [40, 40], maxZoom: 11 });
+    map.fitBounds(bounds, { padding: [40, 40], maxZoom: 18 });
   }
 
   return map;
