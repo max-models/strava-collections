@@ -6,5 +6,5 @@ collections:
     activities:
       - stravaActivityId: "18796354199"
         notes: First activity (from strava)
-      - garminLivetrackUrl: "https://livetrack.garmin.com/session/19e97698-b449-8624-b05a-7942e797fb00/token/5C552D8176DABA2497316FF881E69"
+      - garminLivetrackUrl: "https://livetrack.garmin.com/session/51f7acad-a161-841b-974e-f1c214025f00/token/24A17584B115B88BD4E2FAA54DC8"
         notes: Second activity (live)

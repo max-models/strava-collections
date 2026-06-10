@@ -135,13 +135,24 @@ export function loadPlannedRouteData(
   const allPoints: Array<{ lat: number; lon: number }> = [];
 
   for (const filename of filenames) {
-    const possiblePaths = [join(process.cwd(), "../source", filename), join(process.cwd(), filename)];
+    if (!filename) continue;
+
+    const possiblePaths = [
+      filename, // Try as absolute path
+      join(process.cwd(), filename),
+      join(process.cwd(), "../source", filename),
+      join(process.cwd(), "../..", filename), // Project root from docs/astro
+      join(process.cwd(), "../../..", filename), // Project root from docs/astro/src/pages
+    ];
+
+    let found = false;
     for (const p of possiblePaths) {
       if (existsSync(p)) {
         const content = readFileSync(p, "utf-8");
-          const points = downsamplePoints(parseGpxPoints(content, { includeTelemetry: false }));
-          if (points.length > 0) {
+        const points = downsamplePoints(parseGpxPoints(content, { includeTelemetry: false }));
+        if (points.length > 0) {
           allPoints.push(...points);
+          found = true;
           break;
         }
       }
