@@ -236,15 +236,19 @@ def render_collection_page(
 ) -> str:
     markup, headings = body_html_to_astro_markup(body_html)
     metadata_json = json.dumps(metadata or {}, indent=2)
-    
+
     # Add Live Tracking to headings if garminLivetrackUrl exists
     if metadata and metadata.get("garminLivetrackUrl"):
-        headings.insert(0, {"depth": 3, "slug": "live-tracking", "text": "Live Tracking"})
-    
+        headings.insert(
+            0, {"depth": 3, "slug": "live-tracking", "text": "Live Tracking"}
+        )
+
     # Generate fullscreen map URL based on collection name
     collection_slug = title.lower().replace(" ", "-")
-    fullscreen_map_url = f"${{base}}_static/collection-{collection_slug}-map-fullscreen.html"
-    
+    fullscreen_map_url = (
+        f"${{base}}_static/collection-{collection_slug}-map-fullscreen.html"
+    )
+
     return (
         "---\n"
         "import CollectionPage from '../../components/CollectionPage.astro';\n"
@@ -276,70 +280,70 @@ def render_collection_page(
         f"const fullscreenMapUrl = `{fullscreen_map_url}`;\n"
         "---\n\n"
         "<CollectionPage title={title} headings={headings}>\n"
-        "  <h1 class=\"text-4xl font-bold text-slate-900 mb-8\">{title}</h1>\n"
+        '  <h1 class="text-4xl font-bold text-slate-900 mb-8">{title}</h1>\n'
         "  {metadata.description && (\n"
-        "    <p class=\"text-lg text-slate-600 mb-8 leading-relaxed whitespace-pre-line\">{metadata.description}</p>\n"
+        '    <p class="text-lg text-slate-600 mb-8 leading-relaxed whitespace-pre-line">{metadata.description}</p>\n'
         "  )}\n"
         "  \n"
-        "  <section class=\"collection-stats-section mb-12\">\n"
-        "    <div class=\"grid grid-cols-1 md:grid-cols-3 gap-6\">\n"
-        "      <div class=\"bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-2xl border border-blue-200 shadow-sm\">\n"
-        "        <span class=\"block text-xs font-bold text-blue-600 uppercase tracking-widest mb-2\">Total Distance</span>\n"
-        "        <strong class=\"text-3xl text-slate-900\">{metadata.totalDistanceKm} km</strong>\n"
+        '  <section class="collection-stats-section mb-12">\n'
+        '    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">\n'
+        '      <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-2xl border border-blue-200 shadow-sm">\n'
+        '        <span class="block text-xs font-bold text-blue-600 uppercase tracking-widest mb-2">Total Distance</span>\n'
+        '        <strong class="text-3xl text-slate-900">{metadata.totalDistanceKm} km</strong>\n'
         "      </div>\n"
-        "      <div class=\"bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-2xl border border-green-200 shadow-sm\">\n"
-        "        <span class=\"block text-xs font-bold text-green-600 uppercase tracking-widest mb-2\">Total Elevation Gain</span>\n"
-        "        <strong class=\"text-3xl text-slate-900\">{metadata.totalElevationGainM} m</strong>\n"
+        '      <div class="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-2xl border border-green-200 shadow-sm">\n'
+        '        <span class="block text-xs font-bold text-green-600 uppercase tracking-widest mb-2">Total Elevation Gain</span>\n'
+        '        <strong class="text-3xl text-slate-900">{metadata.totalElevationGainM} m</strong>\n'
         "      </div>\n"
-        "      <div class=\"bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-2xl border border-purple-200 shadow-sm\">\n"
-        "        <span class=\"block text-xs font-bold text-purple-600 uppercase tracking-widest mb-2\">Total Moving Time</span>\n"
-        "        <strong class=\"text-3xl text-slate-900\">{metadata.totalMovingTimeHours} hrs</strong>\n"
+        '      <div class="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-2xl border border-purple-200 shadow-sm">\n'
+        '        <span class="block text-xs font-bold text-purple-600 uppercase tracking-widest mb-2">Total Moving Time</span>\n'
+        '        <strong class="text-3xl text-slate-900">{metadata.totalMovingTimeHours} hrs</strong>\n'
         "      </div>\n"
         "    </div>\n"
         "  </section>\n"
         "  \n"
         "  {metadata.garminLivetrackUrl && (\n"
-        "    <section class=\"garmin-livetrack-section mb-12\" id=\"live-tracking\">\n"
-        "      <h3 class=\"text-xl font-bold text-slate-900 mb-4 flex items-center gap-2\">\n"
-        "        <span class=\"inline-block w-3 h-3 bg-red-500 rounded-full animate-pulse\"></span>\n"
+        '    <section class="garmin-livetrack-section mb-12" id="live-tracking">\n'
+        '      <h3 class="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">\n'
+        '        <span class="inline-block w-3 h-3 bg-red-500 rounded-full animate-pulse"></span>\n'
         "        Live Tracking\n"
         "      </h3>\n"
-        "      <div class=\"garmin-iframe-container\" style=\"border: 3px solid #ef4444; border-radius: 12px; overflow: hidden; margin-bottom: 16px;\">\n"
+        '      <div class="garmin-iframe-container" style="border: 3px solid #ef4444; border-radius: 12px; overflow: hidden; margin-bottom: 16px;">\n'
         "        <iframe\n"
         "          src={metadata.garminLivetrackUrl}\n"
-        "          style=\"width: 100%; height: 600px; border: none;\"\n"
-        "          title=\"Garmin LiveTrack Map\"\n"
+        '          style="width: 100%; height: 600px; border: none;"\n'
+        '          title="Garmin LiveTrack Map"\n'
         "        ></iframe>\n"
         "      </div>\n"
-        "      <div class=\"flex items-center gap-4 mb-6\">\n"
+        '      <div class="flex items-center gap-4 mb-6">\n'
         "        <a\n"
         "          href={metadata.garminLivetrackUrl}\n"
-        "          target=\"_blank\"\n"
-        "          rel=\"noopener noreferrer\"\n"
-        "          class=\"inline-flex items-center gap-2 px-6 py-3 bg-white hover:bg-gray-50 text-red-600 font-semibold rounded-lg border-2 border-red-500 transition-colors shadow-sm\"\n"
+        '          target="_blank"\n'
+        '          rel="noopener noreferrer"\n'
+        '          class="inline-flex items-center gap-2 px-6 py-3 bg-white hover:bg-gray-50 text-red-600 font-semibold rounded-lg border-2 border-red-500 transition-colors shadow-sm"\n'
         "        >\n"
-        "          <svg class=\"w-5 h-5\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\">\n"
-        "            <path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14\"></path>\n"
+        '          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">\n'
+        '            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>\n'
         "          </svg>\n"
         "          Open Full Garmin LiveTrack\n"
         "        </a>\n"
         "      </div>\n"
-        "      <div class=\"grid grid-cols-2 md:grid-cols-4 gap-4 mb-6\" id=\"live-stats\">\n"
-        "        <div class=\"bg-white p-5 rounded-2xl border border-slate-100 shadow-sm\">\n"
-        "          <span class=\"block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1\">Distance</span>\n"
-        "          <strong class=\"text-2xl text-slate-900\" data-stat=\"distance\">--</strong>\n"
+        '      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="live-stats">\n'
+        '        <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">\n'
+        '          <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Distance</span>\n'
+        '          <strong class="text-2xl text-slate-900" data-stat="distance">--</strong>\n'
         "        </div>\n"
-        "        <div class=\"bg-white p-5 rounded-2xl border border-slate-100 shadow-sm\">\n"
-        "          <span class=\"block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1\">Elevation</span>\n"
-        "          <strong class=\"text-2xl text-slate-900\" data-stat=\"elevation\">--</strong>\n"
+        '        <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">\n'
+        '          <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Elevation</span>\n'
+        '          <strong class="text-2xl text-slate-900" data-stat="elevation">--</strong>\n'
         "        </div>\n"
-        "        <div class=\"bg-white p-5 rounded-2xl border border-slate-100 shadow-sm\">\n"
-        "          <span class=\"block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1\">Moving Time</span>\n"
-        "          <strong class=\"text-2xl text-slate-900\" data-stat=\"movingTime\">--</strong>\n"
+        '        <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">\n'
+        '          <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Moving Time</span>\n'
+        '          <strong class="text-2xl text-slate-900" data-stat="movingTime">--</strong>\n'
         "        </div>\n"
-        "        <div class=\"bg-white p-5 rounded-2xl border border-slate-100 shadow-sm\">\n"
-        "          <span class=\"block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1\">Avg Speed</span>\n"
-        "          <strong class=\"text-2xl text-slate-900\" data-stat=\"avgSpeed\">--</strong>\n"
+        '        <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">\n'
+        '          <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Avg Speed</span>\n'
+        '          <strong class="text-2xl text-slate-900" data-stat="avgSpeed">--</strong>\n'
         "        </div>\n"
         "      </div>\n"
         "      <script>\n"

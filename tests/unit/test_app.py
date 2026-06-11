@@ -452,7 +452,10 @@ def test_live_tracking_page_uses_runtime_refresh_script(tmp_path):
         paths.astro_dir / "src" / "pages" / "live-tracking.astro"
     ).read_text(encoding="utf-8")
 
-    assert 'import { setupLiveTrackingPage } from "../scripts/live-tracking";' in live_tracking_page
+    assert (
+        'import { setupLiveTrackingPage } from "../scripts/live-tracking";'
+        in live_tracking_page
+    )
     assert 'id="live-tracking-config"' in live_tracking_page
     assert 'id="refresh-status"' in live_tracking_page
 
