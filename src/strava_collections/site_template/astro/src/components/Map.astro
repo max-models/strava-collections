@@ -60,7 +60,19 @@ const serializeDataForScript = (value: unknown): string => {
     const allPlanned: MapTrack[] = [];
 
     payload.collections.forEach(col => {
-      if (col.plannedRouteData) {
+      // Handle individual planned routes (new format)
+      if (col.plannedRoutes && Array.isArray(col.plannedRoutes)) {
+        col.plannedRoutes.forEach((route, idx) => {
+          allPlanned.push({
+            name: `${col.name} Route ${idx + 1}`,
+            points: route.points,
+            color: "#64748b",
+            isPlanned: true
+          });
+        });
+      }
+      // Fallback to old format (single combined route)
+      else if (col.plannedRouteData) {
         allPlanned.push({
           name: `${col.name} (Planned)`,
           points: col.plannedRouteData.points,

@@ -71,7 +71,7 @@ export function setupMap(options: MapOptions) {
   // Add default layer
   osmLayer.addTo(map);
 
-  // Add layer control
+  // Add layer control positioned below zoom controls
   const baseMaps = {
     "OpenStreetMap": osmLayer,
     "Topographic": topoLayer,
@@ -79,7 +79,7 @@ export function setupMap(options: MapOptions) {
     "Cycling": cycleLayer,
   };
 
-  Leaflet.control.layers(baseMaps).addTo(map);
+  Leaflet.control.layers(baseMaps, {}, { position: 'topleft' }).addTo(map);
 
   const bounds = Leaflet.latLngBounds([]);
 
