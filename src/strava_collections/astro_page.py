@@ -278,7 +278,7 @@ def render_collection_page(
         "<CollectionPage title={title} headings={headings}>\n"
         "  <h1 class=\"text-4xl font-bold text-slate-900 mb-8\">{title}</h1>\n"
         "  {metadata.description && (\n"
-        "    <p class=\"text-lg text-slate-600 mb-8 leading-relaxed\">{metadata.description}</p>\n"
+        "    <p class=\"text-lg text-slate-600 mb-8 leading-relaxed whitespace-pre-line\">{metadata.description}</p>\n"
         "  )}\n"
         "  \n"
         "  <section class=\"collection-stats-section mb-12\">\n"
