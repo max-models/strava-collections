@@ -611,6 +611,10 @@ class StravaCollection:
         return self._garmin_livetrack_url
 
     @property
+    def description(self):
+        return self._description
+
+    @property
     def total_distance_km(self):
         """Total distance in kilometers."""
         return round(self._total_distance * 1e-3, 1)
@@ -667,6 +671,7 @@ class StravaCollection:
             "activities": self.activity_defs,
             "routeGpxFile": self.route_gpx_file,
             "garminLivetrackUrl": self.garmin_livetrack_url,
+            "description": self.description,
             "totalDistanceKm": self.total_distance_km,
             "totalElevationGainM": self.total_elevation_gain_m,
             "totalMovingTimeHours": self.total_moving_time_hours,
