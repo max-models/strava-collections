@@ -1,0 +1,18 @@
+collection_name: "Scandinavian traverse"
+output_dir: "docs/source/"
+planned_routes:
+  - "temporary-strava-activities/routes/NC26_CPH-OSL_Road.gpx"
+  - "temporary-strava-activities/routes/bergen_to_bodo.gpx"
+activity_ids:
+  - "7603766442F" # Røldal to Bergen 🚴🇪🇺🇳🇴
+  - "7591809739F" # To Røldal 🚴🇪🇺🇳🇴
+  - "7588727912F" # Moss to Totak 🚴🇪🇺🇳🇴
+  - "7609035405" # Oslo to Strömstad 🚴🇪🇺🇳🇴🇸🇪
+  - "7575170664F" # Sightseeing in Denmark 🚴🇪🇺🇩🇪🇩🇰
+places:
+  - name: "Oslo"
+    lat: 59.9139
+    lon: 10.7522
+  - name: "Copenhagen"
+    lat: 55.6761
+    lon: 12.5683
