@@ -1,7 +1,6 @@
 import argparse
 import glob
 import os
-import re
 import subprocess
 import sys
 from pathlib import Path
@@ -10,8 +9,6 @@ import yaml
 
 from strava_collections.collection import (
     StravaCollection,
-    mapbox_token,
-    mapbox_token_help,
 )
 from strava_collections.site_sync import sync_site
 from strava_collections.site_template import ensure_site_template

@@ -3,7 +3,6 @@ import subprocess
 import tempfile
 from html import escape
 from pathlib import Path
-from tabnanny import verbose
 from typing import List
 
 import fastrdp
@@ -264,7 +263,6 @@ class StravaCollection:
         traces = []
 
         for color_index, activity in enumerate(self.activities):
-
             if activity.no_map:
                 continue
 
@@ -338,7 +336,6 @@ class StravaCollection:
         track_coordinates: list[tuple[np.ndarray, np.ndarray]] = []
 
         for activity in self.activities:
-
             if activity.no_map:
                 continue
 
@@ -368,7 +365,6 @@ class StravaCollection:
                 dict(color="white", width=linewidths[0]),
                 dict(color=line_color, width=linewidths[1]),
             ]:
-
                 fig.add_trace(
                     go.Scattermap(
                         lat=x_new,
@@ -395,7 +391,7 @@ class StravaCollection:
             place_lats = [place["lat"] for place in places]
             place_lons = [place["lon"] for place in places]
             place_names = [
-                place.get("name", f"Place {i+1}") for i, place in enumerate(places)
+                place.get("name", f"Place {i + 1}") for i, place in enumerate(places)
             ]
             place_colors = [
                 (
