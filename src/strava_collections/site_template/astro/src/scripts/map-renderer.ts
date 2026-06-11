@@ -68,6 +68,14 @@ export function setupMap(options: MapOptions) {
     maxZoom: 20,
   });
 
+  // const outdoorsLayer = Leaflet.tileLayer(
+  //   "https://tile.thunderforest.com/outdoors/{z}/{x}/{y}.png?apikey=YOUR_KEY",
+  //   {
+  //     attribution: "&copy; OpenStreetMap contributors, Thunderforest",
+  //     maxZoom: 22,
+  //   }
+  // );
+
   // Add default layer
   osmLayer.addTo(map);
 
@@ -77,6 +85,7 @@ export function setupMap(options: MapOptions) {
     "Topographic": topoLayer,
     "Satellite": satelliteLayer,
     "Cycling": cycleLayer,
+    // "Outdoors": outdoorsLayer,
   };
 
   Leaflet.control.layers(baseMaps, {}, { position: 'topleft' }).addTo(map);

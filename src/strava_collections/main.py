@@ -248,7 +248,7 @@ def generate_collection_from_yaml(
         verbose=verbose,
         description=data.get("description"),
         route_gpx_file=planned_routes,
-        garmin_livetrack_url=data.get("garminLivetrackUrl"),
+        garmin_livetrack_url=data.get("garmin_livetrack_url") or data.get("garminLivetrackUrl"),
     )
     return site_root
 
