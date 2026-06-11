@@ -1,5 +1,7 @@
 import Leaflet from 'leaflet';
 
+const mapInstances = new WeakMap<HTMLElement, Leaflet.Map>();
+
 export interface TrackPoint {
   lat: number;
   lon: number;
@@ -25,8 +27,20 @@ export interface MapOptions {
 
 export function setupMap(options: MapOptions) {
   const { containerId, tracks, plannedRoutes = [] } = options;
-  const container = document.getElementById(containerId);
+  let container = document.getElementById(containerId);
   if (!container) return null;
+
+  const existingMap = mapInstances.get(container);
+  if (existingMap) {
+    existingMap.remove();
+    mapInstances.delete(container);
+  } else if ("_leaflet_id" in container || container.classList.contains("leaflet-container")) {
+    const replacement = container.cloneNode(false) as HTMLElement;
+    container.replaceWith(replacement);
+    container = replacement;
+  }
+
+  container.innerHTML = "";
 
   const map = Leaflet.map(container, {
     zoomControl: true,
@@ -75,5 +89,6 @@ export function setupMap(options: MapOptions) {
     map.fitBounds(bounds, { padding: [40, 40], maxZoom: 18 });
   }
 
+  mapInstances.set(container, map);
   return map;
 }

@@ -440,8 +440,21 @@ def test_ensure_site_template_copies_astro_app(tmp_path):
 
     assert (paths.astro_dir / "package.json").exists()
     assert (paths.astro_dir / "src" / "pages" / "index.astro").exists()
+    assert (paths.astro_dir / "src" / "scripts" / "live-tracking.ts").exists()
     assert paths.manifest_path.exists()
     assert paths.source_dir.exists()
+
+
+def test_live_tracking_page_uses_runtime_refresh_script(tmp_path):
+    paths = ensure_site_template(tmp_path / "site")
+
+    live_tracking_page = (
+        paths.astro_dir / "src" / "pages" / "live-tracking.astro"
+    ).read_text(encoding="utf-8")
+
+    assert 'import { setupLiveTrackingPage } from "../scripts/live-tracking";' in live_tracking_page
+    assert 'id="live-tracking-config"' in live_tracking_page
+    assert 'id="refresh-status"' in live_tracking_page
 
 
 def test_activity_summary_uses_html_elevation_iframe_by_default():

@@ -2,6 +2,15 @@
 import CollectionPage from "../components/CollectionPage.astro";
 import Map from "../components/Map.astro";
 import { loadPlannedRouteData } from "../scripts/data-helpers";
+import {
+  LIVE_HISTORY_URL,
+  emptyLiveTrackingSnapshot,
+  fetchLiveTrackingSnapshot,
+  formatDistance,
+  formatTime,
+  renderElevationProfileMarkup,
+  serializeDataForScript,
+} from "../scripts/live-tracking";
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -21,7 +30,6 @@ function findLiveTrackingYaml(startDir: string): string {
 }
 
 const liveTrackingPath = findLiveTrackingYaml(__dirname);
-const rootPath = path.dirname(liveTrackingPath);
 const liveTrackingConfig = yaml.load(fs.readFileSync(liveTrackingPath, 'utf8')) as { collections: any[] };
 
 const collection = liveTrackingConfig.collections[0];
@@ -30,107 +38,18 @@ const customText = (collection as any).customText || "";
 
 // Load planned route data statically
 const plannedRouteData = loadPlannedRouteData(collection.routeGpxFile);
-
-// Build-time fetch to avoid CORS issues
-let livePoints: any[] = [];
-let todayDist = 0;
-try {
-  const response = await fetch('https://bitter-silence-3781.max-lindqvist.workers.dev/history');
-  if (response.ok) {
-    const history = await response.json() as Array<{ key: string, data: { lat: number, lon: number, tst: number, alt?: number } }>;
-    const sorted = history.sort((a, b) => a.data.tst - b.data.tst);
-    let totalDist = 0;
-    livePoints = sorted.map((entry, i) => {
-      if (i > 0) {
-        const p1 = sorted[i-1].data;
-        const p2 = entry.data;
-        const R = 6371000;
-        const dLat = ((p2.lat - p1.lat) * Math.PI) / 180;
-        const dLon = ((p2.lon - p1.lon) * Math.PI) / 180;
-        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos((p1.lat * Math.PI) / 180) * Math.cos((p2.lat * Math.PI) / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        totalDist += R * c;
-      }
-      return {
-        lat: entry.data.lat,
-        lon: entry.data.lon,
-        elevation: entry.data.alt,
-        distanceMeters: totalDist,
-        time: new Date(entry.data.tst * 1000).toISOString()
-      };
-    }).filter(p => typeof p.lat === 'number' && typeof p.lon === 'number' && p.lat !== 0 && p.lon !== 0);
-
-    // Calculate today's distance
-    if (livePoints.length > 0) {
-        const lastDate = new Date(livePoints.at(-1).time).toDateString();
-        const pointsToday = livePoints.filter(p => new Date(p.time).toDateString() === lastDate);
-        if (pointsToday.length > 1) {
-            todayDist = pointsToday.at(-1).distanceMeters - pointsToday[0].distanceMeters;
-        }
-    }
-  }
-} catch (e) {
-  console.error("Build-time fetch failed:", e);
-}
-
-const trackerPayload = {
-  collections: [{
-    name: collection.name,
-    color: "#2563eb",
-    plannedRouteData,
-    activities: [{
-      color: "#2563eb",
-      routeData: livePoints.length > 0 ? {
-        status: "ok",
-        points: livePoints,
-        summary: {
-          pointCount: livePoints.length,
-          isActive: true,
-          lastReportedTime: livePoints.at(-1)?.time,
-          totalDistanceMeters: livePoints.at(-1)?.distanceMeters
-        }
-      } : null,
-      notes: "Live Progress",
-      plannedRouteData: null
-    }]
-  }]
+const pageConfig = {
+  apiUrl: LIVE_HISTORY_URL,
+  collectionName: collection.name,
+  plannedRouteData,
 };
 
-// Helper for elevation graph
-const buildElevationSvg = (points: any[]) => {
-  const data = points.filter(p => typeof p.elevation === 'number' && typeof p.distanceMeters === 'number');
-  if (data.length < 2) return null;
+const liveSnapshot = emptyLiveTrackingSnapshot(pageConfig);
 
-  const width = 800;
-  const height = 150;
-  const padLeft = 40;
-  const padRight = 20;
-  const padTop = 10;
-  const padBottom = 20;
-  
-  const xMin = 0;
-  const xMax = data.at(-1).distanceMeters;
-  const rawYMin = Math.min(...data.map(p => p.elevation));
-  const rawYMax = Math.max(...data.map(p => p.elevation));
-  const yMin = Math.floor(rawYMin / 10) * 10 - 10;
-  const yMax = Math.ceil(rawYMax / 10) * 10 + 10;
-  
-  const scaleX = (x: number) => padLeft + (x / xMax) * (width - padLeft - padRight);
-  const scaleY = (y: number) => height - padBottom - ((y - yMin) / (yMax - yMin)) * (height - padTop - padBottom);
-  
-  const path = data.map((p, i) => `${i === 0 ? 'M' : 'L'} ${scaleX(p.distanceMeters)} ${scaleY(p.elevation)}`).join(' ');
-  const area = path + ` L ${scaleX(xMax)} ${height - padBottom} L ${scaleX(xMin)} ${height - padBottom} Z`;
-
-  const tickCount = 4;
-  const ticks = Array.from({ length: tickCount }, (_, i) => {
-    const val = yMin + (i * (yMax - yMin)) / (tickCount - 1);
-    return { val: Math.round(val), y: scaleY(val) };
-  });
-
-  return { path, area, width, height, yMin, yMax, xMax, ticks, padLeft, padRight, padBottom };
-};
-
-const elev = buildElevationSvg(livePoints);
+const trackerPayload = liveSnapshot.trackerPayload;
+const livePoints = liveSnapshot.points;
+const todayDist = liveSnapshot.todayDistanceMeters;
+const elev = liveSnapshot.elevationProfile;
 
 const headings = [
   { title: "Live Map", slug: "live-map", level: 2 },
@@ -139,22 +58,13 @@ const headings = [
   ...(customText ? [{ title: "About the Ride", slug: "about", level: 2 }] : []),
   { title: "Data Sources", slug: "data-sources", level: 2 },
 ];
-
-function formatDistance(m: number) {
-    if (m >= 1000) return `${(m / 1000).toFixed(1)} km`;
-    return `${Math.round(m)} m`;
-}
-
-function formatTime(iso: string) {
-    if (!iso) return "-";
-    return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-}
 ---
 
 <CollectionPage title="Live Tracking" headings={headings}>
   <div class="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
     <div>
       <p class="text-slate-500 mt-1 text-base sm:text-lg">Follow the journey in real-time.</p>
+      <p id="refresh-status" class="mt-2 text-sm text-slate-500">Refreshing live data on page load…</p>
     </div>
     <button 
       id="refresh-button"
@@ -179,57 +89,32 @@ function formatTime(iso: string) {
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
                 <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Dist.</span>
-                <strong class="text-2xl text-slate-900">{formatDistance(livePoints.at(-1)?.distanceMeters || 0)}</strong>
+                <strong id="live-total-distance" class="text-2xl text-slate-900">{formatDistance(livePoints.at(-1)?.distanceMeters || 0)}</strong>
             </div>
             <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
                 <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Today Dist.</span>
-                <strong class="text-2xl text-strava">{formatDistance(todayDist)}</strong>
+                <strong id="live-today-distance" class="text-2xl text-strava">{formatDistance(todayDist)}</strong>
             </div>
             <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
                 <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Last Point</span>
-                <strong class="text-2xl text-slate-900">{formatTime(livePoints.at(-1)?.time)}</strong>
+                <strong id="live-last-point" class="text-2xl text-slate-900">{formatTime(livePoints.at(-1)?.time)}</strong>
             </div>
             <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
                 <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Track Points</span>
-                <strong class="text-2xl text-slate-900">{livePoints.length}</strong>
+                <strong id="live-track-points" class="text-2xl text-slate-900">{livePoints.length}</strong>
             </div>
         </div>
     </section>
 
-    {elev && (
       <section id="elevation-profile">
         <h2 class="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
             <svg class="w-5 h-5 text-strava" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
             Elevation Profile
         </h2>
         <div class="bg-white rounded-2xl p-6 shadow-md border border-slate-100">
-          <div class="w-full">
-            <svg viewBox={`0 0 ${elev.width} ${elev.height}`} class="w-full h-auto" preserveAspectRatio="none">
-              <defs>
-                <linearGradient id="elev-grad" x1="0" x2="0" y1="0" y2="1">
-                  <stop offset="0%" stop-color="#fc4c02" stop-opacity="0.2" />
-                  <stop offset="100%" stop-color="#fc4c02" stop-opacity="0" />
-                </linearGradient>
-              </defs>
-              
-              {elev.ticks.map(tick => (
-                <g>
-                  <line x1={elev.padLeft} y1={tick.y} x2={elev.width - elev.padRight} y2={tick.y} stroke="#e2e8f0" stroke-width="1" stroke-dasharray="4 4" />
-                  <text x={elev.padLeft - 8} y={tick.y} text-anchor="end" dominant-baseline="middle" fill="#94a3b8" font-weight="bold" style="font-size: 10px; font-family: ui-sans-serif, system-ui, sans-serif;">{tick.val}m</text>
-                </g>
-              ))}
-
-              <path d={elev.area} fill="url(#elev-grad)" />
-              <path d={elev.path} fill="none" stroke="#fc4c02" stroke-width="2" stroke-linejoin="round" />
-            </svg>
-          </div>
-          <div class="flex justify-between mt-2 pl-10 text-[10px] font-bold text-slate-400 uppercase">
-            <span>Start</span>
-            <span>{Math.round(elev.xMax / 1000)} km</span>
-          </div>
+          <div id="elevation-profile-content" set:html={renderElevationProfileMarkup(elev)}></div>
         </div>
       </section>
-    )}
 
     {customText && (
         <section id="about">
@@ -270,13 +155,24 @@ function formatTime(iso: string) {
   </div>
 
   <script>
-    const refreshBtn = document.getElementById('refresh-button');
-    const refreshIcon = document.getElementById('refresh-icon');
-    if (refreshBtn && refreshIcon) {
-      refreshBtn.addEventListener('click', () => {
-        refreshIcon.classList.add('animate-spin');
-        window.location.reload();
-      });
+    import { setupLiveTrackingPage } from "../scripts/live-tracking";
+
+    function initializeLiveTrackingPage() {
+      const configEl = document.getElementById('live-tracking-config');
+      if (!configEl?.textContent) {
+        return;
+      }
+
+      setupLiveTrackingPage(JSON.parse(configEl.textContent));
     }
+
+    initializeLiveTrackingPage();
+    document.addEventListener('astro:after-swap', initializeLiveTrackingPage);
   </script>
+
+  <script
+    id="live-tracking-config"
+    type="application/json"
+    set:html={serializeDataForScript(pageConfig)}
+  ></script>
 </CollectionPage>
