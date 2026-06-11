@@ -148,14 +148,22 @@ export function loadPlannedRouteData(
     let found = false;
     for (const p of possiblePaths) {
       if (existsSync(p)) {
-        const content = readFileSync(p, "utf-8");
-        const points = downsamplePoints(parseGpxPoints(content, { includeTelemetry: false }));
-        if (points.length > 0) {
-          allPoints.push(...points);
-          found = true;
-          break;
+        try {
+          const content = readFileSync(p, "utf-8");
+          const points = downsamplePoints(parseGpxPoints(content, { includeTelemetry: false }));
+          if (points.length > 0) {
+            allPoints.push(...points);
+            found = true;
+            break;
+          }
+        } catch (error) {
+          console.warn(`Failed to load GPX file ${p}:`, error);
         }
       }
+    }
+    
+    if (!found) {
+      console.warn(`Could not find GPX file: ${filename}`);
     }
   }
 

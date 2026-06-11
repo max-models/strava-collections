@@ -6,13 +6,15 @@ interface Props {
   className?: string;
   payload?: any;      // The unified tracker payload structure
   autoInit?: boolean; // Whether to initialize the map automatically
+  fullscreenUrl?: string; // Optional URL to fullscreen map
 }
 
 const { 
   containerId = "collection-map", 
   className = "collection-map-canvas",
   payload,
-  autoInit = true
+  autoInit = true,
+  fullscreenUrl
 } = Astro.props;
 
 const serializeDataForScript = (value: unknown): string => {
@@ -21,7 +23,23 @@ const serializeDataForScript = (value: unknown): string => {
 };
 ---
 
-<div id={containerId} class={className} data-auto-init={String(autoInit)}></div>
+<div class="map-container">
+  <div id={containerId} class={className} data-auto-init={String(autoInit)}></div>
+  {fullscreenUrl && (
+    <a 
+      href={fullscreenUrl} 
+      target="_blank" 
+      rel="noopener noreferrer"
+      class="fullscreen-link"
+      title="Open fullscreen map"
+    >
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path>
+      </svg>
+      Fullscreen
+    </a>
+  )}
+</div>
 
 <script id="map-data" type="application/json" set:html={serializeDataForScript(payload)}></script>
 
@@ -84,11 +102,48 @@ const serializeDataForScript = (value: unknown): string => {
 </script>
 
 <style>
+  .map-container {
+    position: relative;
+    width: 100%;
+  }
+
   .collection-map-canvas {
     height: 450px;
     width: 100%;
     border-radius: 12px;
     z-index: 1;
     border: 1px solid #e2e8f0;
+  }
+
+  .fullscreen-link {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    background: white;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    color: #475569;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+  }
+
+  .fullscreen-link:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+    color: #1e293b;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+  }
+
+  .fullscreen-link svg {
+    width: 18px;
+    height: 18px;
   }
 </style>

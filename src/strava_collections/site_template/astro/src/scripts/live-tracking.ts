@@ -216,20 +216,25 @@ export function setupLiveTrackingPage(config: LiveTrackingPageConfig): void {
   const refreshIcon = document.getElementById("refresh-icon");
 
   if (!refreshButton || !refreshIcon) {
+    console.error("Live tracking: refresh button or icon not found");
     return;
   }
   if (refreshButton.dataset.liveTrackingInitialized === "true") {
+    console.log("Live tracking: already initialized");
     return;
   }
   refreshButton.dataset.liveTrackingInitialized = "true";
 
   const refresh = async (): Promise<void> => {
+    console.log("Live tracking: starting refresh...");
     setRefreshLoadingState(true);
     setRefreshStatus("Refreshing live data…", "loading");
 
     try {
       const snapshot = await fetchLiveTrackingSnapshot(config, window.fetch.bind(window));
+      console.log("Live tracking: fetched snapshot with", snapshot.points.length, "points");
       await renderSnapshot(config, snapshot);
+      console.log("Live tracking: rendered snapshot successfully");
       setRefreshStatus(
         `Updated ${formatTime(new Date().toISOString())}`,
         "success",
@@ -249,6 +254,7 @@ export function setupLiveTrackingPage(config: LiveTrackingPageConfig): void {
     void refresh();
   });
 
+  console.log("Live tracking: triggering initial refresh");
   void refresh();
 }
 
