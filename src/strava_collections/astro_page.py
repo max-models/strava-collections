@@ -141,10 +141,10 @@ def wrap_gallery_images(markup: str) -> str:
             src = src_match.group("src")
             alt_match = ALT_RE.search(attrs)
             alt = alt_match.group("alt") if alt_match else ""
-            class_match = CLASS_RE.search(attrs)
-            class_attr = (
-                f' class="{class_match.group("classname")}"' if class_match else ""
-            )
+            # class_match = CLASS_RE.search(attrs)
+            # class_attr = (
+            #     f' class="{class_match.group("classname")}"' if class_match else ""
+            # )
             return (
                 f'<a href="{src}" class="glightbox" data-gallery="{gallery_id}"'
                 f' aria-label="{alt or "Open gallery image"}">'

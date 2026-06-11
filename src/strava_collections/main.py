@@ -152,12 +152,12 @@ def generate_collection(
     map_path = path_static / mapfig_name
     map_full_name = f"{collection_filename}-map-fullscreen.html"
     map_full_path = path_static / map_full_name
-    map_asset_paths = [
-        map_path,
-        map_full_path,
-        map_path.with_suffix(".png"),
-        path_static / f"{collection_filename}-map-thick.png",
-    ]
+    # map_asset_paths = [
+    #     map_path,
+    #     map_full_path,
+    #     map_path.with_suffix(".png"),
+    #     path_static / f"{collection_filename}-map-thick.png",
+    # ]
 
     elevation_extension = elevation_extension_for_backend(args.backend)
     elevfig_name = f"{collection_filename}-elev.{elevation_extension}"
