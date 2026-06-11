@@ -236,6 +236,11 @@ def render_collection_page(
 ) -> str:
     markup, headings = body_html_to_astro_markup(body_html)
     metadata_json = json.dumps(metadata or {}, indent=2)
+    
+    # Generate fullscreen map URL based on collection name
+    collection_slug = title.lower().replace(" ", "-")
+    fullscreen_map_url = f"${{base}}_static/collection-{collection_slug}-map-fullscreen.html"
+    
     return (
         "---\n"
         "import CollectionPage from '../../components/CollectionPage.astro';\n"
@@ -263,9 +268,10 @@ def render_collection_page(
         "    }))\n"
         "  }]\n"
         "};\n"
+        f"const fullscreenMapUrl = `{fullscreen_map_url}`;\n"
         "---\n\n"
         "<CollectionPage title={title} headings={headings}>\n"
-        "  <Map payload={trackerPayload} />\n"
+        "  <Map payload={trackerPayload} fullscreenUrl={fullscreenMapUrl} />\n"
         f"  {markup}\n"
         "</CollectionPage>\n"
     )

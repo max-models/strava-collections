@@ -234,6 +234,10 @@ def generate_collection_from_yaml(
         data = yaml.safe_load(f)
 
     output_dir, site_root = resolve_output_directory(args, data.get("output_dir"))
+    
+    # Support both "planned_routes" (new) and "routeGpxFile" (legacy) fields
+    planned_routes = data.get("planned_routes") or data.get("routeGpxFile")
+    
     generate_collection(
         collection_name=data["collection_name"],
         activities=data.get("activities") or data.get("activity_ids", []),
@@ -243,7 +247,7 @@ def generate_collection_from_yaml(
         places=data.get("places"),
         verbose=verbose,
         description=data.get("description"),
-        route_gpx_file=data.get("routeGpxFile"),
+        route_gpx_file=planned_routes,
         garmin_livetrack_url=data.get("garminLivetrackUrl"),
     )
     return site_root
