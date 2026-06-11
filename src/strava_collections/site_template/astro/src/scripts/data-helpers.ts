@@ -148,18 +148,69 @@ export function loadPlannedRouteData(
     let found = false;
     for (const p of possiblePaths) {
       if (existsSync(p)) {
-        const content = readFileSync(p, "utf-8");
-        const points = downsamplePoints(parseGpxPoints(content, { includeTelemetry: false }));
-        if (points.length > 0) {
-          allPoints.push(...points);
-          found = true;
-          break;
+        try {
+          const content = readFileSync(p, "utf-8");
+          const points = downsamplePoints(parseGpxPoints(content, { includeTelemetry: false }));
+          if (points.length > 0) {
+            allPoints.push(...points);
+            found = true;
+            break;
+          }
+        } catch (error) {
+          console.warn(`Failed to load GPX file ${p}:`, error);
         }
       }
+    }
+    
+    if (!found) {
+      console.warn(`Could not find GPX file: ${filename}`);
     }
   }
 
   return allPoints.length > 0 ? { points: allPoints } : null;
+}
+
+export function loadPlannedRoutesIndividually(
+  input: string | string[] | undefined | null
+): Array<{ points: Array<{ lat: number; lon: number }> }> {
+  if (!input) return [];
+  const filenames = Array.isArray(input) ? input : [input];
+  const routes: Array<{ points: Array<{ lat: number; lon: number }> }> = [];
+
+  for (const filename of filenames) {
+    if (!filename) continue;
+
+    const possiblePaths = [
+      filename, // Try as absolute path
+      join(process.cwd(), filename),
+      join(process.cwd(), "../source", filename),
+      join(process.cwd(), "../..", filename), // Project root from docs/astro
+      join(process.cwd(), "../../..", filename), // Project root from docs/astro/src/pages
+    ];
+
+    let found = false;
+    for (const p of possiblePaths) {
+      if (existsSync(p)) {
+        try {
+          const content = readFileSync(p, "utf-8");
+          const points = downsamplePoints(parseGpxPoints(content, { includeTelemetry: false }));
+          if (points.length > 0) {
+            routes.push({ points });
+            found = true;
+            break;
+          }
+        } catch (error) {
+          console.warn(`Failed to load GPX file ${p}:`, error);
+        }
+      }
+    }
+    
+    if (!found) {
+      console.warn(`Could not find GPX file: ${filename}`);
+    }
+  }
+
+  return routes;
 }
 
 export function loadStravaRouteData(activities: any[]): GarminRouteData[] {

@@ -106,6 +106,7 @@ def test_main_generates_map_assets_without_mapbox_token(monkeypatch, tmp_path):
     class FakeCollection:
         def __init__(self, name, activities, **kwargs):
             force_update = kwargs.get("force_update", False)
+            print(force_update)
             self.activities = [FakeActivity()]
 
         def generate_gpx_assets(self, output_dir, **kwargs):
@@ -215,6 +216,7 @@ def test_main_defaults_to_docs_site_output(monkeypatch, tmp_path, capsys):
     class FakeCollection:
         def __init__(self, name, activities, **kwargs):
             force_update = kwargs.get("force_update", False)
+            print(force_update)
             self.activities = [FakeActivity()]
 
         def generate_gpx_assets(self, output_dir, **kwargs):
@@ -276,6 +278,7 @@ def test_main_output_scaffolds_site_template(monkeypatch, tmp_path, capsys):
     class FakeCollection:
         def __init__(self, name, activities, **kwargs):
             force_update = kwargs.get("force_update", False)
+            print(force_update)
             self.activities = [FakeActivity()]
 
         def generate_gpx_assets(self, output_dir, **kwargs):
@@ -349,6 +352,7 @@ def test_main_output_generates_yaml_map_assets_without_mapbox_token(
     class FakeCollection:
         def __init__(self, name, activities, **kwargs):
             force_update = kwargs.get("force_update", False)
+            print(force_update)
             self.activities = [FakeActivity()]
 
         def generate_gpx_assets(self, output_dir, **kwargs):
@@ -408,6 +412,7 @@ def test_main_expands_globbed_yaml_inputs(monkeypatch, tmp_path):
     class FakeCollection:
         def __init__(self, name, activities, **kwargs):
             force_update = kwargs.get("force_update", False)
+            print(force_update)
             seen_names.append(name)
             self.activities = [FakeActivity(activities[0]["strava_id"][0])]
 
@@ -452,7 +457,10 @@ def test_live_tracking_page_uses_runtime_refresh_script(tmp_path):
         paths.astro_dir / "src" / "pages" / "live-tracking.astro"
     ).read_text(encoding="utf-8")
 
-    assert 'import { setupLiveTrackingPage } from "../scripts/live-tracking";' in live_tracking_page
+    assert (
+        'import { setupLiveTrackingPage } from "../scripts/live-tracking";'
+        in live_tracking_page
+    )
     assert 'id="live-tracking-config"' in live_tracking_page
     assert 'id="refresh-status"' in live_tracking_page
 
@@ -801,6 +809,7 @@ def test_main_parses_places_from_yaml(monkeypatch, tmp_path):
     class FakeCollection:
         def __init__(self, name, activities, **kwargs):
             force_update = kwargs.get("force_update", False)
+            print(force_update)
             self.activities = [FakeActivity()]
 
         def generate_gpx_assets(self, output_dir, **kwargs):

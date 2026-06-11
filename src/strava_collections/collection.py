@@ -3,7 +3,6 @@ import subprocess
 import tempfile
 from html import escape
 from pathlib import Path
-from tabnanny import verbose
 from typing import List
 
 import fastrdp
@@ -237,13 +236,19 @@ class StravaCollection:
                     )
                 )
         print()
-        tot_elevation_gaion = 0.0
+        self._total_distance = 0.0
+        self._total_elevation_gain = 0.0
+        self._total_moving_time = 0.0
         for activity in self.activities:
-            tot_elevation_gaion += activity.activity.total_elevation_gain
+            self._total_distance += activity.activity.distance
+            self._total_elevation_gain += activity.activity.total_elevation_gain
+            self._total_moving_time += activity.activity.moving_time
             print(
                 f"{activity.activity.name}, distance: {round(activity.activity.distance * 1e-3, 1)} km, elevation gain: {round(activity.activity.total_elevation_gain)} m"
             )
-        print(f"{tot_elevation_gaion = }")
+        print(f"Total elevation gain: {round(self._total_elevation_gain)} m")
+        print(f"Total distance: {round(self._total_distance * 1e-3, 1)} km")
+        print(f"Total moving time: {round(self._total_moving_time / 3600, 1)} hours")
 
     def plot_elevation(
         self,
@@ -258,7 +263,6 @@ class StravaCollection:
         traces = []
 
         for color_index, activity in enumerate(self.activities):
-
             if activity.no_map:
                 continue
 
@@ -332,7 +336,6 @@ class StravaCollection:
         track_coordinates: list[tuple[np.ndarray, np.ndarray]] = []
 
         for activity in self.activities:
-
             if activity.no_map:
                 continue
 
@@ -362,7 +365,6 @@ class StravaCollection:
                 dict(color="white", width=linewidths[0]),
                 dict(color=line_color, width=linewidths[1]),
             ]:
-
                 fig.add_trace(
                     go.Scattermap(
                         lat=x_new,
@@ -389,7 +391,7 @@ class StravaCollection:
             place_lats = [place["lat"] for place in places]
             place_lons = [place["lon"] for place in places]
             place_names = [
-                place.get("name", f"Place {i+1}") for i, place in enumerate(places)
+                place.get("name", f"Place {i + 1}") for i, place in enumerate(places)
             ]
             place_colors = [
                 (
@@ -604,6 +606,25 @@ class StravaCollection:
     def garmin_livetrack_url(self):
         return self._garmin_livetrack_url
 
+    @property
+    def description(self):
+        return self._description
+
+    @property
+    def total_distance_km(self):
+        """Total distance in kilometers."""
+        return round(self._total_distance * 1e-3, 1)
+
+    @property
+    def total_elevation_gain_m(self):
+        """Total elevation gain in meters."""
+        return round(self._total_elevation_gain)
+
+    @property
+    def total_moving_time_hours(self):
+        """Total moving time in hours."""
+        return round(self._total_moving_time / 3600, 1)
+
     def generate_gpx_assets(
         self,
         output_dir: Path,
@@ -646,6 +667,10 @@ class StravaCollection:
             "activities": self.activity_defs,
             "routeGpxFile": self.route_gpx_file,
             "garminLivetrackUrl": self.garmin_livetrack_url,
+            "description": self.description,
+            "totalDistanceKm": self.total_distance_km,
+            "totalElevationGainM": self.total_elevation_gain_m,
+            "totalMovingTimeHours": self.total_moving_time_hours,
         }
         page_source = render_collection_page(
             title=self.name,

@@ -1,7 +1,6 @@
 import argparse
 import glob
 import os
-import re
 import subprocess
 import sys
 from pathlib import Path
@@ -10,8 +9,6 @@ import yaml
 
 from strava_collections.collection import (
     StravaCollection,
-    mapbox_token,
-    mapbox_token_help,
 )
 from strava_collections.site_sync import sync_site
 from strava_collections.site_template import ensure_site_template
@@ -155,12 +152,12 @@ def generate_collection(
     map_path = path_static / mapfig_name
     map_full_name = f"{collection_filename}-map-fullscreen.html"
     map_full_path = path_static / map_full_name
-    map_asset_paths = [
-        map_path,
-        map_full_path,
-        map_path.with_suffix(".png"),
-        path_static / f"{collection_filename}-map-thick.png",
-    ]
+    # map_asset_paths = [
+    #     map_path,
+    #     map_full_path,
+    #     map_path.with_suffix(".png"),
+    #     path_static / f"{collection_filename}-map-thick.png",
+    # ]
 
     elevation_extension = elevation_extension_for_backend(args.backend)
     elevfig_name = f"{collection_filename}-elev.{elevation_extension}"
@@ -234,6 +231,10 @@ def generate_collection_from_yaml(
         data = yaml.safe_load(f)
 
     output_dir, site_root = resolve_output_directory(args, data.get("output_dir"))
+
+    # Support both "planned_routes" (new) and "routeGpxFile" (legacy) fields
+    planned_routes = data.get("planned_routes") or data.get("routeGpxFile")
+
     generate_collection(
         collection_name=data["collection_name"],
         activities=data.get("activities") or data.get("activity_ids", []),
@@ -243,8 +244,9 @@ def generate_collection_from_yaml(
         places=data.get("places"),
         verbose=verbose,
         description=data.get("description"),
-        route_gpx_file=data.get("routeGpxFile"),
-        garmin_livetrack_url=data.get("garminLivetrackUrl"),
+        route_gpx_file=planned_routes,
+        garmin_livetrack_url=data.get("garmin_livetrack_url")
+        or data.get("garminLivetrackUrl"),
     )
     return site_root
 

@@ -193,3 +193,4 @@ old_scripts/
 collection-*.md
 node_modules/
 dist/
+.bob/

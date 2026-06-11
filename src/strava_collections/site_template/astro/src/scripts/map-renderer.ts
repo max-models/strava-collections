@@ -47,14 +47,52 @@ export function setupMap(options: MapOptions) {
     scrollWheelZoom: true,
   });
 
-  Leaflet.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  // Define multiple tile layers
+  const osmLayer = Leaflet.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     maxZoom: 19,
-  }).addTo(map);
+  });
+
+  const topoLayer = Leaflet.tileLayer("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png", {
+    attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)',
+    maxZoom: 17,
+  });
+
+  const satelliteLayer = Leaflet.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+    attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
+    maxZoom: 19,
+  });
+
+  const cycleLayer = Leaflet.tileLayer("https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png", {
+    attribution: '<a href="https://github.com/cyclosm/cyclosm-cartocss-style/releases" title="CyclOSM - Open Bicycle render">CyclOSM</a> | Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    maxZoom: 20,
+  });
+
+  // const outdoorsLayer = Leaflet.tileLayer(
+  //   "https://tile.thunderforest.com/outdoors/{z}/{x}/{y}.png?apikey=YOUR_KEY",
+  //   {
+  //     attribution: "&copy; OpenStreetMap contributors, Thunderforest",
+  //     maxZoom: 22,
+  //   }
+  // );
+
+  // Add default layer
+  osmLayer.addTo(map);
+
+  // Add layer control positioned below zoom controls
+  const baseMaps = {
+    "OpenStreetMap": osmLayer,
+    "Topographic": topoLayer,
+    "Satellite": satelliteLayer,
+    "Cycling": cycleLayer,
+    // "Outdoors": outdoorsLayer,
+  };
+
+  Leaflet.control.layers(baseMaps, {}, { position: 'topleft' }).addTo(map);
 
   const bounds = Leaflet.latLngBounds([]);
 
-  // Draw planned routes first (background)
+  // Draw planned routes first (background) - each route separately
   plannedRoutes.forEach(route => {
     if (route.points.length < 2) return;
     const latLngs = route.points.map(p => [p.lat, p.lon] as [number, number]);

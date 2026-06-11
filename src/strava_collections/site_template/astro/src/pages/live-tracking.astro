@@ -36,15 +36,27 @@ const collection = liveTrackingConfig.collections[0];
 const garminUrl = collection.activities.find((a: any) => a.garminLivetrackUrl)?.garminLivetrackUrl || collection.garminLivetrackUrl;
 const customText = (collection as any).customText || "";
 
-// Load planned route data statically
+// Load planned route data statically (may return null if files are missing/ignored)
 const plannedRouteData = loadPlannedRouteData(collection.routeGpxFile);
+if (!plannedRouteData) {
+  console.warn('No planned route data loaded - GPX files may be missing or ignored');
+}
+
 const pageConfig = {
   apiUrl: LIVE_HISTORY_URL,
   collectionName: collection.name,
   plannedRouteData,
 };
 
-const liveSnapshot = emptyLiveTrackingSnapshot(pageConfig);
+// Fetch live data at build time to avoid CORS issues
+let liveSnapshot;
+try {
+  liveSnapshot = await fetchLiveTrackingSnapshot(pageConfig);
+  console.log(`Successfully fetched ${liveSnapshot.points.length} live tracking points at build time`);
+} catch (error) {
+  console.warn('Failed to fetch live tracking data at build time:', error);
+  liveSnapshot = emptyLiveTrackingSnapshot(pageConfig);
+}
 
 const trackerPayload = liveSnapshot.trackerPayload;
 const livePoints = liveSnapshot.points;
