@@ -1,0 +1,161 @@
+---
+import CollectionPage from '../../components/CollectionPage.astro';
+import Map from '../../components/Map.astro';
+import {{ loadStravaRouteData, loadPlannedRouteData, loadPlannedRoutesIndividually }} from '../../scripts/data-helpers';
+
+const title = {title_json};
+const headings = {headings_json};
+const metadata = {metadata_json};
+const base = import.meta.env.BASE_URL.endsWith('/')
+  ? import.meta.env.BASE_URL
+  : `${{import.meta.env.BASE_URL}}/`;
+
+// Prepare map data
+const palette = ['#636EFA', '#EF553B', '#00CC96', '#AB63FA', '#FFA15A', '#19D3F3', '#FF6692', '#B6E880', '#FF97FF', '#FECB52'];
+const stravaRouteData = loadStravaRouteData(metadata.activities || []);
+const plannedRoutesIndividual = loadPlannedRoutesIndividually(metadata.routeGpxFile);
+const trackerPayload = {{
+  collections: [{{
+    name: title,
+    color: '#fc4c02',
+    plannedRoutes: plannedRoutesIndividual,
+    activities: (metadata.activities || []).map((act, i) => ({{
+      ...act,
+      color: palette[i % palette.length],
+      routeData: stravaRouteData[i],
+      plannedRouteData: loadPlannedRouteData(act.routeGpxFile),
+    }}))
+  }}]
+}};
+const fullscreenMapUrl = `{fullscreen_map_url}`;
+---
+
+<CollectionPage title={{title}} headings={{headings}}>
+  <h1 class="text-3xl md:text-4xl font-bold text-slate-900 mb-8 break-words">{{title}}</h1>
+  {{metadata.description && (
+    <p class="text-lg text-slate-600 mb-8 leading-relaxed whitespace-pre-line break-words">{{metadata.description}}</p>
+  )}}
+  
+  <section class="collection-stats-section mb-12 w-full overflow-hidden">
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6 w-full">
+      <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-4 md:p-6 rounded-2xl border border-blue-200 shadow-sm min-w-0">
+        <span class="block text-xs font-bold text-blue-600 uppercase tracking-widest mb-2">Total Distance</span>
+        <strong class="text-2xl md:text-3xl text-slate-900 break-words">{{metadata.totalDistanceKm}} km</strong>
+      </div>
+      <div class="bg-gradient-to-br from-green-50 to-green-100 p-4 md:p-6 rounded-2xl border border-green-200 shadow-sm min-w-0">
+        <span class="block text-xs font-bold text-green-600 uppercase tracking-widest mb-2">Total Elevation Gain</span>
+        <strong class="text-2xl md:text-3xl text-slate-900 break-words">{{metadata.totalElevationGainM}} m</strong>
+      </div>
+      <div class="bg-gradient-to-br from-purple-50 to-purple-100 p-4 md:p-6 rounded-2xl border border-purple-200 shadow-sm min-w-0">
+        <span class="block text-xs font-bold text-purple-600 uppercase tracking-widest mb-2">Total Moving Time</span>
+        <strong class="text-2xl md:text-3xl text-slate-900 break-words">{{metadata.totalMovingTimeHours}} hrs</strong>
+      </div>
+    </div>
+  </section>
+  
+  {{metadata.garminLivetrackUrl && (
+    <section class="garmin-livetrack-section mb-12 w-full overflow-hidden" id="live-tracking">
+      <h3 class="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+        <span class="inline-block w-3 h-3 bg-red-500 rounded-full animate-pulse"></span>
+        Live Tracking
+      </h3>
+      <div class="garmin-iframe-container border-[3px] border-red-500 rounded-xl overflow-hidden mb-4 w-full max-w-full">
+        <iframe
+          src={{metadata.garminLivetrackUrl}}
+          style="width: 100%; height: 800px; border: none;"
+          title="Garmin LiveTrack Map"
+        ></iframe>
+      </div>
+      <div class="flex flex-wrap items-center gap-4 mb-6">
+        <a
+          href={{metadata.garminLivetrackUrl}}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex items-center gap-2 px-6 py-3 bg-white hover:bg-gray-50 text-red-600 font-semibold rounded-lg border-2 border-red-500 transition-colors shadow-sm text-sm md:text-base max-w-full"
+        >
+          <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+          </svg>
+          <span class="break-words">Open Full Garmin LiveTrack</span>
+        </a>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6 w-full" id="live-stats">
+        <div class="bg-white p-4 md:p-5 rounded-2xl border border-slate-100 shadow-sm min-w-0">
+          <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Distance</span>
+          <strong class="text-xl md:text-2xl text-slate-900 break-words" data-stat="distance">--</strong>
+        </div>
+        <div class="bg-white p-4 md:p-5 rounded-2xl border border-slate-100 shadow-sm min-w-0">
+          <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Elevation</span>
+          <strong class="text-xl md:text-2xl text-slate-900 break-words" data-stat="elevation">--</strong>
+        </div>
+        <div class="bg-white p-4 md:p-5 rounded-2xl border border-slate-100 shadow-sm min-w-0">
+          <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Moving Time</span>
+          <strong class="text-xl md:text-2xl text-slate-900 break-words" data-stat="movingTime">--</strong>
+        </div>
+        <div class="bg-white p-4 md:p-5 rounded-2xl border border-slate-100 shadow-sm min-w-0">
+          <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Avg Speed</span>
+          <strong class="text-xl md:text-2xl text-slate-900 break-words" data-stat="avgSpeed">--</strong>
+        </div>
+      </div>
+      <script is:inline>
+        (async () => {{
+          const LIVE_HISTORY_URL = 'https://bitter-silence-3781.max-lindqvist.workers.dev/history';
+          const stats = document.querySelectorAll('#live-stats [data-stat]');
+          if (!stats.length) return;
+
+          try {{
+            const response = await fetch(LIVE_HISTORY_URL);
+            if (!response.ok) return;
+            const history = await response.json();
+            if (!Array.isArray(history) || history.length === 0) return;
+
+            const validEntries = history
+              .map(e => e.data)
+              .filter(d => d && typeof d.lat === 'number' && typeof d.lon === 'number' && typeof d.tst === 'number')
+              .sort((a, b) => a.tst - b.tst);
+
+            if (validEntries.length === 0) return;
+
+            const lastEntry = validEntries[validEntries.length - 1];
+            const lastDate = new Date(lastEntry.tst * 1000).toDateString();
+            const todayEntries = validEntries.filter(e => new Date(e.tst * 1000).toDateString() === lastDate);
+
+            if (todayEntries.length === 0) return;
+
+            const firstToday = todayEntries[0];
+            const durationSecs = lastEntry.tst - firstToday.tst;
+
+            let totalDist = 0;
+            const R = 6371000;
+            const toRad = v => v * Math.PI / 180;
+
+            for (let i = 1; i < todayEntries.length; i++) {{
+              const p1 = todayEntries[i-1], p2 = todayEntries[i];
+              const dLat = toRad(p2.lat - p1.lat), dLon = toRad(p2.lon - p1.lon);
+              const a = Math.sin(dLat/2)**2 + Math.cos(toRad(p1.lat)) * Math.cos(toRad(p2.lat)) * Math.sin(dLon/2)**2;
+              totalDist += R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            }}
+
+            stats.forEach(stat => {{
+              const type = stat.getAttribute('data-stat');
+              if (type === 'distance') {{
+                stat.textContent = totalDist >= 1000 ? `${{(totalDist / 1000).toFixed(1)}} km` : `${{Math.round(totalDist)}} m`;
+              }} else if (type === 'elevation') {{
+                stat.textContent = lastEntry.alt ? `${{Math.round(lastEntry.alt)}} m` : '--';
+              }} else if (type === 'movingTime') {{
+                const h = Math.floor(durationSecs / 3600);
+                const m = Math.floor((durationSecs % 3600) / 60);
+                stat.textContent = h > 0 ? `${{h}}h ${{m}}m` : `${{m}}m`;
+              }} else if (type === 'avgSpeed' && totalDist > 0 && durationSecs > 0) {{
+                const speed = (totalDist / 1000) / (durationSecs / 3600);
+                stat.textContent = `${{speed.toFixed(1)}} km/h`;
+              }}
+            }});
+          }} catch (e) {{ console.error('Live stats error:', e); }}
+        }})();
+      </script>
+    </section>
+  )}}
+  <Map payload={{trackerPayload}} fullscreenUrl={{fullscreenMapUrl}} />
+  {markup}
+</CollectionPage>
