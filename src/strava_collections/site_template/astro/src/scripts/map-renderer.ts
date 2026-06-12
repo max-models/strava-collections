@@ -164,7 +164,7 @@ export function setupMap(options: MapOptions) {
     const color = isNear ? "#10b981" : "#ef4444"; // emerald-500 or red-500
 
     const marker = Leaflet.circleMarker([place.lat, place.lon], {
-      radius: 8,
+      radius: 5,
       fillColor: color,
       color: "#ffffff",
       weight: 2,

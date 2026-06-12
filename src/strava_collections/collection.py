@@ -40,7 +40,7 @@ mapbox_token = os.getenv("MAPBOX_TOKEN")
 mapbox_token_help = (
     "MAPBOX_TOKEN is no longer required for the default interactive map styles."
 )
-PLACE_MARKER_SIZE = 8
+PLACE_MARKER_SIZE = 5
 PLACE_NEARBY_TRACK_THRESHOLD_KM = 20.0
 
 
