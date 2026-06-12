@@ -339,8 +339,9 @@ class StravaActivity:
 
     def get_coords(self):
         """Decode the map polyline into a list of (lat, lon) tuples."""
-        if self.activity.map and self.activity.map.polyline:
-            return polyline.decode(self.activity.map.polyline)
+        strava_map = getattr(self.activity, "map", None)
+        if strava_map and getattr(strava_map, "polyline", None):
+            return polyline.decode(strava_map.polyline)
         return []
 
     def to_dataframe(self):
@@ -424,21 +425,13 @@ class StravaActivity:
             out_str += description
             out_str += "</div>\n"
 
-        # Elevation profile
-        if include_elevation:
-            elevation_asset_extension = elevation_asset_extension.lstrip(".")
-            elevation_src = (
-                f"/_static/activity-{self.activity_id}.{elevation_asset_extension}"
-            )
-            if elevation_asset_extension == "html":
-                out_str += embed_iframe(
-                    src=elevation_src,
-                )
-            else:
-                out_str += embed_image(
-                    src=elevation_src,
-                    alt=f"{self.activity.name} elevation profile",
-                )
+        # Activity-specific map
+        if not self.no_map:
+            out_str += f'<div class="activity-map-canvas" id="map-{self.activity_id}" data-activity-id="{self.activity_id}"></div>\n'
+
+        # Activity-specific elevation
+        if not self.no_map:
+            out_str += f'<div class="activity-elevation-canvas" id="elev-{self.activity_id}" data-activity-id="{self.activity_id}"></div>\n'
 
         # Photos
         # TODO: Get photos from the DetailedActivity (currently seems broken?)

@@ -62,7 +62,7 @@ def test_main_uses_plotly_html_for_yaml_input(monkeypatch, tmp_path):
             calls["generate_astro"] = (filepath, kwargs)
 
     monkeypatch.setattr("strava_collections.main.StravaCollection", FakeCollection)
-    monkeypatch.setattr("strava_collections.main.mapbox_token", "test-token")
+    monkeypatch.setattr("strava_collections.collection.mapbox_token", "test-token")
     monkeypatch.setattr(
         "sys.argv",
         ["strava-collections", "-i", str(yaml_path)],
@@ -122,7 +122,7 @@ def test_main_generates_map_assets_without_mapbox_token(monkeypatch, tmp_path):
             calls["generate_astro"] = (filepath, kwargs)
 
     monkeypatch.setattr("strava_collections.main.StravaCollection", FakeCollection)
-    monkeypatch.setattr("strava_collections.main.mapbox_token", None)
+    monkeypatch.setattr("strava_collections.collection.mapbox_token", None)
     monkeypatch.setattr(
         "sys.argv",
         ["strava-collections", "-i", str(yaml_path)],
@@ -130,9 +130,9 @@ def test_main_generates_map_assets_without_mapbox_token(monkeypatch, tmp_path):
 
     main()
 
-    assert len(calls["plot_map"]) == 2
-    assert calls["plot_map"][0][0].endswith("collection-taiwan-map.png")
-    assert calls["plot_map"][1][0].endswith("collection-taiwan-map-thick.png")
+    assert len(calls["plot_map"]) == 3
+    assert calls["plot_map"][0][0].endswith("collection-taiwan-map-fullscreen.html")
+    assert calls["plot_map"][1][0].endswith("collection-taiwan-map.png")
     assert calls["plot_elevation"][0].endswith("collection-taiwan-elev.html")
     assert calls["generate_astro"][0].endswith("collection-taiwan.astro")
 
@@ -183,7 +183,7 @@ def test_main_accepts_multiple_yaml_inputs(monkeypatch, tmp_path):
             calls["generate_astro"].append((filepath, kwargs))
 
     monkeypatch.setattr("strava_collections.main.StravaCollection", FakeCollection)
-    monkeypatch.setattr("strava_collections.main.mapbox_token", "test-token")
+    monkeypatch.setattr("strava_collections.collection.mapbox_token", "test-token")
     monkeypatch.setattr(
         "sys.argv",
         [
@@ -233,7 +233,7 @@ def test_main_defaults_to_docs_site_output(monkeypatch, tmp_path, capsys):
 
     monkeypatch.chdir(tmp_path)
     monkeypatch.setattr("strava_collections.main.StravaCollection", FakeCollection)
-    monkeypatch.setattr("strava_collections.main.mapbox_token", "test-token")
+    monkeypatch.setattr("strava_collections.collection.mapbox_token", "test-token")
     monkeypatch.setattr(
         "strava_collections.main.sync_site",
         lambda site_root: calls["sync_site"].append(Path(site_root)),
@@ -294,7 +294,7 @@ def test_main_output_scaffolds_site_template(monkeypatch, tmp_path, capsys):
             Path(filepath).write_text("---\n", encoding="utf-8")
 
     monkeypatch.setattr("strava_collections.main.StravaCollection", FakeCollection)
-    monkeypatch.setattr("strava_collections.main.mapbox_token", "test-token")
+    monkeypatch.setattr("strava_collections.collection.mapbox_token", "test-token")
     monkeypatch.setattr(
         "strava_collections.main.sync_site",
         lambda site_root: calls["sync_site"].append(Path(site_root)),
@@ -368,7 +368,7 @@ def test_main_output_generates_yaml_map_assets_without_mapbox_token(
             Path(filepath).write_text("---\n", encoding="utf-8")
 
     monkeypatch.setattr("strava_collections.main.StravaCollection", FakeCollection)
-    monkeypatch.setattr("strava_collections.main.mapbox_token", None)
+    monkeypatch.setattr("strava_collections.collection.mapbox_token", None)
     monkeypatch.setattr("strava_collections.main.sync_site", lambda site_root: None)
     monkeypatch.setattr(
         "sys.argv",
@@ -429,7 +429,7 @@ def test_main_expands_globbed_yaml_inputs(monkeypatch, tmp_path):
             return None
 
     monkeypatch.setattr("strava_collections.main.StravaCollection", FakeCollection)
-    monkeypatch.setattr("strava_collections.main.mapbox_token", "test-token")
+    monkeypatch.setattr("strava_collections.collection.mapbox_token", "test-token")
     monkeypatch.setattr(
         "sys.argv",
         ["strava-collections", "-i", str(tmp_path / "*.yml")],
@@ -454,7 +454,7 @@ def test_live_tracking_page_uses_runtime_refresh_script(tmp_path):
     paths = ensure_site_template(tmp_path / "site")
 
     live_tracking_page = (
-        paths.astro_dir / "src" / "pages" / "live-tracking.astro"
+        paths.astro_dir / "src" / "pages" / "experimental-live-tracking.astro"
     ).read_text(encoding="utf-8")
 
     assert (
@@ -465,7 +465,7 @@ def test_live_tracking_page_uses_runtime_refresh_script(tmp_path):
     assert 'id="refresh-status"' in live_tracking_page
 
 
-def test_activity_summary_uses_html_elevation_iframe_by_default():
+def test_activity_summary_uses_web_plotting_placeholder():
     activity = StravaActivity.__new__(StravaActivity)
     activity._activity_id = 1324271479
     activity._activity = SimpleNamespace(
@@ -475,16 +475,15 @@ def test_activity_summary_uses_html_elevation_iframe_by_default():
         total_elevation_gain=50.0,
         elapsed_time=3600,
         description="",
+        map=SimpleNamespace(polyline="u{~vGvswfC?h@"),
     )
     activity._photos = []
 
     markdown = activity.generate_markdown_summary(include_elevation=True)
 
-    assert 'src="/_static/activity-1324271479.html"' in markdown
-    assert "<iframe " in markdown
-    assert "aspect-ratio: 3 / 1" in markdown
-    assert 'loading="lazy"' not in markdown
-    assert "lazy-" not in markdown
+    assert 'class="activity-elevation-canvas"' in markdown
+    assert 'data-activity-id="1324271479"' in markdown
+    assert "<iframe " not in markdown
 
 
 def test_activity_summary_gallery_images_keep_lightbox_class_and_accessibility():
@@ -497,6 +496,7 @@ def test_activity_summary_gallery_images_keep_lightbox_class_and_accessibility()
         total_elevation_gain=50.0,
         elapsed_time=3600,
         description="",
+        map=SimpleNamespace(polyline="u{~vGvswfC?h@"),
     )
     activity._photos = [{"urls": {"500": "https://example.com/photo.jpg"}}]
 
@@ -507,6 +507,7 @@ def test_activity_summary_gallery_images_keep_lightbox_class_and_accessibility()
     assert 'loading="lazy"' in markdown
     assert 'decoding="async"' in markdown
     assert 'alt="Day 1 photo 1"' in markdown
+    assert 'data-activity-id="1324271479"' in markdown
 
 
 def test_activity_download_reuses_rotated_refresh_token(monkeypatch, tmp_path, capsys):
@@ -581,10 +582,15 @@ def test_get_authenticated_client_requires_refresh_token(monkeypatch):
 def test_collection_generate_astro_writes_astro_page(tmp_path):
     collection = StravaCollection.__new__(StravaCollection)
     collection._name = "Taiwan"
+    collection._description = None
     collection._activities = []
     collection._activity_defs = []
     collection._route_gpx_file = None
     collection._garmin_livetrack_url = None
+    collection._places = []
+    collection._total_distance = 0.0
+    collection._total_elevation_gain = 0.0
+    collection._total_moving_time = 0.0
     static_dir = tmp_path / "_static"
     static_dir.mkdir()
     for asset_name in ("collection-taiwan-map.html", "collection-taiwan-elev.html"):
@@ -612,12 +618,23 @@ def test_collection_generate_astro_writes_astro_page(tmp_path):
     assert "CollectionPage.astro" in astro_page
     assert 'const title = "Taiwan";' in astro_page
     assert "import Map from" in astro_page
+    assert "import ElevationChart from" in astro_page
     assert "import { loadStravaRouteData" in astro_page
     assert "const trackerPayload =" in astro_page
-    assert "<Map payload={trackerPayload} />" in astro_page
+    assert "const collectionElevationData =" in astro_page
+    assert (
+        "<Map payload={trackerPayload} fullscreenUrl={fullscreenMapUrl} />"
+        in astro_page
+    )
+    assert (
+        '<ElevationChart id="collection-elevation" data={collectionElevationData} height={200} />'
+        in astro_page
+    )
     assert "bodyHtml" not in astro_page
     assert "<CollectionPage title={title} headings={headings}>" in astro_page
-    assert "<iframe src={`${base}_static/collection-taiwan-elev.html`}" in astro_page
+    assert (
+        "<iframe src={`${base}_static/collection-taiwan-elev.html`}" not in astro_page
+    )
 
 
 def test_markdown_to_body_html_keeps_local_plotly_assets_as_iframes(tmp_path):
@@ -825,7 +842,7 @@ def test_main_parses_places_from_yaml(monkeypatch, tmp_path):
             Path(filepath).write_text("---\n", encoding="utf-8")
 
     monkeypatch.setattr("strava_collections.main.StravaCollection", FakeCollection)
-    monkeypatch.setattr("strava_collections.main.mapbox_token", "test-token")
+    monkeypatch.setattr("strava_collections.collection.mapbox_token", "test-token")
     monkeypatch.setattr("strava_collections.main.sync_site", lambda site_root: None)
     monkeypatch.setattr(
         "sys.argv",
@@ -834,7 +851,7 @@ def test_main_parses_places_from_yaml(monkeypatch, tmp_path):
 
     main()
 
-    assert len(plot_map_calls) == 2
+    assert len(plot_map_calls) == 3
     for call in plot_map_calls:
         assert "places" in call
         assert call["places"] == [{"name": "Taipei", "lat": 25.0330, "lon": 121.5654}]

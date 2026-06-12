@@ -23,10 +23,34 @@ export interface MapOptions {
   containerId: string;
   tracks: MapTrack[];
   plannedRoutes?: MapTrack[];
+  places?: Array<{ name: string; lat: number; lon: number }>;
+}
+
+function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) ** 2;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+function isPlaceNearAnyTrack(place: { lat: number, lon: number }, tracks: MapTrack[]): boolean {
+  const threshold = 20.0; // km
+  for (const track of tracks) {
+    for (const p of track.points) {
+      if (haversineDistance(place.lat, place.lon, p.lat, p.lon) <= threshold) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 export function setupMap(options: MapOptions) {
-  const { containerId, tracks, plannedRoutes = [] } = options;
+  const { containerId, tracks, plannedRoutes = [], places = [] } = options;
   let container = document.getElementById(containerId);
   if (!container) return null;
 
@@ -47,7 +71,7 @@ export function setupMap(options: MapOptions) {
     scrollWheelZoom: true,
   });
 
-  // Define multiple tile layers
+  // ... (tile layers same as before)
   const osmLayer = Leaflet.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     maxZoom: 19,
@@ -68,13 +92,22 @@ export function setupMap(options: MapOptions) {
     maxZoom: 20,
   });
 
-  // const outdoorsLayer = Leaflet.tileLayer(
-  //   "https://tile.thunderforest.com/outdoors/{z}/{x}/{y}.png?apikey=YOUR_KEY",
-  //   {
-  //     attribution: "&copy; OpenStreetMap contributors, Thunderforest",
-  //     maxZoom: 22,
-  //   }
-  // );
+  const humanitarianLayer = Leaflet.tileLayer("https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png", {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Tiles style by <a href="https://www.hotosm.org/" target="_blank">Humanitarian OpenStreetMap Team</a> hosted by <a href="https://openstreetmap.fr/" target="_blank">OpenStreetMap France</a>',
+    maxZoom: 19,
+  });
+
+  const voyagerLayer = Leaflet.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+    subdomains: 'abcd',
+    maxZoom: 20,
+  });
+
+  const darkLayer = Leaflet.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+    subdomains: 'abcd',
+    maxZoom: 20,
+  });
 
   // Add default layer
   osmLayer.addTo(map);
@@ -85,7 +118,9 @@ export function setupMap(options: MapOptions) {
     "Topographic": topoLayer,
     "Satellite": satelliteLayer,
     "Cycling": cycleLayer,
-    // "Outdoors": outdoorsLayer,
+    "Humanitarian": humanitarianLayer,
+    "Voyager": voyagerLayer,
+    "Dark Matter": darkLayer,
   };
 
   Leaflet.control.layers(baseMaps, {}, { position: 'topleft' }).addTo(map);
@@ -121,6 +156,24 @@ export function setupMap(options: MapOptions) {
     }).addTo(map);
 
     bounds.extend(poly.getBounds());
+  });
+
+  // Draw places
+  places.forEach(place => {
+    const isNear = isPlaceNearAnyTrack(place, tracks);
+    const color = isNear ? "#10b981" : "#ef4444"; // emerald-500 or red-500
+
+    const marker = Leaflet.circleMarker([place.lat, place.lon], {
+      radius: 5,
+      fillColor: color,
+      color: "#ffffff",
+      weight: 2,
+      opacity: 1,
+      fillOpacity: 0.8
+    }).addTo(map);
+
+    marker.bindPopup(`<b>${place.name}</b><br>Lat: ${place.lat.toFixed(4)}, Lon: ${place.lon.toFixed(4)}`);
+    bounds.extend([place.lat, place.lon]);
   });
 
   if (bounds.isValid()) {
