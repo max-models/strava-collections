@@ -159,3 +159,51 @@ const fullscreenMapUrl = `{fullscreen_map_url}`;
   <Map payload={{trackerPayload}} fullscreenUrl={{fullscreenMapUrl}} />
   {markup}
 </CollectionPage>
+
+<script>
+  import {{ setupMap }} from '../../scripts/map-renderer';
+
+  function initActivityMaps() {{
+    const mapContainers = document.querySelectorAll('.activity-map-canvas');
+    const dataEl = document.getElementById("map-data");
+    if (!dataEl?.textContent) return;
+    
+    try {{
+      const payload = JSON.parse(dataEl.textContent);
+      const activities = payload.collections[0].activities;
+
+      mapContainers.forEach(container => {{
+        const activityId = container.getAttribute('data-activity-id');
+        const activity = activities.find(a => {{
+          const id = a.stravaActivityId || (a.strava_id ? String(a.strava_id[0]) : '');
+          return id === activityId;
+        }});
+        
+        if (activity && activity.routeData?.status === "ok" && container instanceof HTMLElement) {{
+          setupMap({{
+            containerId: container.id,
+            tracks: [{{
+              name: activity.notes || "Activity",
+              points: activity.routeData.points,
+              color: activity.color
+            }}],
+            plannedRoutes: activity.plannedRouteData ? [{{
+              name: "Planned",
+              points: activity.plannedRouteData.points,
+              color: "#64748b",
+              isPlanned: true
+            }}] : []
+          }});
+        }}
+      }});
+    }} catch (e) {{
+      console.error("Failed to initialize activity maps:", e);
+    }}
+  }}
+
+  // Initialize on load
+  initActivityMaps();
+
+  // Re-initialize after Astro view transitions
+  document.addEventListener('astro:after-swap', initActivityMaps);
+</script>

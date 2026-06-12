@@ -544,7 +544,7 @@ class StravaCollection:
                 include_elevation=include_activity_elevation,
                 elevation_asset_extension=activity_elevation_extension,
             )
-        return f"<h1>{escape(self.name)}</h1>\n{html_str}{collection_table_md}"
+        return f"{html_str}{collection_table_md}"
 
     def generate_markdown(
         self,
