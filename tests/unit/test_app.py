@@ -622,11 +622,19 @@ def test_collection_generate_astro_writes_astro_page(tmp_path):
     assert "import { loadStravaRouteData" in astro_page
     assert "const trackerPayload =" in astro_page
     assert "const collectionElevationData =" in astro_page
-    assert "<Map payload={trackerPayload} fullscreenUrl={fullscreenMapUrl} />" in astro_page
-    assert '<ElevationChart id="collection-elevation" data={collectionElevationData} height={200} />' in astro_page
+    assert (
+        "<Map payload={trackerPayload} fullscreenUrl={fullscreenMapUrl} />"
+        in astro_page
+    )
+    assert (
+        '<ElevationChart id="collection-elevation" data={collectionElevationData} height={200} />'
+        in astro_page
+    )
     assert "bodyHtml" not in astro_page
     assert "<CollectionPage title={title} headings={headings}>" in astro_page
-    assert "<iframe src={`${base}_static/collection-taiwan-elev.html`}" not in astro_page
+    assert (
+        "<iframe src={`${base}_static/collection-taiwan-elev.html`}" not in astro_page
+    )
 
 
 def test_markdown_to_body_html_keeps_local_plotly_assets_as_iframes(tmp_path):
