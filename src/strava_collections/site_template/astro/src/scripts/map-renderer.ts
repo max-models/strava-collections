@@ -68,6 +68,23 @@ export function setupMap(options: MapOptions) {
     maxZoom: 20,
   });
 
+  const humanitarianLayer = Leaflet.tileLayer("https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png", {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Tiles style by <a href="https://www.hotosm.org/" target="_blank">Humanitarian OpenStreetMap Team</a> hosted by <a href="https://openstreetmap.fr/" target="_blank">OpenStreetMap France</a>',
+    maxZoom: 19,
+  });
+
+  const voyagerLayer = Leaflet.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+    subdomains: 'abcd',
+    maxZoom: 20,
+  });
+
+  const darkLayer = Leaflet.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+    subdomains: 'abcd',
+    maxZoom: 20,
+  });
+
   // const outdoorsLayer = Leaflet.tileLayer(
   //   "https://tile.thunderforest.com/outdoors/{z}/{x}/{y}.png?apikey=YOUR_KEY",
   //   {
@@ -85,6 +102,9 @@ export function setupMap(options: MapOptions) {
     "Topographic": topoLayer,
     "Satellite": satelliteLayer,
     "Cycling": cycleLayer,
+    "Humanitarian": humanitarianLayer,
+    "Voyager": voyagerLayer,
+    "Dark Matter": darkLayer,
     // "Outdoors": outdoorsLayer,
   };
 
