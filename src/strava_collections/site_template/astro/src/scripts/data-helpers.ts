@@ -233,13 +233,14 @@ export function loadStravaRouteData(activities: any[]): GarminRouteData[] {
     for (const p of possiblePaths) {
       if (existsSync(p)) {
         const content = readFileSync(p, "utf-8");
-        const points = parseGpxPoints(content, { includeTelemetry: false });
+        const points = parseGpxPoints(content, { includeTelemetry: true });
         if (points.length > 0) {
+          const downsampled = downsamplePoints(points, 500);
           results[i] = {
             status: "ok",
-            points,
+            points: downsampled,
             summary: {
-              pointCount: points.length,
+              pointCount: downsampled.length,
               isActive: false,
             },
           };
@@ -285,13 +286,14 @@ export function loadStravaRouteData(activities: any[]): GarminRouteData[] {
     const id = a.stravaActivityId || (a.strava_id ? String(a.strava_id[0]) : "");
     const rawData = exported[id];
     if (typeof rawData === "string") {
-      const points = downsamplePoints(parseGpxPoints(rawData, { includeTelemetry: false }));
-      if (points.length > 0) {
+      const points = parseGpxPoints(rawData, { includeTelemetry: true });
+      const downsampled = downsamplePoints(points, 500);
+      if (downsampled.length > 0) {
         return {
           status: "ok",
-          points,
+          points: downsampled,
           summary: {
-            pointCount: points.length,
+            pointCount: downsampled.length,
             isActive: false,
           },
         };

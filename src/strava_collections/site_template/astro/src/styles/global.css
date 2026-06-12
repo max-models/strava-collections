@@ -52,6 +52,15 @@
   z-index: 1;
 }
 
+.activity-elevation-canvas {
+  height: 200px;
+  width: 100%;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+}
+
 /* ── Gallery ──────────────────────────────────────────────────────── */
 
 .gallery {

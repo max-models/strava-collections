@@ -215,11 +215,13 @@ class StravaCollection:
         route_gpx_file: str | list[str] | None = None,
         garmin_livetrack_url: str | None = None,
         verbose: bool = False,
+        places: list[dict] | None = None,
     ) -> None:
         self._name = name
         self._description = description
         self._route_gpx_file = route_gpx_file
         self._garmin_livetrack_url = garmin_livetrack_url
+        self._places = places or []
 
         self._activity_defs = activities
         print(f"Loading collection '{self.name}':")
@@ -500,17 +502,6 @@ class StravaCollection:
     ):
         html_str = ""
 
-        collection_elevation_src = f"/_static/{elevfig_name}"
-        if elevfig_name.lower().endswith(".html"):
-            html_str += embed_iframe(
-                src=collection_elevation_src,
-            )
-        else:
-            html_str += embed_image(
-                src=collection_elevation_src,
-                alt=f"{self.name} elevation profile",
-            )
-
         collection_table_md = ""
         if include_table:
             data = []
@@ -611,6 +602,10 @@ class StravaCollection:
         return self._description
 
     @property
+    def places(self):
+        return self._places
+
+    @property
     def total_distance_km(self):
         """Total distance in kilometers."""
         return round(self._total_distance * 1e-3, 1)
@@ -668,6 +663,7 @@ class StravaCollection:
             "routeGpxFile": self.route_gpx_file,
             "garminLivetrackUrl": self.garmin_livetrack_url,
             "description": self.description,
+            "places": self.places,
             "totalDistanceKm": self.total_distance_km,
             "totalElevationGainM": self.total_elevation_gain_m,
             "totalMovingTimeHours": self.total_moving_time_hours,

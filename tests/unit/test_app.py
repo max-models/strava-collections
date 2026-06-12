@@ -465,7 +465,7 @@ def test_live_tracking_page_uses_runtime_refresh_script(tmp_path):
     assert 'id="refresh-status"' in live_tracking_page
 
 
-def test_activity_summary_uses_html_elevation_iframe_by_default():
+def test_activity_summary_uses_web_plotting_placeholder():
     activity = StravaActivity.__new__(StravaActivity)
     activity._activity_id = 1324271479
     activity._activity = SimpleNamespace(
@@ -475,17 +475,15 @@ def test_activity_summary_uses_html_elevation_iframe_by_default():
         total_elevation_gain=50.0,
         elapsed_time=3600,
         description="",
-        map=SimpleNamespace(polyline=""),
+        map=SimpleNamespace(polyline="u{~vGvswfC?h@"),
     )
     activity._photos = []
 
     markdown = activity.generate_markdown_summary(include_elevation=True)
 
-    assert 'src="/_static/activity-1324271479.html"' in markdown
-    assert "<iframe " in markdown
-    assert "aspect-ratio: 3 / 1" in markdown
-    assert 'loading="lazy"' not in markdown
-    assert "lazy-" not in markdown
+    assert 'class="activity-elevation-canvas"' in markdown
+    assert 'data-activity-id="1324271479"' in markdown
+    assert "<iframe " not in markdown
 
 
 def test_activity_summary_gallery_images_keep_lightbox_class_and_accessibility():
@@ -589,6 +587,7 @@ def test_collection_generate_astro_writes_astro_page(tmp_path):
     collection._activity_defs = []
     collection._route_gpx_file = None
     collection._garmin_livetrack_url = None
+    collection._places = []
     collection._total_distance = 0.0
     collection._total_elevation_gain = 0.0
     collection._total_moving_time = 0.0
@@ -619,12 +618,15 @@ def test_collection_generate_astro_writes_astro_page(tmp_path):
     assert "CollectionPage.astro" in astro_page
     assert 'const title = "Taiwan";' in astro_page
     assert "import Map from" in astro_page
+    assert "import ElevationChart from" in astro_page
     assert "import { loadStravaRouteData" in astro_page
     assert "const trackerPayload =" in astro_page
+    assert "const collectionElevationData =" in astro_page
     assert "<Map payload={trackerPayload} fullscreenUrl={fullscreenMapUrl} />" in astro_page
+    assert '<ElevationChart id="collection-elevation" data={collectionElevationData} height={200} />' in astro_page
     assert "bodyHtml" not in astro_page
     assert "<CollectionPage title={title} headings={headings}>" in astro_page
-    assert "<iframe src={`${base}_static/collection-taiwan-elev.html`}" in astro_page
+    assert "<iframe src={`${base}_static/collection-taiwan-elev.html`}" not in astro_page
 
 
 def test_markdown_to_body_html_keeps_local_plotly_assets_as_iframes(tmp_path):

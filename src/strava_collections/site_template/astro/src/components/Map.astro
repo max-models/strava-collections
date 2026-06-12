@@ -58,8 +58,12 @@ const serializeDataForScript = (value: unknown): string => {
     // Map the tracker payload structure to MapRenderer format
     const allTracks: MapTrack[] = [];
     const allPlanned: MapTrack[] = [];
+    const allPlaces: any[] = [];
 
     payload.collections.forEach(col => {
+      if (col.places) {
+        allPlaces.push(...col.places);
+      }
       // Handle individual planned routes (new format)
       if (col.plannedRoutes && Array.isArray(col.plannedRoutes)) {
         col.plannedRoutes.forEach((route, idx) => {
@@ -104,7 +108,8 @@ const serializeDataForScript = (value: unknown): string => {
     setupMap({
       containerId: "collection-map",
       tracks: allTracks,
-      plannedRoutes: allPlanned
+      plannedRoutes: allPlanned,
+      places: allPlaces
     });
   }
 

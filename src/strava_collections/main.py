@@ -117,6 +117,7 @@ def generate_collection(
         description=description,
         route_gpx_file=route_gpx_file,
         garmin_livetrack_url=garmin_livetrack_url,
+        places=places,
     )
 
     output_dir.mkdir(parents=True, exist_ok=True)

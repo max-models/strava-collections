@@ -429,21 +429,9 @@ class StravaActivity:
         if not self.no_map:
             out_str += f'<div class="activity-map-canvas" id="map-{self.activity_id}" data-activity-id="{self.activity_id}"></div>\n'
 
-        # Elevation profile
-        if include_elevation:
-            elevation_asset_extension = elevation_asset_extension.lstrip(".")
-            elevation_src = (
-                f"/_static/activity-{self.activity_id}.{elevation_asset_extension}"
-            )
-            if elevation_asset_extension == "html":
-                out_str += embed_iframe(
-                    src=elevation_src,
-                )
-            else:
-                out_str += embed_image(
-                    src=elevation_src,
-                    alt=f"{self.activity.name} elevation profile",
-                )
+        # Activity-specific elevation
+        if not self.no_map:
+            out_str += f'<div class="activity-elevation-canvas" id="elev-{self.activity_id}" data-activity-id="{self.activity_id}"></div>\n'
 
         # Photos
         # TODO: Get photos from the DetailedActivity (currently seems broken?)

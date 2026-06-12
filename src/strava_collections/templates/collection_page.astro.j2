@@ -1,6 +1,7 @@
 ---
 import CollectionPage from '../../components/CollectionPage.astro';
 import Map from '../../components/Map.astro';
+import ElevationChart from '../../components/ElevationChart.astro';
 import {{ loadStravaRouteData, loadPlannedRouteData, loadPlannedRoutesIndividually }} from '../../scripts/data-helpers';
 
 const title = {title_json};
@@ -19,6 +20,7 @@ const trackerPayload = {{
     name: title,
     color: '#fc4c02',
     plannedRoutes: plannedRoutesIndividual,
+    places: metadata.places || [],
     activities: (metadata.activities || []).map((act, i) => ({{
       ...act,
       color: palette[i % palette.length],
@@ -28,6 +30,47 @@ const trackerPayload = {{
   }}]
 }};
 const fullscreenMapUrl = `{fullscreen_map_url}`;
+
+// Prepare collection elevation data
+let cumulativeDistance = 0;
+const collectionElevationData = trackerPayload.collections[0].activities
+  .filter(act => act.routeData?.status === "ok")
+  .map(act => {{
+    const points = [...act.routeData.points];
+    const flip = act.strava_id?.[1] || act.flip || false;
+    if (flip) {{
+      points.reverse();
+    }}
+    
+    const x = [];
+    const y = [];
+    
+    let activityDistance = 0;
+    for (let i = 0; i < points.length; i++) {{
+      if (i > 0) {{
+        const p1 = points[i-1];
+        const p2 = points[i];
+        const R = 6371; // km
+        const dLat = (p2.lat - p1.lat) * Math.PI / 180;
+        const dLon = (p2.lon - p1.lon) * Math.PI / 180;
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                  Math.cos(p1.lat * Math.PI / 180) * Math.cos(p2.lat * Math.PI / 180) *
+                  Math.sin(dLon/2) * Math.sin(dLon/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        activityDistance += R * c;
+      }}
+      x.push(cumulativeDistance + activityDistance);
+      y.push(points[i].elevation || 0);
+    }}
+    const result = {{
+      name: act.notes || "Activity",
+      x,
+      y,
+      color: act.color
+    }};
+    cumulativeDistance += activityDistance;
+    return result;
+  }});
 ---
 
 <CollectionPage title={{title}} headings={{headings}}>
@@ -156,6 +199,7 @@ const fullscreenMapUrl = `{fullscreen_map_url}`;
       </script>
     </section>
   )}}
+  <ElevationChart id="collection-elevation" data={{collectionElevationData}} height={{200}} />
   <Map payload={{trackerPayload}} fullscreenUrl={{fullscreenMapUrl}} />
   {markup}
 </CollectionPage>
@@ -165,6 +209,7 @@ const fullscreenMapUrl = `{fullscreen_map_url}`;
 
   function initActivityMaps() {{
     const mapContainers = document.querySelectorAll('.activity-map-canvas');
+    const elevContainers = document.querySelectorAll('.activity-elevation-canvas');
     const dataEl = document.getElementById("map-data");
     if (!dataEl?.textContent) return;
     
@@ -196,8 +241,60 @@ const fullscreenMapUrl = `{fullscreen_map_url}`;
           }});
         }}
       }});
+
+      elevContainers.forEach(container => {{
+        const activityId = container.getAttribute('data-activity-id');
+        const activity = activities.find(a => {{
+          const id = a.stravaActivityId || (a.strava_id ? String(a.strava_id[0]) : '');
+          return id === activityId;
+        }});
+
+        if (activity && activity.routeData?.status === "ok" && container instanceof HTMLElement && window.Plotly) {{
+          const points = [...activity.routeData.points];
+          const flip = activity.strava_id?.[1] || activity.flip || false;
+          if (flip) {{
+            points.reverse();
+          }}
+
+          const x = [];
+          const y = [];
+          let dist = 0;
+          for (let i = 0; i < points.length; i++) {{
+            if (i > 0) {{
+              const p1 = points[i-1], p2 = points[i];
+              const R = 6371;
+              const dLat = (p2.lat - p1.lat) * Math.PI / 180;
+              const dLon = (p2.lon - p1.lon) * Math.PI / 180;
+              const a = Math.sin(dLat/2)**2 + Math.cos(p1.lat * Math.PI/180) * Math.cos(p2.lat * Math.PI/180) * Math.sin(dLon/2)**2;
+              dist += R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            }}
+            x.push(dist);
+            y.push(points[i].elevation || 0);
+          }}
+
+          const trace = {{
+            x: x,
+            y: y,
+            type: 'scatter',
+            mode: 'lines',
+            fill: 'tozeroy',
+            line: {{ color: activity.color, width: 2 }},
+            hovertemplate: '%{{y:.0f}}m at %{{x:.1f}}km<extra></extra>'
+          }};
+
+          window.Plotly.newPlot(container.id, [trace], {{
+            height: 200,
+            margin: {{ l: 40, r: 20, t: 10, b: 30 }},
+            showlegend: false,
+            xaxis: {{ title: 'Distance (km)' }},
+            yaxis: {{ title: 'Elevation (m)' }},
+            paper_bgcolor: 'rgba(0,0,0,0)',
+            plot_bgcolor: 'rgba(0,0,0,0)'
+          }}, {{ responsive: true, displayModeBar: false }});
+        }}
+      }});
     }} catch (e) {{
-      console.error("Failed to initialize activity maps:", e);
+      console.error("Failed to initialize activity assets:", e);
     }}
   }}
 
