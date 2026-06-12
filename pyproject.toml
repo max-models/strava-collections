@@ -69,15 +69,10 @@ where = [ "src" ]
 
 [tool.setuptools.package-data]
 strava_collections = [
-  "site_template/astro/package.json",
-  "site_template/astro/package-lock.json",
-  "site_template/astro/*.json",
-  "site_template/astro/*.mjs",
-  "site_template/astro/scripts/*.py",
-  "site_template/astro/src/**/*.astro",
-  "site_template/astro/src/**/*.css",
-  "site_template/astro/src/**/*.d.ts",
-  "site_template/astro/src/**/*.ts",
+  "*.gpx",
+  "templates/*.j2",
+  "site_template/**/*",
+  "site_template/**/.*",
 ]
 
 [tool.isort]
