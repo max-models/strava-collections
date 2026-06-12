@@ -1,16 +1,4 @@
 ---
-import CollectionPage from "../components/CollectionPage.astro";
-import Map from "../components/Map.astro";
-import { loadPlannedRouteData } from "../scripts/data-helpers";
-import {
-  LIVE_HISTORY_URL,
-  emptyLiveTrackingSnapshot,
-  fetchLiveTrackingSnapshot,
-  formatDistance,
-  formatTime,
-  renderElevationProfileMarkup,
-  serializeDataForScript,
-} from "../scripts/live-tracking";
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -19,172 +7,39 @@ import yaml from 'js-yaml';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-function findLiveTrackingYaml(startDir: string): string {
+function findLiveTrackingYaml(startDir: string): string | null {
   let curr = startDir;
   while (curr !== path.dirname(curr)) {
     const p = path.join(curr, 'live-tracking.yaml');
     if (fs.existsSync(p)) return p;
     curr = path.dirname(curr);
   }
-  throw new Error('Could not find live-tracking.yaml in any parent directory');
+  return null;
 }
 
+// Try to find live-tracking.yaml and redirect to the collection with garminLivetrackUrl
 const liveTrackingPath = findLiveTrackingYaml(__dirname);
-const liveTrackingConfig = yaml.load(fs.readFileSync(liveTrackingPath, 'utf8')) as { collections: any[] };
+let redirectUrl = '/';
 
-const collection = liveTrackingConfig.collections[0];
-const garminUrl = collection.activities.find((a: any) => a.garminLivetrackUrl)?.garminLivetrackUrl || collection.garminLivetrackUrl;
-const customText = (collection as any).customText || "";
-
-// Load planned route data statically (may return null if files are missing/ignored)
-const plannedRouteData = loadPlannedRouteData(collection.routeGpxFile);
-if (!plannedRouteData) {
-  console.warn('No planned route data loaded - GPX files may be missing or ignored');
-}
-
-const pageConfig = {
-  apiUrl: LIVE_HISTORY_URL,
-  collectionName: collection.name,
-  plannedRouteData,
-};
-
-// Fetch live data at build time to avoid CORS issues
-let liveSnapshot;
-try {
-  liveSnapshot = await fetchLiveTrackingSnapshot(pageConfig);
-  console.log(`Successfully fetched ${liveSnapshot.points.length} live tracking points at build time`);
-} catch (error) {
-  console.warn('Failed to fetch live tracking data at build time:', error);
-  liveSnapshot = emptyLiveTrackingSnapshot(pageConfig);
-}
-
-const trackerPayload = liveSnapshot.trackerPayload;
-const livePoints = liveSnapshot.points;
-const todayDist = liveSnapshot.todayDistanceMeters;
-const elev = liveSnapshot.elevationProfile;
-
-const headings = [
-  { title: "Live Map", slug: "live-map", level: 2 },
-  { title: "Statistics", slug: "statistics", level: 2 },
-  { title: "Elevation Profile", slug: "elevation-profile", level: 2 },
-  ...(customText ? [{ title: "About the Ride", slug: "about", level: 2 }] : []),
-  { title: "Data Sources", slug: "data-sources", level: 2 },
-];
----
-
-<CollectionPage title="Live Tracking" headings={headings}>
-  <div class="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-    <div>
-      <p class="text-slate-500 mt-1 text-base sm:text-lg">Follow the journey in real-time.</p>
-      <p id="refresh-status" class="mt-2 text-sm text-slate-500">Refreshing live data on page load…</p>
-    </div>
-    <button 
-      id="refresh-button"
-      class="inline-flex items-center justify-center px-5 py-2.5 bg-strava border border-transparent rounded-xl text-sm font-bold text-white hover:opacity-90 transition-all shadow-lg active:scale-95"
-    >
-      <svg id="refresh-icon" class="mr-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-      Refresh Data
-    </button>
-  </div>
-
-  <div class="space-y-12">
-    <section id="live-map">
-      <h2 class="sr-only">Live Map</h2>
-      <Map payload={trackerPayload} />
-    </section>
-
-    <section id="statistics">
-        <h2 class="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
-            <svg class="w-5 h-5 text-strava" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
-            Statistics
-        </h2>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
-                <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Dist.</span>
-                <strong id="live-total-distance" class="text-2xl text-slate-900">{formatDistance(livePoints.at(-1)?.distanceMeters || 0)}</strong>
-            </div>
-            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
-                <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Today Dist.</span>
-                <strong id="live-today-distance" class="text-2xl text-strava">{formatDistance(todayDist)}</strong>
-            </div>
-            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
-                <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Last Point</span>
-                <strong id="live-last-point" class="text-2xl text-slate-900">{formatTime(livePoints.at(-1)?.time)}</strong>
-            </div>
-            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
-                <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Track Points</span>
-                <strong id="live-track-points" class="text-2xl text-slate-900">{livePoints.length}</strong>
-            </div>
-        </div>
-    </section>
-
-      <section id="elevation-profile">
-        <h2 class="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
-            <svg class="w-5 h-5 text-strava" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
-            Elevation Profile
-        </h2>
-        <div class="bg-white rounded-2xl p-6 shadow-md border border-slate-100">
-          <div id="elevation-profile-content" set:html={renderElevationProfileMarkup(elev)}></div>
-        </div>
-      </section>
-
-    {customText && (
-        <section id="about">
-            <h2 class="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
-                <svg class="w-5 h-5 text-strava" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                About the Ride
-            </h2>
-            <div class="bg-white rounded-2xl p-8 shadow-sm border border-slate-100 prose prose-slate max-w-none" set:html={customText}></div>
-        </section>
-    )}
-
-    <section id="data-sources">
-        <h2 class="text-xl font-bold text-slate-900 mb-6">Data Sources</h2>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div class="flex items-center justify-between p-5 bg-slate-50 rounded-2xl border border-slate-200 shadow-sm">
-                <div class="flex flex-col">
-                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Live API</span>
-                <code class="text-sm text-slate-600 mt-1 truncate max-w-[150px] sm:max-w-none">workers.dev/history</code>
-                </div>
-                <a href="https://bitter-silence-3781.max-lindqvist.workers.dev/history" target="_blank" rel="noopener noreferrer" class="p-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors shadow-sm" title="Raw API Feed">
-                <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
-                </a>
-            </div>
-
-            {garminUrl && (
-                <div class="flex items-center justify-between p-5 bg-blue-50 rounded-2xl border border-blue-100 shadow-sm">
-                <div class="flex flex-col">
-                    <span class="text-xs font-bold text-blue-400 uppercase tracking-wider">Garmin LiveTrack</span>
-                    <span class="text-sm text-blue-700 mt-1 font-medium">External Fallback</span>
-                </div>
-                <a href={garminUrl} target="_blank" rel="noopener noreferrer" class="p-2 bg-white border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors shadow-sm" title="Open Garmin LiveTrack">
-                    <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
-                </a>
-                </div>
-            )}
-        </div>
-    </section>
-  </div>
-
-  <script>
-    import { setupLiveTrackingPage } from "../scripts/live-tracking";
-
-    function initializeLiveTrackingPage() {
-      const configEl = document.getElementById('live-tracking-config');
-      if (!configEl?.textContent) {
-        return;
-      }
-
-      setupLiveTrackingPage(JSON.parse(configEl.textContent));
+if (liveTrackingPath) {
+  try {
+    const liveTrackingConfig = yaml.load(fs.readFileSync(liveTrackingPath, 'utf8')) as { collections: any[] };
+    const collection = liveTrackingConfig.collections[0];
+    
+    // Check if this collection has a garminLivetrackUrl
+    const hasGarminUrl = collection.activities?.some((a: any) => a.garminLivetrackUrl) || collection.garminLivetrackUrl;
+    
+    if (hasGarminUrl && collection.name) {
+      // Convert collection name to slug (lowercase, replace spaces with hyphens)
+      const slug = collection.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+      const baseUrl = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
+      redirectUrl = `${baseUrl}collections/${slug}#live-tracking`;
     }
+  } catch (error) {
+    console.error('Error reading live-tracking.yaml:', error);
+  }
+}
 
-    initializeLiveTrackingPage();
-    document.addEventListener('astro:after-swap', initializeLiveTrackingPage);
-  </script>
-
-  <script
-    id="live-tracking-config"
-    type="application/json"
-    set:html={serializeDataForScript(pageConfig)}
-  ></script>
-</CollectionPage>
+// Perform redirect
+return Astro.redirect(redirectUrl);
+---
