@@ -286,18 +286,18 @@ def render_collection_page(
         "  )}\n"
         "  \n"
         '  <section class="collection-stats-section mb-12">\n'
-        '    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">\n'
-        '      <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-2xl border border-blue-200 shadow-sm">\n'
+        '    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6">\n'
+        '      <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-4 md:p-6 rounded-2xl border border-blue-200 shadow-sm">\n'
         '        <span class="block text-xs font-bold text-blue-600 uppercase tracking-widest mb-2">Total Distance</span>\n'
-        '        <strong class="text-3xl text-slate-900">{metadata.totalDistanceKm} km</strong>\n'
+        '        <strong class="text-2xl md:text-3xl text-slate-900">{metadata.totalDistanceKm} km</strong>\n'
         "      </div>\n"
-        '      <div class="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-2xl border border-green-200 shadow-sm">\n'
+        '      <div class="bg-gradient-to-br from-green-50 to-green-100 p-4 md:p-6 rounded-2xl border border-green-200 shadow-sm">\n'
         '        <span class="block text-xs font-bold text-green-600 uppercase tracking-widest mb-2">Total Elevation Gain</span>\n'
-        '        <strong class="text-3xl text-slate-900">{metadata.totalElevationGainM} m</strong>\n'
+        '        <strong class="text-2xl md:text-3xl text-slate-900">{metadata.totalElevationGainM} m</strong>\n'
         "      </div>\n"
-        '      <div class="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-2xl border border-purple-200 shadow-sm">\n'
+        '      <div class="bg-gradient-to-br from-purple-50 to-purple-100 p-4 md:p-6 rounded-2xl border border-purple-200 shadow-sm">\n'
         '        <span class="block text-xs font-bold text-purple-600 uppercase tracking-widest mb-2">Total Moving Time</span>\n'
-        '        <strong class="text-3xl text-slate-900">{metadata.totalMovingTimeHours} hrs</strong>\n'
+        '        <strong class="text-2xl md:text-3xl text-slate-900">{metadata.totalMovingTimeHours} hrs</strong>\n'
         "      </div>\n"
         "    </div>\n"
         "  </section>\n"
@@ -308,10 +308,10 @@ def render_collection_page(
         '        <span class="inline-block w-3 h-3 bg-red-500 rounded-full animate-pulse"></span>\n'
         "        Live Tracking\n"
         "      </h3>\n"
-        '      <div class="garmin-iframe-container" style="border: 3px solid #ef4444; border-radius: 12px; overflow: hidden; margin-bottom: 16px;">\n'
+        '      <div class="garmin-iframe-container border-[3px] border-red-500 rounded-xl overflow-hidden mb-4 w-full">\n'
         "        <iframe\n"
         "          src={metadata.garminLivetrackUrl}\n"
-        '          style="width: 100%; height: 600px; border: none;"\n'
+        '          class="w-full h-[400px] md:h-[600px] border-none"\n'
         '          title="Garmin LiveTrack Map"\n'
         "        ></iframe>\n"
         "      </div>\n"
@@ -320,7 +320,7 @@ def render_collection_page(
         "          href={metadata.garminLivetrackUrl}\n"
         '          target="_blank"\n'
         '          rel="noopener noreferrer"\n'
-        '          class="inline-flex items-center gap-2 px-6 py-3 bg-white hover:bg-gray-50 text-red-600 font-semibold rounded-lg border-2 border-red-500 transition-colors shadow-sm"\n'
+        '          class="inline-flex items-center gap-2 px-6 py-3 bg-white hover:bg-gray-50 text-red-600 font-semibold rounded-lg border-2 border-red-500 transition-colors shadow-sm text-sm md:text-base"\n'
         "        >\n"
         '          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">\n'
         '            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>\n'
@@ -328,22 +328,22 @@ def render_collection_page(
         "          Open Full Garmin LiveTrack\n"
         "        </a>\n"
         "      </div>\n"
-        '      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="live-stats">\n'
-        '        <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">\n'
+        '      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="live-stats">\n'
+        '        <div class="bg-white p-4 md:p-5 rounded-2xl border border-slate-100 shadow-sm">\n'
         '          <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Distance</span>\n'
-        '          <strong class="text-2xl text-slate-900" data-stat="distance">--</strong>\n'
+        '          <strong class="text-xl md:text-2xl text-slate-900" data-stat="distance">--</strong>\n'
         "        </div>\n"
-        '        <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">\n'
+        '        <div class="bg-white p-4 md:p-5 rounded-2xl border border-slate-100 shadow-sm">\n'
         '          <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Elevation</span>\n'
-        '          <strong class="text-2xl text-slate-900" data-stat="elevation">--</strong>\n'
+        '          <strong class="text-xl md:text-2xl text-slate-900" data-stat="elevation">--</strong>\n'
         "        </div>\n"
-        '        <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">\n'
+        '        <div class="bg-white p-4 md:p-5 rounded-2xl border border-slate-100 shadow-sm">\n'
         '          <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Moving Time</span>\n'
-        '          <strong class="text-2xl text-slate-900" data-stat="movingTime">--</strong>\n'
+        '          <strong class="text-xl md:text-2xl text-slate-900" data-stat="movingTime">--</strong>\n'
         "        </div>\n"
-        '        <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">\n'
+        '        <div class="bg-white p-4 md:p-5 rounded-2xl border border-slate-100 shadow-sm">\n'
         '          <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Avg Speed</span>\n'
-        '          <strong class="text-2xl text-slate-900" data-stat="avgSpeed">--</strong>\n'
+        '          <strong class="text-xl md:text-2xl text-slate-900" data-stat="avgSpeed">--</strong>\n'
         "        </div>\n"
         "      </div>\n"
         "      <script>\n"
