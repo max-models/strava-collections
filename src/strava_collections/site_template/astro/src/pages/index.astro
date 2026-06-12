@@ -36,6 +36,9 @@ if (liveTrackingPath) {
     console.error('Error reading live-tracking.yaml:', error);
   }
 }
+const base = import.meta.env.BASE_URL.endsWith('/')
+  ? import.meta.env.BASE_URL
+  : `${import.meta.env.BASE_URL}/`;
 ---
 
 <Layout title="Home">
@@ -49,7 +52,7 @@ if (liveTrackingPath) {
     {hasLiveTracking && (
       <div class="mt-4">
         <a
-          href={`${import.meta.env.BASE_URL}live-tracking`}
+          href={`${base}live-tracking`}
           class="inline-flex items-center gap-2 px-6 py-3 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition-colors shadow-md"
         >
           <span class="inline-block w-3 h-3 bg-white rounded-full animate-pulse"></span>
