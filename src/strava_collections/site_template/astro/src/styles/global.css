@@ -7,20 +7,27 @@
 
 .description-box {
   background: #ffffff;
-  padding: 24px 28px;
+  padding: 16px 20px;
   border-radius: 16px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   width: 100%;
   margin-bottom: 20px;
 }
 
+@media (min-width: 640px) {
+  .description-box {
+    padding: 24px 28px;
+  }
+}
+
 .description-title {
   font-weight: 700;
-  font-size: 1.6rem;
+  font-size: clamp(1.25rem, 4vw, 1.6rem);
   color: #0f172a;
   margin-bottom: 12px;
   letter-spacing: 0.3px;
   padding-bottom: 6px;
+  line-height: 1.2;
 }
 
 .description-text {
@@ -33,13 +40,14 @@
   border: 1px solid #e5e7eb;
   white-space: pre-wrap;
   margin-bottom: 12px;
+  overflow-wrap: break-word;
 }
 
 /* ── Gallery ──────────────────────────────────────────────────────── */
 
 .gallery {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
   gap: 14px;
   margin-top: 16px;
 }
@@ -48,10 +56,12 @@
   display: block;
   border-radius: 14px;
   overflow: hidden;
+  max-width: 100%;
 }
 
 .gallery img {
   width: 100%;
+  max-width: 100%;
   height: clamp(180px, 24vw, 240px);
   object-fit: cover;
   display: block;
@@ -63,6 +73,18 @@
     transform 0.25s ease,
     box-shadow 0.25s ease,
     border-color 0.25s ease;
+}
+
+/* ── Global Media Constraints ─────────────────────────────────────── */
+img, video {
+  max-width: 100%;
+  height: auto;
+  box-sizing: border-box;
+}
+
+iframe {
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .gallery img:hover {
