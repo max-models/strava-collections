@@ -412,7 +412,7 @@ class StravaActivity:
         out_str += get_icon_link(
             "https://cdn-icons-png.freepik.com/512/13063/13063145.png"
         )
-        out_str += f"<span>{timedelta(seconds=self.activity.elapsed_time)}</span>\n "
+        out_str += f"<span>{timedelta(seconds=self.activity.moving_time)}</span>\n "
         out_str += "       "
         out_str += get_icon_link(
             "https://cdn.worldvectorlogo.com/logos/strava-2.svg",

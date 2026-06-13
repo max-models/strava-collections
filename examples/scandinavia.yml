@@ -1,6 +1,6 @@
 collection_name: "Scandinavian traverse"
 output_dir: "docs/source/"
-garmin_livetrack_url: "https://livetrack.garmin.com/session/95c49836-4715-8c3b-962a-209688fe0d00/token/BB165E83A8F9ED37AB5DEE74F6A4A474"
+garmin_livetrack_url: "https://livetrack.garmin.com/session/b728516a-8409-8e7b-9be5-51c401815b00/token/75AF6BD81BE29D92F571E89C7C6AF4F9"
 planned_routes:
   - "temporary-strava-activities/routes/NC26_CPH-OSL_Road.gpx"
   - "temporary-strava-activities/routes/bergen_to_bodo.gpx"
