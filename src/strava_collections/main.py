@@ -322,6 +322,12 @@ def main():
     )
 
     parser.add_argument(
+        "--update-site",
+        action="store_true",
+        help="Update the website template and sync assets without reprocessing collections",
+    )
+
+    parser.add_argument(
         "--serve",
         action="store_true",
         help="Install dependencies and start the development server",
@@ -342,9 +348,16 @@ def main():
 
     args = parser.parse_args()
 
+    if args.update_site:
+        site_root = Path(args.output).resolve() if args.output else Path("docs").resolve()
+        print(f"Updating website at: {site_root}")
+        ensure_site_template(site_root)
+        sync_site(site_root)
+        print_site_instructions(site_root)
+        return
+
     if args.download:
         import json
-        from pathlib import Path
 
         from strava_collections.activity import StravaActivity
 
