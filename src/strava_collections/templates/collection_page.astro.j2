@@ -300,23 +300,26 @@ const collectionElevationData = trackerPayload.collections[0].activities
             height: 200,
             margin: {{ l: 45, r: 20, t: 10, b: 35 }},
             showlegend: false,
+            dragmode: false,
             xaxis: {{ 
               title: {{ text: 'Distance (km)', font: {{ size: 11, color: '#64748b' }} }},
               showgrid: true,
               gridcolor: '#f1f5f9',
               zeroline: false,
-              tickfont: {{ size: 10, color: '#94a3b8' }}
+              tickfont: {{ size: 10, color: '#94a3b8' }},
+              fixedrange: true
             }},
             yaxis: {{ 
               title: {{ text: 'Elevation (m)', font: {{ size: 11, color: '#64748b' }} }},
               showgrid: true,
               gridcolor: '#f1f5f9',
               zeroline: false,
-              tickfont: {{ size: 10, color: '#94a3b8' }}
+              tickfont: {{ size: 10, color: '#94a3b8' }},
+              fixedrange: true
             }},
             paper_bgcolor: 'rgba(0,0,0,0)',
             plot_bgcolor: 'rgba(0,0,0,0)'
-          }}, {{ responsive: true, displayModeBar: false }});
+          }}, {{ responsive: true, displayModeBar: false, scrollZoom: false }});
         }}
       }});
     }} catch (e) {{
