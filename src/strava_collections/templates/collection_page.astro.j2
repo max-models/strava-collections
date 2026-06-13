@@ -96,12 +96,13 @@ const collectionElevationData = trackerPayload.collections[0].activities
     </div>
   </section>
   
-  {{metadata.garminLivetrackUrl && (
+  {{/* metadata.garminLivetrackUrl && (
     <section class="garmin-livetrack-section mb-12 w-full overflow-hidden" id="live-tracking">
       <h3 class="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
         <span class="inline-block w-3 h-3 bg-red-500 rounded-full animate-pulse"></span>
         Live Tracking
       </h3>
+      You can change to km by clicking top right, then Statute and select Metric.
       <div class="garmin-iframe-container border-[3px] border-red-500 rounded-xl overflow-hidden mb-4 w-full max-w-full">
         <iframe
           src={{metadata.garminLivetrackUrl}}
@@ -140,40 +141,62 @@ const collectionElevationData = trackerPayload.collections[0].activities
           <strong class="text-xl md:text-2xl text-slate-900 break-words" data-stat="avgSpeed">--</strong>
         </div>
       </div>
+      <p id="live-status-msg" class="text-xs text-slate-400 mb-6 italic text-center">Loading live stats...</p>
+
       <script is:inline>
         (async () => {{
           const LIVE_HISTORY_URL = 'https://bitter-silence-3781.max-lindqvist.workers.dev/history';
           const stats = document.querySelectorAll('#live-stats [data-stat]');
+          const statusMsg = document.getElementById('live-status-msg');
           if (!stats.length) return;
 
           try {{
             const response = await fetch(LIVE_HISTORY_URL);
-            if (!response.ok) return;
+            if (!response.ok) {{
+              if (statusMsg) statusMsg.textContent = 'Failed to load live data.';
+              return;
+            }}
             const history = await response.json();
-            if (!Array.isArray(history) || history.length === 0) return;
+            if (!Array.isArray(history) || history.length === 0) {{
+              if (statusMsg) statusMsg.textContent = 'No live tracking data available yet.';
+              return;
+            }}
 
             const validEntries = history
               .map(e => e.data)
               .filter(d => d && typeof d.lat === 'number' && typeof d.lon === 'number' && typeof d.tst === 'number')
               .sort((a, b) => a.tst - b.tst);
 
-            if (validEntries.length === 0) return;
+            if (validEntries.length === 0) {{
+              if (statusMsg) statusMsg.textContent = 'No valid tracking points found.';
+              return;
+            }}
 
             const lastEntry = validEntries[validEntries.length - 1];
             const lastDate = new Date(lastEntry.tst * 1000).toDateString();
-            const todayEntries = validEntries.filter(e => new Date(e.tst * 1000).toDateString() === lastDate);
+            
+            // Try to filter for points from the last active day
+            let activeEntries = validEntries.filter(e => new Date(e.tst * 1000).toDateString() === lastDate);
+            
+            // If very few points today, show total available history instead
+            if (activeEntries.length < 2) {{
+              activeEntries = validEntries;
+              if (statusMsg) statusMsg.textContent = 'Showing total trip progress.';
+            }} else {{
+              if (statusMsg) statusMsg.textContent = `Live progress for ${{(new Date(lastEntry.tst * 1000)).toLocaleDateString()}}.`;
+            }}
 
-            if (todayEntries.length === 0) return;
-
-            const firstToday = todayEntries[0];
-            const durationSecs = lastEntry.tst - firstToday.tst;
+            const firstEntry = activeEntries[0];
+            const durationSecs = lastEntry.tst - firstEntry.tst;
 
             let totalDist = 0;
             const R = 6371000;
             const toRad = v => v * Math.PI / 180;
 
-            for (let i = 1; i < todayEntries.length; i++) {{
-              const p1 = todayEntries[i-1], p2 = todayEntries[i];
+            for (let i = 1; i < activeEntries.length; i++) {{
+              const p1 = activeEntries[i-1], p2 = activeEntries[i];
+              if (p1.lat === 0 || p1.lon === 0 || p2.lat === 0 || p2.lon === 0) continue;
+              
               const dLat = toRad(p2.lat - p1.lat), dLon = toRad(p2.lon - p1.lon);
               const a = Math.sin(dLat/2)**2 + Math.cos(toRad(p1.lat)) * Math.cos(toRad(p2.lat)) * Math.sin(dLon/2)**2;
               totalDist += R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
@@ -184,7 +207,7 @@ const collectionElevationData = trackerPayload.collections[0].activities
               if (type === 'distance') {{
                 stat.textContent = totalDist >= 1000 ? `${{(totalDist / 1000).toFixed(1)}} km` : `${{Math.round(totalDist)}} m`;
               }} else if (type === 'elevation') {{
-                stat.textContent = lastEntry.alt ? `${{Math.round(lastEntry.alt)}} m` : '--';
+                stat.textContent = lastEntry.alt !== undefined ? `${{Math.round(lastEntry.alt)}} m` : '--';
               }} else if (type === 'movingTime') {{
                 const h = Math.floor(durationSecs / 3600);
                 const m = Math.floor((durationSecs % 3600) / 60);
@@ -194,11 +217,16 @@ const collectionElevationData = trackerPayload.collections[0].activities
                 stat.textContent = `${{speed.toFixed(1)}} km/h`;
               }}
             }});
-          }} catch (e) {{ console.error('Live stats error:', e); }}
+
+            if (statusMsg) statusMsg.innerHTML += ` Last updated: ${{(new Date()).toLocaleTimeString()}}.`;
+          }} catch (e) {{ 
+            console.error('Live stats error:', e);
+            if (statusMsg) statusMsg.textContent = 'Error processing live data.';
+          }}
         }})();
       </script>
     </section>
-  )}}
+  ) */}}
   <ElevationChart id="collection-elevation" data={{collectionElevationData}} height={{200}} />
   <Map payload={{trackerPayload}} fullscreenUrl={{fullscreenMapUrl}} />
   {markup}
@@ -300,23 +328,26 @@ const collectionElevationData = trackerPayload.collections[0].activities
             height: 200,
             margin: {{ l: 45, r: 20, t: 10, b: 35 }},
             showlegend: false,
+            dragmode: false,
             xaxis: {{ 
               title: {{ text: 'Distance (km)', font: {{ size: 11, color: '#64748b' }} }},
               showgrid: true,
               gridcolor: '#f1f5f9',
               zeroline: false,
-              tickfont: {{ size: 10, color: '#94a3b8' }}
+              tickfont: {{ size: 10, color: '#94a3b8' }},
+              fixedrange: true
             }},
             yaxis: {{ 
               title: {{ text: 'Elevation (m)', font: {{ size: 11, color: '#64748b' }} }},
               showgrid: true,
               gridcolor: '#f1f5f9',
               zeroline: false,
-              tickfont: {{ size: 10, color: '#94a3b8' }}
+              tickfont: {{ size: 10, color: '#94a3b8' }},
+              fixedrange: true
             }},
             paper_bgcolor: 'rgba(0,0,0,0)',
             plot_bgcolor: 'rgba(0,0,0,0)'
-          }}, {{ responsive: true, displayModeBar: false }});
+          }}, {{ responsive: true, displayModeBar: false, scrollZoom: false }});
         }}
       }});
     }} catch (e) {{
