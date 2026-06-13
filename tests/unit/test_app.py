@@ -474,6 +474,7 @@ def test_activity_summary_uses_web_plotting_placeholder():
         distance=1000.0,
         total_elevation_gain=50.0,
         elapsed_time=3600,
+        moving_time=3600,
         description="",
         map=SimpleNamespace(polyline="u{~vGvswfC?h@"),
     )
@@ -495,6 +496,7 @@ def test_activity_summary_gallery_images_keep_lightbox_class_and_accessibility()
         distance=1000.0,
         total_elevation_gain=50.0,
         elapsed_time=3600,
+        moving_time=3600,
         description="",
         map=SimpleNamespace(polyline="u{~vGvswfC?h@"),
     )
