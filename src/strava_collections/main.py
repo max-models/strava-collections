@@ -331,6 +331,16 @@ def main():
         action="store_false",
         help="Disable individual activity elevation plots",
     )
+    build_parser.add_argument(
+        "--serve",
+        action="store_true",
+        help="Serve the site after building",
+    )
+    build_parser.add_argument(
+        "--host",
+        action="store_true",
+        help="Expose server to host",
+    )
     build_parser.set_defaults(include_activity_elevation=True)
 
     # Command: analyze
@@ -497,6 +507,21 @@ def main():
                 "live-tracking.yaml", site_root / "source" / "live-tracking.yaml"
             )
         print_site_instructions(site_root)
+
+        if getattr(args, "serve", False):
+            astro_dir = site_root / "astro"
+            print(f"\n🚀 Starting development server in {astro_dir}...")
+            try:
+                subprocess.run(["npm", "ci"], cwd=astro_dir, check=True)
+                npm_command = ["npm", "run", "dev"]
+                if args.host:
+                    npm_command.extend(["--", "--host"])
+                subprocess.run(npm_command, cwd=astro_dir, check=True)
+            except KeyboardInterrupt:
+                print("\n👋 Server stopped.")
+            except Exception as e:
+                print(f"❌ Error starting server: {e}")
+                sys.exit(1)
 
     if getattr(args, "command", None) == "serve":
         site_root = (
