@@ -6,3 +6,5 @@ runs:
     - name: Loop over all collections and build
       shell: bash
       run: strava-collections -i 'examples/*.yml'
+      env:
+        STRAVA_CACHE_DIR: temporary-strava-activities
