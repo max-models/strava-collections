@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import yaml from 'js-yaml';
+import Layout from '../layouts/Layout.astro';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -17,29 +18,132 @@ function findLiveTrackingYaml(startDir: string): string | null {
   return null;
 }
 
-// Try to find live-tracking.yaml and redirect to the collection with garminLivetrackUrl
 const liveTrackingPath = findLiveTrackingYaml(__dirname);
 let redirectUrl = '/';
+let collectionName = '';
 
 if (liveTrackingPath) {
   try {
     const liveTrackingConfig = yaml.load(fs.readFileSync(liveTrackingPath, 'utf8')) as { collections: any[] };
     const collection = liveTrackingConfig.collections[0];
     
-    // Check if this collection has a garminLivetrackUrl
     const hasGarminUrl = collection.activities?.some((a: any) => a.garminLivetrackUrl) || collection.garminLivetrackUrl;
     
     if (hasGarminUrl && collection.name) {
-      // Convert collection name to slug (lowercase, replace spaces with hyphens)
+      collectionName = collection.name;
       const slug = collection.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
       const baseUrl = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
-      redirectUrl = `${baseUrl}collections/${slug}#live-tracking`;
+      redirectUrl = `${baseUrl}collections/${slug}/#live-tracking`;
     }
   } catch (error) {
     console.error('Error reading live-tracking.yaml:', error);
   }
 }
-
-// Perform redirect
-return Astro.redirect(redirectUrl);
 ---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Opening Live Tracking...</title>
+    <meta http-equiv="refresh" content={`0;url=${redirectUrl}`} />
+    <script define:vars={{ redirectUrl }}>
+      // Immediate client-side redirect
+      window.location.replace(redirectUrl);
+    </script>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        background-color: #f8fafc;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        color: #1e293b;
+      }
+      .card {
+        background: white;
+        padding: 2.5rem;
+        border-radius: 24px;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+        text-align: center;
+        max-width: 400px;
+        width: 90%;
+        border: 1px solid #e2e8f0;
+      }
+      .icon-container {
+        position: relative;
+        width: 64px;
+        height: 64px;
+        margin: 0 auto 1.5rem;
+      }
+      .pulse {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        background: #fc4c02;
+        border-radius: 50%;
+        opacity: 0.2;
+        animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      }
+      .icon {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        background: #fc4c02;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+      }
+      h1 {
+        font-size: 1.25rem;
+        font-weight: 700;
+        margin: 0 0 0.5rem;
+        color: #0f172a;
+      }
+      p {
+        color: #64748b;
+        font-size: 0.95rem;
+        line-height: 1.5;
+        margin: 0 0 1.5rem;
+      }
+      .link {
+        color: #fc4c02;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 0.875rem;
+      }
+      .link:hover {
+        text-decoration: underline;
+      }
+      @keyframes pulse {
+        0%, 100% { transform: scale(1); opacity: 0.2; }
+        50% { transform: scale(1.4); opacity: 0; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <div class="icon-container">
+        <div class="pulse"></div>
+        <div class="icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2a10 10 0 1 0 10 10H12V2z"></path>
+            <path d="M12 12L2.7 7.3"></path>
+          </svg>
+        </div>
+      </div>
+      <h1>Opening Live Tracking</h1>
+      {collectionName ? (
+        <p>Connecting to <strong>{collectionName}</strong>...</p>
+      ) : (
+        <p>Getting your live location...</p>
+      )}
+      <a href={redirectUrl} class="link">Click here if you aren't redirected automatically</a>
+    </div>
+  </body>
+</html>
