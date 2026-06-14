@@ -41,9 +41,9 @@ def main() -> int:
     clear_vite_dependency_cache()
     previous_snapshot = snapshot_source_tree()
 
-    astro_command = ["npm", "run", "astro:dev"]
+    astro_command = ["npx", "astro", "dev"]
     if len(sys.argv) > 1:
-        astro_command.extend(["--", *sys.argv[1:]])
+        astro_command.extend(sys.argv[1:])
 
     astro_process = subprocess.Popen(
         astro_command,
