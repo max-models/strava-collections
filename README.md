@@ -91,6 +91,7 @@ assets, and `astro/` is the copied Astro site template.
 ### Map Features
 
 Collection maps include:
+
 - **Map style dropdown** (top-left): Switch between different map styles (outdoors, streets, light, dark, satellite, etc.)
 - **Places markers** (red dots): If places are defined in the YAML, they appear as red markers on the map with hover tooltips
 

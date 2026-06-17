@@ -5,7 +5,7 @@ planned_routes:
   - "temporary-strava-activities/routes/NC26_CPH-OSL_Road.gpx"
   - "temporary-strava-activities/routes/bergen_to_bodo.gpx"
 # activity_ids:
-#   # - "7588727912" # Moss to Totak 🚴🇪🇺🇳🇴  
+#   # - "7588727912" # Moss to Totak 🚴🇪🇺🇳🇴
 #   # - "7591809739" # To Røldal 🚴🇪🇺🇳🇴
 #   # - "7603766442" # Røldal to Bergen 🚴🇪🇺🇳🇴
 places:
@@ -29,6 +29,6 @@ places:
     lon: 14.4049
 description: |
   Live tracking for my June bike trip
-  
+
   - Part 1: Nordic Chase 2026 - Copenhagen to Oslo, we will start on Friday 7AM and cycle 725 km to Oslo.
   - Part 2: Bergen to Bodö starts on Monday morning, at a slower pace (vacation riding).
