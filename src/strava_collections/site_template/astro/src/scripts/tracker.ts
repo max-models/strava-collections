@@ -93,7 +93,10 @@ interface GraphMetricConfig {
   baselineAtZero: boolean;
   xFormatter: (v: number) => string;
   yFormatter: (v: number) => string;
-  selectPoint: (point: GarminTrackPoint, prev?: GarminTrackPoint) => ChartSeriesPoint | null;
+  selectPoint: (
+    point: GarminTrackPoint,
+    prev?: GarminTrackPoint,
+  ) => ChartSeriesPoint | null;
 }
 
 interface LeafletState {
@@ -120,8 +123,11 @@ export async function setupTripTracker(payload: TrackerPayload): Promise<void> {
     col.activities
       .map((activity, ai) => ({ col, ci, ai, activity }))
       .filter(
-        ({ activity }): activity is typeof activity & { routeData: GarminRouteOk } =>
-          activity.routeData?.status === "ok" && activity.routeData.points.length > 0,
+        ({
+          activity,
+        }): activity is typeof activity & { routeData: GarminRouteOk } =>
+          activity.routeData?.status === "ok" &&
+          activity.routeData.points.length > 0,
       )
       .map(({ col, ci, ai, activity }) => ({
         collectionIndex: ci,
@@ -144,9 +150,15 @@ export async function setupTripTracker(payload: TrackerPayload): Promise<void> {
       col.activities.some((a) => a.plannedRouteData),
   );
   activeCollectionIndex =
-    firstCollectionWithRoute >= 0 ? firstCollectionWithRoute : collections.length > 0 ? 0 : null;
+    firstCollectionWithRoute >= 0
+      ? firstCollectionWithRoute
+      : collections.length > 0
+        ? 0
+        : null;
   visibleCollections =
-    activeCollectionIndex === null ? new Set<number>() : new Set<number>([activeCollectionIndex]);
+    activeCollectionIndex === null
+      ? new Set<number>()
+      : new Set<number>([activeCollectionIndex]);
 
   const mapShell = getElement<HTMLDivElement>("map-shell");
   const placeholder = getElement<HTMLDivElement>("map-placeholder");
@@ -175,7 +187,11 @@ async function renderMap(options: {
   hideLiveStats();
   hideGraphs();
 
-  const anyPlanned = collections.some((col, ci) => visibleCollections.has(ci) && (col.plannedRouteData || col.activities.some(a => a.plannedRouteData)));
+  const anyPlanned = collections.some(
+    (col, ci) =>
+      visibleCollections.has(ci) &&
+      (col.plannedRouteData || col.activities.some((a) => a.plannedRouteData)),
+  );
   const allVisible = getVisibleRouteEntries();
 
   if (allVisible.length === 0 && !anyPlanned) {
@@ -195,25 +211,25 @@ async function renderMap(options: {
         name: col.name,
         points: col.plannedRouteData.points,
         color: "#64748b",
-        isPlanned: true
+        isPlanned: true,
       });
     }
 
-    col.activities.forEach(act => {
+    col.activities.forEach((act) => {
       if (act.plannedRouteData) {
         allPlanned.push({
           name: "Planned Activity",
           points: act.plannedRouteData.points,
           color: "#64748b",
-          isPlanned: true
+          isPlanned: true,
         });
       }
-      
+
       if (act.routeData?.status === "ok") {
         allTracks.push({
           name: act.notes || "Activity",
           points: act.routeData.points,
-          color: act.color
+          color: act.color,
         });
       }
     });
@@ -222,21 +238,27 @@ async function renderMap(options: {
   const map = setupMap({
     containerId: "collection-map",
     tracks: allTracks,
-    plannedRoutes: allPlanned
+    plannedRoutes: allPlanned,
   });
 
   if (!map) return;
 
   // If we have live data, ensure we are focused on the latest position
   if (allVisible.length > 0) {
-    const latestEntries = allVisible.filter(e => e.routeData.points.length > 0);
+    const latestEntries = allVisible.filter(
+      (e) => e.routeData.points.length > 0,
+    );
     if (latestEntries.length > 0) {
       const newest = latestEntries.sort((a, b) => {
-        const tA = a.routeData.summary.lastReportedTime ? new Date(a.routeData.summary.lastReportedTime).getTime() : 0;
-        const tB = b.routeData.summary.lastReportedTime ? new Date(b.routeData.summary.lastReportedTime).getTime() : 0;
+        const tA = a.routeData.summary.lastReportedTime
+          ? new Date(a.routeData.summary.lastReportedTime).getTime()
+          : 0;
+        const tB = b.routeData.summary.lastReportedTime
+          ? new Date(b.routeData.summary.lastReportedTime).getTime()
+          : 0;
         return tB - tA;
       })[0];
-      
+
       const lastPoint = newest.routeData.points.at(-1);
       if (lastPoint) {
         map.panTo([lastPoint.lat, lastPoint.lon]);
@@ -253,7 +275,9 @@ async function renderMap(options: {
 }
 
 function getVisibleRouteEntries(): RouteEntry[] {
-  return allRouteEntries.filter((e) => visibleCollections.has(e.collectionIndex));
+  return allRouteEntries.filter((e) =>
+    visibleCollections.has(e.collectionIndex),
+  );
 }
 
 function selectCollection(collectionIndex: number): void {
@@ -286,12 +310,14 @@ function updateCollectionButtonStates(): void {
     return;
   }
 
-  controls.querySelectorAll<HTMLButtonElement>("[data-collection-index]").forEach((btn) => {
-    const ci = Number(btn.dataset.collectionIndex);
-    const selected = activeCollectionIndex === ci;
-    btn.classList.toggle("collection-btn--off", !selected);
-    btn.setAttribute("aria-selected", selected ? "true" : "false");
-  });
+  controls
+    .querySelectorAll<HTMLButtonElement>("[data-collection-index]")
+    .forEach((btn) => {
+      const ci = Number(btn.dataset.collectionIndex);
+      const selected = activeCollectionIndex === ci;
+      btn.classList.toggle("collection-btn--off", !selected);
+      btn.setAttribute("aria-selected", selected ? "true" : "false");
+    });
 }
 
 function renderCollectionControls(collections: TrackerCollection[]): void {
@@ -320,12 +346,14 @@ function renderCollectionControls(collections: TrackerCollection[]): void {
     })
     .join("");
 
-  controls.querySelectorAll<HTMLButtonElement>("[data-collection-index]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const ci = Number(btn.dataset.collectionIndex);
-      selectCollection(ci);
+  controls
+    .querySelectorAll<HTMLButtonElement>("[data-collection-index]")
+    .forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const ci = Number(btn.dataset.collectionIndex);
+        selectCollection(ci);
+      });
     });
-  });
 }
 
 function updateMapStats(routes: RouteEntry[]): void {
@@ -337,7 +365,10 @@ function updateMapStats(routes: RouteEntry[]): void {
     (sum, e) => sum + (e.routeData.summary.totalDurationSecs ?? 0),
     0,
   );
-  const pointCount = routes.reduce((sum, e) => sum + e.routeData.summary.pointCount, 0);
+  const pointCount = routes.reduce(
+    (sum, e) => sum + e.routeData.summary.pointCount,
+    0,
+  );
   const lastUpdated = routes
     .map((e) => e.routeData.summary.lastReportedTime)
     .filter((v): v is string => Boolean(v))
@@ -457,7 +488,9 @@ function renderGraphs(routes: RouteEntry[]): void {
     )
     .join("");
 
-  const selected = available.find((entry) => entry.metric.key === activeGraphMetric) ?? available[0];
+  const selected =
+    available.find((entry) => entry.metric.key === activeGraphMetric) ??
+    available[0];
   graphHeading.textContent = selected.metric.title;
   canvas.innerHTML = `
     <article class="graph-card graph-card--full">
@@ -475,16 +508,20 @@ function renderGraphs(routes: RouteEntry[]): void {
       })}</div>
     </article>`;
 
-  switcher.querySelectorAll<HTMLButtonElement>("[data-metric]").forEach((button) => {
-    button.addEventListener("click", () => {
-      const metric = button.dataset.metric as GraphMetricConfig["key"] | undefined;
-      if (!metric || metric === activeGraphMetric) {
-        return;
-      }
-      activeGraphMetric = metric;
-      renderGraphs(routes);
+  switcher
+    .querySelectorAll<HTMLButtonElement>("[data-metric]")
+    .forEach((button) => {
+      button.addEventListener("click", () => {
+        const metric = button.dataset.metric as
+          | GraphMetricConfig["key"]
+          | undefined;
+        if (!metric || metric === activeGraphMetric) {
+          return;
+        }
+        activeGraphMetric = metric;
+        renderGraphs(routes);
+      });
     });
-  });
 
   graphSection.classList.remove("hidden");
 }
@@ -523,7 +560,9 @@ function getGraphMetrics(): GraphMetricConfig[] {
           return { x: point.distanceMeters, y: point.speedMetersPerSec * 3.6 };
         }
         const derived = deriveSpeedKmh(point, prev);
-        return typeof derived === "number" ? { x: point.distanceMeters, y: derived } : null;
+        return typeof derived === "number"
+          ? { x: point.distanceMeters, y: derived }
+          : null;
       },
     },
     {
@@ -535,7 +574,9 @@ function getGraphMetrics(): GraphMetricConfig[] {
       xFormatter: formatDistance,
       yFormatter: (v) => `${Math.round(v)} m`,
       selectPoint: (point) =>
-        typeof point.distanceMeters === "number" && typeof point.elevation === "number" && point.elevation !== 0
+        typeof point.distanceMeters === "number" &&
+        typeof point.elevation === "number" &&
+        point.elevation !== 0
           ? { x: point.distanceMeters, y: point.elevation }
           : null,
     },
@@ -548,7 +589,8 @@ function getGraphMetrics(): GraphMetricConfig[] {
       xFormatter: formatDistance,
       yFormatter: (v) => `${Math.round(v)} bpm`,
       selectPoint: (point) =>
-        typeof point.distanceMeters === "number" && typeof point.heartRateBeatsPerMin === "number"
+        typeof point.distanceMeters === "number" &&
+        typeof point.heartRateBeatsPerMin === "number"
           ? { x: point.distanceMeters, y: point.heartRateBeatsPerMin }
           : null,
     },
@@ -561,7 +603,8 @@ function getGraphMetrics(): GraphMetricConfig[] {
       xFormatter: formatDistance,
       yFormatter: (v) => `${Math.round(v)} w`,
       selectPoint: (point) =>
-        typeof point.distanceMeters === "number" && typeof point.powerWatts === "number"
+        typeof point.distanceMeters === "number" &&
+        typeof point.powerWatts === "number"
           ? { x: point.distanceMeters, y: point.powerWatts }
           : null,
     },
@@ -574,7 +617,8 @@ function getGraphMetrics(): GraphMetricConfig[] {
       xFormatter: formatDistance,
       yFormatter: (v) => `${Math.round(v)} rpm`,
       selectPoint: (point) =>
-        typeof point.distanceMeters === "number" && typeof point.cadenceCyclesPerMin === "number"
+        typeof point.distanceMeters === "number" &&
+        typeof point.cadenceCyclesPerMin === "number"
           ? { x: point.distanceMeters, y: point.cadenceCyclesPerMin }
           : null,
     },
@@ -587,22 +631,34 @@ function getGraphMetrics(): GraphMetricConfig[] {
  */
 function buildCombinedSeries(
   routes: RouteEntry[],
-  selectPoint: (point: GarminTrackPoint, prev?: GarminTrackPoint) => ChartSeriesPoint | null,
+  selectPoint: (
+    point: GarminTrackPoint,
+    prev?: GarminTrackPoint,
+  ) => ChartSeriesPoint | null,
 ): ChartSeries[] {
   const result: ChartSeries[] = [];
   let xOffset = 0;
 
   for (const entry of routes) {
     const rawPoints = entry.routeData.points
-      .map((point, index, all) => selectPoint(point, index > 0 ? all[index - 1] : undefined))
-      .filter((p): p is ChartSeriesPoint => p !== null && Number.isFinite(p.x) && Number.isFinite(p.y));
+      .map((point, index, all) =>
+        selectPoint(point, index > 0 ? all[index - 1] : undefined),
+      )
+      .filter(
+        (p): p is ChartSeriesPoint =>
+          p !== null && Number.isFinite(p.x) && Number.isFinite(p.y),
+      );
 
     if (rawPoints.length < 2) {
       continue;
     }
 
     const xMax = rawPoints.at(-1)!.x;
-    const offsetPoints = rawPoints.map((p) => ({ x: p.x + xOffset, displayX: p.x, y: p.y }));
+    const offsetPoints = rawPoints.map((p) => ({
+      x: p.x + xOffset,
+      displayX: p.x,
+      y: p.y,
+    }));
 
     result.push({
       color: entry.color,
@@ -617,7 +673,10 @@ function buildCombinedSeries(
   return result;
 }
 
-function deriveSpeedKmh(point: GarminTrackPoint, prev?: GarminTrackPoint): number | null {
+function deriveSpeedKmh(
+  point: GarminTrackPoint,
+  prev?: GarminTrackPoint,
+): number | null {
   if (
     !prev ||
     typeof prev.distanceMeters !== "number" ||
@@ -646,7 +705,8 @@ function buildLineChartSvg(options: {
   xLabel: string;
   yLabel: string;
 }): string {
-  const { series, xFormatter, yFormatter, baselineAtZero, xLabel, yLabel } = options;
+  const { series, xFormatter, yFormatter, baselineAtZero, xLabel, yLabel } =
+    options;
   const width = 680;
   const height = 240;
   const padding = { top: 16, right: 16, bottom: 34, left: 48 };
@@ -657,7 +717,8 @@ function buildLineChartSvg(options: {
   const xMax = Math.max(...allX, 1);
   const rawYMin = Math.min(...allY);
   const rawYMax = Math.max(...allY);
-  const equalPad = rawYMax === rawYMin ? Math.max(Math.abs(rawYMax) * 0.05, 1) : 0;
+  const equalPad =
+    rawYMax === rawYMin ? Math.max(Math.abs(rawYMax) * 0.05, 1) : 0;
   const yMin = baselineAtZero ? 0 : rawYMin - equalPad;
   const yMax = rawYMax + equalPad;
   const chartWidth = width - padding.left - padding.right;
@@ -665,7 +726,8 @@ function buildLineChartSvg(options: {
   const yRange = Math.max(yMax - yMin, 1);
 
   const scaleX = (v: number) => padding.left + (v / xMax) * chartWidth;
-  const scaleY = (v: number) => padding.top + chartHeight - ((v - yMin) / yRange) * chartHeight;
+  const scaleY = (v: number) =>
+    padding.top + chartHeight - ((v - yMin) / yRange) * chartHeight;
 
   const gridLinesCount = 6;
   const gridLines = Array.from({ length: gridLinesCount }, (_, i) => {
@@ -687,7 +749,10 @@ function buildLineChartSvg(options: {
   const paths = series
     .map((s) => {
       const d = s.points
-        .map((p, i) => `${i === 0 ? "M" : "L"} ${scaleX(p.x).toFixed(2)} ${scaleY(p.y).toFixed(2)}`)
+        .map(
+          (p, i) =>
+            `${i === 0 ? "M" : "L"} ${scaleX(p.x).toFixed(2)} ${scaleY(p.y).toFixed(2)}`,
+        )
         .join(" ");
       return `<path d="${d}" fill="none" stroke="${escapeHtml(s.color)}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />`;
     })
@@ -735,7 +800,10 @@ Total ${xLabel}: ${xFormatter(s.xTotal)}`;
     </svg>`;
 }
 
-function renderActivityList(collections: TrackerCollection[], selectedCollectionIndex: number | null): void {
+function renderActivityList(
+  collections: TrackerCollection[],
+  selectedCollectionIndex: number | null,
+): void {
   const activityList = getElement<HTMLDivElement>("activity-list");
   if (!activityList) {
     return;
@@ -743,24 +811,39 @@ function renderActivityList(collections: TrackerCollection[], selectedCollection
 
   const cards = collections
     .flatMap((col, ci) =>
-      (selectedCollectionIndex === null || selectedCollectionIndex === ci ? col.activities : []).map(
-        (activity, ai) => {
-          const entry = allRouteEntries.find((e) => e.collectionIndex === ci && e.activityIndex === ai);
-          const gpxHref = entry ? buildGpxDownloadUrl(entry.routeData.points, `${col.name} #${ai + 1}`) : null;
-          const statusText = getActivityStatusLabel(activity.routeData, activity.garminLivetrackUrl, activity.stravaActivityId);
-          const metrics = entry ? renderActivityMetrics(entry.routeData) : "";
-          const notes = activity.notes ? `<p class="activity-notes">${escapeHtml(activity.notes)}</p>` : "";
-          const garminLink = activity.garminLivetrackUrl
-            ? `<a class="button-link" href="${escapeHtml(activity.garminLivetrackUrl)}" target="_blank" rel="noreferrer">Open in Garmin</a>`
-            : "";
-          const stravaLink = activity.stravaActivityId
-            ? `<a class="button-link" href="https://www.strava.com/activities/${encodeURIComponent(activity.stravaActivityId)}" target="_blank" rel="noreferrer">Open in Strava</a>`
-            : "";
-          const gpxLink = gpxHref
-            ? `<a class="button-link button-link-secondary" href="${gpxHref}" download="${slugify(col.name)}-${ai + 1}.gpx">Download GPX</a>`
-            : "";
+      (selectedCollectionIndex === null || selectedCollectionIndex === ci
+        ? col.activities
+        : []
+      ).map((activity, ai) => {
+        const entry = allRouteEntries.find(
+          (e) => e.collectionIndex === ci && e.activityIndex === ai,
+        );
+        const gpxHref = entry
+          ? buildGpxDownloadUrl(
+              entry.routeData.points,
+              `${col.name} #${ai + 1}`,
+            )
+          : null;
+        const statusText = getActivityStatusLabel(
+          activity.routeData,
+          activity.garminLivetrackUrl,
+          activity.stravaActivityId,
+        );
+        const metrics = entry ? renderActivityMetrics(entry.routeData) : "";
+        const notes = activity.notes
+          ? `<p class="activity-notes">${escapeHtml(activity.notes)}</p>`
+          : "";
+        const garminLink = activity.garminLivetrackUrl
+          ? `<a class="button-link" href="${escapeHtml(activity.garminLivetrackUrl)}" target="_blank" rel="noreferrer">Open in Garmin</a>`
+          : "";
+        const stravaLink = activity.stravaActivityId
+          ? `<a class="button-link" href="https://www.strava.com/activities/${encodeURIComponent(activity.stravaActivityId)}" target="_blank" rel="noreferrer">Open in Strava</a>`
+          : "";
+        const gpxLink = gpxHref
+          ? `<a class="button-link button-link-secondary" href="${gpxHref}" download="${slugify(col.name)}-${ai + 1}.gpx">Download GPX</a>`
+          : "";
 
-          return `
+        return `
           <article class="activity-card">
             <div class="activity-card__header">
               <span class="activity-swatch" style="background:${escapeHtml(activity.color)}"></span>
@@ -773,8 +856,7 @@ function renderActivityList(collections: TrackerCollection[], selectedCollection
             ${metrics}
             <div class="activity-actions">${gpxLink}${garminLink}${stravaLink}</div>
           </article>`;
-        },
-      ),
+      }),
     )
     .join("");
 
@@ -839,9 +921,14 @@ function buildPlaceholderCopy(collections: TrackerCollection[]): string {
   return "The last build could not extract route data. Use the source links in the activity list as a fallback.";
 }
 
-function buildGpxDownloadUrl(points: GarminTrackPoint[], title: string): string {
+function buildGpxDownloadUrl(
+  points: GarminTrackPoint[],
+  title: string,
+): string {
   const gpx = buildGpxDocument(points, title);
-  const url = URL.createObjectURL(new Blob([gpx], { type: "application/gpx+xml" }));
+  const url = URL.createObjectURL(
+    new Blob([gpx], { type: "application/gpx+xml" }),
+  );
   gpxDownloadUrls.push(url);
   return url;
 }
@@ -854,7 +941,10 @@ function revokeGpxUrls(): void {
 function buildGpxDocument(points: GarminTrackPoint[], title: string): string {
   const trkpts = points
     .map((p) => {
-      const ele = typeof p.elevation === "number" ? `<ele>${p.elevation.toFixed(2)}</ele>` : "";
+      const ele =
+        typeof p.elevation === "number"
+          ? `<ele>${p.elevation.toFixed(2)}</ele>`
+          : "";
       const time = p.time ? `<time>${escapeXml(p.time)}</time>` : "";
       return `<trkpt lat="${p.lat}" lon="${p.lon}">${ele}${time}</trkpt>`;
     })
@@ -873,7 +963,9 @@ function formatDistance(distanceMeters?: number): string {
   if (typeof distanceMeters !== "number" || Number.isNaN(distanceMeters)) {
     return "-";
   }
-  return distanceMeters >= 1000 ? `${(distanceMeters / 1000).toFixed(1)} km` : `${Math.round(distanceMeters)} m`;
+  return distanceMeters >= 1000
+    ? `${(distanceMeters / 1000).toFixed(1)} km`
+    : `${Math.round(distanceMeters)} m`;
 }
 
 function formatSpeed(speedKmh?: number | null): string {

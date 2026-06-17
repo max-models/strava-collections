@@ -43,11 +43,12 @@ const hydrationPattern = /self\.__next_f\.push\(\[1,"((?:\\.|[^"\\])*)"\]\)/gs;
 
 export function parseGpxPoints(
   gpxContent: string,
-  options: { includeTelemetry?: boolean } = {}
+  options: { includeTelemetry?: boolean } = {},
 ): GarminTrackPoint[] {
   const includeTelemetry = options.includeTelemetry ?? true;
   const points: GarminTrackPoint[] = [];
-  const trkptRegex = /<trkpt lat="([-0-9.]+)" lon="([-0-9.]+)">([\s\S]*?)<\/trkpt>/g;
+  const trkptRegex =
+    /<trkpt lat="([-0-9.]+)" lon="([-0-9.]+)">([\s\S]*?)<\/trkpt>/g;
   let match;
   while ((match = trkptRegex.exec(gpxContent)) !== null) {
     const lat = parseFloat(match[1]);
@@ -89,7 +90,8 @@ export function parseGpxPoints(
         const d = calculateDistance(p1.lat, p1.lon, p2.lat, p2.lon);
         totalDistance += d;
         if (p1.time && p2.time) {
-          const dt = (new Date(p2.time).getTime() - new Date(p1.time).getTime()) / 1000;
+          const dt =
+            (new Date(p2.time).getTime() - new Date(p1.time).getTime()) / 1000;
           if (dt > 0) totalDuration += dt;
         }
       }
@@ -101,13 +103,21 @@ export function parseGpxPoints(
   return points;
 }
 
-function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+function calculateDistance(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number,
+): number {
   const R = 6371000;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
   const dLon = ((lon2 - lon1) * Math.PI) / 180;
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
 }
@@ -128,7 +138,7 @@ function downsamplePoints<T>(points: T[], maxPoints = 1000): T[] {
 }
 
 export function loadPlannedRouteData(
-  input: string | string[] | undefined | null
+  input: string | string[] | undefined | null,
 ): { points: Array<{ lat: number; lon: number }> } | null {
   if (!input) return null;
   const filenames = Array.isArray(input) ? input : [input];
@@ -150,7 +160,9 @@ export function loadPlannedRouteData(
       if (existsSync(p)) {
         try {
           const content = readFileSync(p, "utf-8");
-          const points = downsamplePoints(parseGpxPoints(content, { includeTelemetry: false }));
+          const points = downsamplePoints(
+            parseGpxPoints(content, { includeTelemetry: false }),
+          );
           if (points.length > 0) {
             allPoints.push(...points);
             found = true;
@@ -161,7 +173,7 @@ export function loadPlannedRouteData(
         }
       }
     }
-    
+
     if (!found) {
       console.warn(`Could not find GPX file: ${filename}`);
     }
@@ -171,7 +183,7 @@ export function loadPlannedRouteData(
 }
 
 export function loadPlannedRoutesIndividually(
-  input: string | string[] | undefined | null
+  input: string | string[] | undefined | null,
 ): Array<{ points: Array<{ lat: number; lon: number }> }> {
   if (!input) return [];
   const filenames = Array.isArray(input) ? input : [input];
@@ -193,7 +205,9 @@ export function loadPlannedRoutesIndividually(
       if (existsSync(p)) {
         try {
           const content = readFileSync(p, "utf-8");
-          const points = downsamplePoints(parseGpxPoints(content, { includeTelemetry: false }));
+          const points = downsamplePoints(
+            parseGpxPoints(content, { includeTelemetry: false }),
+          );
           if (points.length > 0) {
             routes.push({ points });
             found = true;
@@ -204,7 +218,7 @@ export function loadPlannedRoutesIndividually(
         }
       }
     }
-    
+
     if (!found) {
       console.warn(`Could not find GPX file: ${filename}`);
     }
@@ -220,7 +234,8 @@ export function loadStravaRouteData(activities: any[]): GarminRouteData[] {
 
   // First, try to load from local GPX files if they exist
   activities.forEach((a, i) => {
-    const activityId = a.stravaActivityId || (a.strava_id ? String(a.strava_id[0]) : "");
+    const activityId =
+      a.stravaActivityId || (a.strava_id ? String(a.strava_id[0]) : "");
     if (!activityId) return;
 
     const filename = `activity-${activityId}.gpx`;
@@ -259,7 +274,9 @@ export function loadStravaRouteData(activities: any[]): GarminRouteData[] {
   const missingActivityIds = activities
     .map((a, i) => (results[i] === null ? a : null))
     .filter((a) => a !== null)
-    .map((a) => a.stravaActivityId || (a.strava_id ? String(a.strava_id[0]) : ""))
+    .map(
+      (a) => a.stravaActivityId || (a.strava_id ? String(a.strava_id[0]) : ""),
+    )
     .filter((id) => id.length > 0);
 
   if (missingActivityIds.length === 0) {
@@ -272,18 +289,26 @@ export function loadStravaRouteData(activities: any[]): GarminRouteData[] {
     env.PYTHONPATH = env.PYTHONPATH ? `${repoSrc}:${env.PYTHONPATH}` : repoSrc;
   }
 
-  const output = execFileSync("python3", ["-m", "strava_collections.live_tracking_export", ...missingActivityIds], {
-    cwd: process.cwd(),
-    encoding: "utf-8",
-    env,
-    maxBuffer: 10 * 1024 * 1024,
-  });
-  const exported = JSON.parse(output) as Record<string, string | GarminRouteData>;
+  const output = execFileSync(
+    "python3",
+    ["-m", "strava_collections.live_tracking_export", ...missingActivityIds],
+    {
+      cwd: process.cwd(),
+      encoding: "utf-8",
+      env,
+      maxBuffer: 10 * 1024 * 1024,
+    },
+  );
+  const exported = JSON.parse(output) as Record<
+    string,
+    string | GarminRouteData
+  >;
 
   return activities.map((a, i) => {
     if (results[i] !== null) return results[i] as GarminRouteData;
 
-    const id = a.stravaActivityId || (a.strava_id ? String(a.strava_id[0]) : "");
+    const id =
+      a.stravaActivityId || (a.strava_id ? String(a.strava_id[0]) : "");
     const rawData = exported[id];
     if (typeof rawData === "string") {
       const points = parseGpxPoints(rawData, { includeTelemetry: true });
@@ -307,10 +332,17 @@ export function loadStravaRouteData(activities: any[]): GarminRouteData[] {
 export const parseLivetrackUrl = (url: string): boolean =>
   /\/session\/([a-z0-9-]+)\/token\/([a-z0-9]+)/i.test(url);
 
-export async function loadGarminRouteData(activities: any[], collectionMetadata?: any): Promise<(GarminRouteData | null)[]> {
+export async function loadGarminRouteData(
+  activities: any[],
+  collectionMetadata?: any,
+): Promise<(GarminRouteData | null)[]> {
   return Promise.all(
     activities.map(async (activity) => {
-      const url = activity.garminLivetrackUrl || (activity === activities[activities.length - 1] ? collectionMetadata?.garminLivetrackUrl : null);
+      const url =
+        activity.garminLivetrackUrl ||
+        (activity === activities[activities.length - 1]
+          ? collectionMetadata?.garminLivetrackUrl
+          : null);
       if (!url || !parseLivetrackUrl(url)) {
         return null;
       }
@@ -320,7 +352,7 @@ export async function loadGarminRouteData(activities: any[], collectionMetadata?
         const timeoutId = setTimeout(() => controller.abort(), 5000);
         const response = await fetch(url, { signal: controller.signal });
         clearTimeout(timeoutId);
-        
+
         if (!response.ok) {
           return { status: "error" } as const;
         }
@@ -353,7 +385,9 @@ export async function loadGarminRouteData(activities: any[], collectionMetadata?
 
 export function parseTrackDataFromHtml(
   html: string,
-): { points: GarminTrackPointSource[]; session: GarminSessionData } | { errorDetail: string } {
+):
+  | { points: GarminTrackPointSource[]; session: GarminSessionData }
+  | { errorDetail: string } {
   let trackQuery: GarminHydratedQuery | undefined;
   let sessionQuery: GarminHydratedQuery | undefined;
 
@@ -376,11 +410,16 @@ export function parseTrackDataFromHtml(
         const queries = collectQueries(payload);
 
         if (!trackQuery) {
-          trackQuery = queries.find((query) => query.queryKey?.at(-1) === "track-points");
+          trackQuery = queries.find(
+            (query) => query.queryKey?.at(-1) === "track-points",
+          );
         }
         if (!sessionQuery) {
           sessionQuery = queries.find(
-            (query) => Array.isArray(query.queryKey) && query.queryKey[0] === "session" && query.queryKey.length === 3,
+            (query) =>
+              Array.isArray(query.queryKey) &&
+              query.queryKey[0] === "session" &&
+              query.queryKey.length === 3,
           );
         }
       }
@@ -425,10 +464,14 @@ function collectQueries(value: unknown): GarminHydratedQuery[] {
   return out;
 }
 
-function asTrackPages(value: unknown): Array<{ trackPoints?: GarminTrackPointSource[] }> {
+function asTrackPages(
+  value: unknown,
+): Array<{ trackPoints?: GarminTrackPointSource[] }> {
   if (!value || typeof value !== "object" || !("pages" in value)) return [];
   const pages = (value as { pages?: unknown[] }).pages;
-  return Array.isArray(pages) ? (pages as Array<{ trackPoints?: GarminTrackPointSource[] }>) : [];
+  return Array.isArray(pages)
+    ? (pages as Array<{ trackPoints?: GarminTrackPointSource[] }>)
+    : [];
 }
 
 function asSessionData(value: unknown): GarminSessionData {
@@ -436,7 +479,9 @@ function asSessionData(value: unknown): GarminSessionData {
   return value as GarminSessionData;
 }
 
-function normalizeTrackPoint(point: GarminTrackPointSource): GarminTrackPoint | null {
+function normalizeTrackPoint(
+  point: GarminTrackPointSource,
+): GarminTrackPoint | null {
   const lat = point.position?.lat;
   const lon = point.position?.lon;
   if (typeof lat !== "number" || typeof lon !== "number") return null;
@@ -444,17 +489,49 @@ function normalizeTrackPoint(point: GarminTrackPointSource): GarminTrackPoint | 
     lat,
     lon,
     elevation: typeof point.altitude === "number" ? point.altitude : undefined,
-    speedMetersPerSec: typeof point.speedMetersPerSec === "number" ? point.speedMetersPerSec : typeof point.speed === "number" ? point.speed : undefined,
-    heartRateBeatsPerMin: typeof point.heartRateBeatsPerMin === "number" && point.heartRateBeatsPerMin > 0 ? point.heartRateBeatsPerMin : undefined,
-    cadenceCyclesPerMin: typeof point.cadenceCyclesPerMin === "number" ? point.cadenceCyclesPerMin : undefined,
-    powerWatts: typeof point.powerWatts === "number" ? point.powerWatts : undefined,
+    speedMetersPerSec:
+      typeof point.speedMetersPerSec === "number"
+        ? point.speedMetersPerSec
+        : typeof point.speed === "number"
+          ? point.speed
+          : undefined,
+    heartRateBeatsPerMin:
+      typeof point.heartRateBeatsPerMin === "number" &&
+      point.heartRateBeatsPerMin > 0
+        ? point.heartRateBeatsPerMin
+        : undefined,
+    cadenceCyclesPerMin:
+      typeof point.cadenceCyclesPerMin === "number"
+        ? point.cadenceCyclesPerMin
+        : undefined,
+    powerWatts:
+      typeof point.powerWatts === "number" ? point.powerWatts : undefined,
     time: point.dateTime ?? point.reportedTime,
-    distanceMeters: typeof point.totalDistanceMeters === "number" ? point.totalDistanceMeters : typeof point.distanceMeters === "number" ? point.distanceMeters : undefined,
-    durationSecs: typeof point.totalDurationSecs === "number" ? point.totalDurationSecs : typeof point.durationSecs === "number" ? point.durationSecs : undefined,
+    distanceMeters:
+      typeof point.totalDistanceMeters === "number"
+        ? point.totalDistanceMeters
+        : typeof point.distanceMeters === "number"
+          ? point.distanceMeters
+          : undefined,
+    durationSecs:
+      typeof point.totalDurationSecs === "number"
+        ? point.totalDurationSecs
+        : typeof point.durationSecs === "number"
+          ? point.durationSecs
+          : undefined,
   };
 }
 
-function buildRouteSummary(points: GarminTrackPoint[], session: GarminSessionData): { totalDistanceMeters?: number; totalDurationSecs?: number; lastReportedTime?: string; pointCount: number; isActive: boolean } {
+function buildRouteSummary(
+  points: GarminTrackPoint[],
+  session: GarminSessionData,
+): {
+  totalDistanceMeters?: number;
+  totalDurationSecs?: number;
+  lastReportedTime?: string;
+  pointCount: number;
+  isActive: boolean;
+} {
   const lastPoint = points.at(-1);
   const lastReportedTime = lastPoint?.time;
   return {
@@ -466,13 +543,26 @@ function buildRouteSummary(points: GarminTrackPoint[], session: GarminSessionDat
   };
 }
 
-function isSessionActive(session: GarminSessionData, lastReportedTime?: string): boolean {
+function isSessionActive(
+  session: GarminSessionData,
+  lastReportedTime?: string,
+): boolean {
   const extractedAtMs = Date.now();
   const startMs = session.start ? Date.parse(session.start) : Number.NaN;
   const endMs = session.end ? Date.parse(session.end) : Number.NaN;
-  const lastReportedMs = lastReportedTime ? Date.parse(lastReportedTime) : Number.NaN;
-  if ([startMs, endMs, lastReportedMs].some((value) => Number.isNaN(value))) return false;
-  const frequencySecs = typeof session.postTrackPointFrequency === "number" ? session.postTrackPointFrequency : 15;
+  const lastReportedMs = lastReportedTime
+    ? Date.parse(lastReportedTime)
+    : Number.NaN;
+  if ([startMs, endMs, lastReportedMs].some((value) => Number.isNaN(value)))
+    return false;
+  const frequencySecs =
+    typeof session.postTrackPointFrequency === "number"
+      ? session.postTrackPointFrequency
+      : 15;
   const freshnessWindowMs = Math.max(frequencySecs * 8_000, 10 * 60_000);
-  return (extractedAtMs >= startMs && extractedAtMs <= endMs + freshnessWindowMs && extractedAtMs - lastReportedMs <= freshnessWindowMs);
+  return (
+    extractedAtMs >= startMs &&
+    extractedAtMs <= endMs + freshnessWindowMs &&
+    extractedAtMs - lastReportedMs <= freshnessWindowMs
+  );
 }

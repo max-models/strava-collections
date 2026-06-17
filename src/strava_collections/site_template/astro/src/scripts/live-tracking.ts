@@ -56,18 +56,16 @@ export interface LiveTrackingSnapshot {
       plannedRouteData: PlannedRouteData | null;
       activities: Array<{
         color: string;
-        routeData:
-          | {
-              status: "ok";
-              points: LiveTrackingPoint[];
-              summary: {
-                pointCount: number;
-                isActive: boolean;
-                lastReportedTime?: string;
-                totalDistanceMeters?: number;
-              };
-            }
-          | null;
+        routeData: {
+          status: "ok";
+          points: LiveTrackingPoint[];
+          summary: {
+            pointCount: number;
+            isActive: boolean;
+            lastReportedTime?: string;
+            totalDistanceMeters?: number;
+          };
+        } | null;
         notes: string;
         plannedRouteData: null;
       }>;
@@ -231,8 +229,15 @@ export function setupLiveTrackingPage(config: LiveTrackingPageConfig): void {
     setRefreshStatus("Refreshing live data…", "loading");
 
     try {
-      const snapshot = await fetchLiveTrackingSnapshot(config, window.fetch.bind(window));
-      console.log("Live tracking: fetched snapshot with", snapshot.points.length, "points");
+      const snapshot = await fetchLiveTrackingSnapshot(
+        config,
+        window.fetch.bind(window),
+      );
+      console.log(
+        "Live tracking: fetched snapshot with",
+        snapshot.points.length,
+        "points",
+      );
       await renderSnapshot(config, snapshot);
       console.log("Live tracking: rendered snapshot successfully");
       setRefreshStatus(
@@ -320,9 +325,7 @@ function calculateTodayDistance(points: LiveTrackingPoint[]): number {
     return 0;
   }
 
-  return (
-    pointsToday.at(-1)!.distanceMeters - pointsToday[0]!.distanceMeters
-  );
+  return pointsToday.at(-1)!.distanceMeters - pointsToday[0]!.distanceMeters;
 }
 
 function buildElevationProfile(
@@ -354,13 +357,12 @@ function buildElevationProfile(
   const scaleX = (x: number): number =>
     padLeft + (x / xRange) * (width - padLeft - padRight);
   const scaleY = (y: number): number =>
-    height -
-    padBottom -
-    ((y - yMin) / yRange) * (height - padTop - padBottom);
+    height - padBottom - ((y - yMin) / yRange) * (height - padTop - padBottom);
 
   const path = data
-    .map((point, index) =>
-      `${index === 0 ? "M" : "L"} ${scaleX(point.distanceMeters)} ${scaleY(point.elevation)}`,
+    .map(
+      (point, index) =>
+        `${index === 0 ? "M" : "L"} ${scaleX(point.distanceMeters)} ${scaleY(point.elevation)}`,
     )
     .join(" ");
   const area =
@@ -416,12 +418,17 @@ async function renderSnapshot(
     plannedRoutes,
   });
 
-  setText("live-total-distance", formatDistance(snapshot.points.at(-1)?.distanceMeters ?? 0));
+  setText(
+    "live-total-distance",
+    formatDistance(snapshot.points.at(-1)?.distanceMeters ?? 0),
+  );
   setText("live-today-distance", formatDistance(snapshot.todayDistanceMeters));
   setText("live-last-point", formatTime(snapshot.points.at(-1)?.time));
   setText("live-track-points", String(snapshot.points.length));
 
-  const elevationContainer = document.getElementById("elevation-profile-content");
+  const elevationContainer = document.getElementById(
+    "elevation-profile-content",
+  );
   if (elevationContainer) {
     elevationContainer.innerHTML = renderElevationProfileMarkup(
       snapshot.elevationProfile,

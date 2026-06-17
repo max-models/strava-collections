@@ -1,13 +1,17 @@
 collection_name: "Scandinavian traverse"
 output_dir: "docs/source/"
-# garmin_livetrack_url: "https://livetrack.garmin.com/session/ef99cea6-c02b-805a-9193-780a5b9e8100/token/4464808D911168E0FDEBB4825A10B4A1"
+garmin_livetrack_url: "https://livetrack.garmin.com/session/b6d656a4-bdb2-8db8-9b82-ffc73c367d00/token/3375A4CCC51B10693DE1DE833AAAFE8"
 planned_routes:
   - "temporary-strava-activities/routes/NC26_CPH-OSL_Road.gpx"
   - "temporary-strava-activities/routes/bergen_to_bodo.gpx"
-# activity_ids:
-#   # - "7588727912" # Moss to Totak 🚴🇪🇺🇳🇴  
-#   # - "7591809739" # To Røldal 🚴🇪🇺🇳🇴
-#   # - "7603766442" # Røldal to Bergen 🚴🇪🇺🇳🇴
+activity_ids:
+  - "18997389038" # Nordic chase 2026
+  - "7588727912" # Moss to Totak 🚴🇪🇺🇳🇴
+  - "7591809739" # To Røldal 🚴🇪🇺🇳🇴
+  - "7603766442" # Røldal to Bergen 🚴🇪🇺🇳🇴
+  - "19024509444"
+  - "19039071801"
+  - "19052318131"
 places:
   - name: "Copenhagen"
     lat: 55.6761
@@ -29,6 +33,6 @@ places:
     lon: 14.4049
 description: |
   Live tracking for my June bike trip
-  
+
   - Part 1: Nordic Chase 2026 - Copenhagen to Oslo, we will start on Friday 7AM and cycle 725 km to Oslo.
   - Part 2: Bergen to Bodö starts on Monday morning, at a slower pace (vacation riding).
