@@ -1,10 +1,10 @@
-collection_name: "Bergen to Istanbul"
+collection_name: "Skagen to Istanbul"
 output_dir: "docs/source/"
 activity_ids:
-  - "7603766442F" # Røldal to Bergen 🚴🇪🇺🇳🇴
-  - "7591809739F" # To Røldal 🚴🇪🇺🇳🇴
-  - "7588727912F" # Moss to Totak 🚴🇪🇺🇳🇴
-  - "7609035405" # Oslo to Strömstad 🚴🇪🇺🇳🇴🇸🇪
+  # - "7603766442F" # Røldal to Bergen 🚴🇪🇺🇳🇴
+  # - "7591809739F" # To Røldal 🚴🇪🇺🇳🇴
+  # - "7588727912F" # Moss to Totak 🚴🇪🇺🇳🇴
+  # - "7609035405" # Oslo to Strömstad 🚴🇪🇺🇳🇴🇸🇪
   - "7575170664F" # Sightseeing in Denmark 🚴🇪🇺🇩🇪🇩🇰
   - "7565316218F" # Short warmup ride (escaping Hamburg) 🚴🇪🇺🇩🇪
   - "7067014667" # 1. Hamburg - Oldenburg 🚴🇪🇺🇩🇪

@@ -1,17 +1,22 @@
 collection_name: "Scandinavian traverse"
 output_dir: "docs/source/"
-garmin_livetrack_url: "https://livetrack.garmin.com/session/134dc088-fccb-8ba0-a4dd-b778fb37d100/token/FF237117CBC11D1CF68383568E787A3"
+# garmin_livetrack_url: "https://livetrack.garmin.com/session/a4262b4a-16ac-8fc8-aed9-74133b077f00/token/5CC4DB35EDFEC4D9C1DA6D8E4B7D5ADB"
 planned_routes:
   - "temporary-strava-activities/routes/NC26_CPH-OSL_Road.gpx"
   - "temporary-strava-activities/routes/bergen_to_bodo.gpx"
 activity_ids:
   - "18997389038" # Nordic chase 2026
-  - "7588727912" # Moss to Totak 🚴🇪🇺🇳🇴
-  - "7591809739" # To Røldal 🚴🇪🇺🇳🇴
-  - "7603766442" # Røldal to Bergen 🚴🇪🇺🇳🇴
+  # - "7588727912" # Moss to Totak 🚴🇪🇺🇳🇴
+  # - "7591809739" # To Røldal 🚴🇪🇺🇳🇴
+  # - "7603766442" # Røldal to Bergen 🚴🇪🇺🇳🇴
   - "19024509444"
   - "19039071801"
   - "19052318131"
+  - "19064042931"
+  - "19081579847" # trondheim
+  - "19089875811"
+  - "19102554420"
+  - "19114492934"
 places:
   - name: "Copenhagen"
     lat: 55.6761
