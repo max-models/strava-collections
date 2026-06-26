@@ -13,6 +13,7 @@ activity_ids:
   - "19039071801"
   - "19052318131"
   - "19064042931"
+  - "19076386456" # trondheim
 places:
   - name: "Copenhagen"
     lat: 55.6761
