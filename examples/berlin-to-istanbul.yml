@@ -1,0 +1,23 @@
+collection_name: "Berlin to Tarifa"
+output_dir: "docs/source/"
+activity_ids:
+  - "8766382217F" # Dresden to Berlin 🚴🇪🇺🇩🇪
+  - "8741391139F" # To Dresden 🚴🇪🇺🇨🇿🇩🇪
+  - "8736885309F" # Hilly ride to Karlovy Vary 🚴🇪🇺🇩🇪🇨🇿
+  - "8730837773F" # Munich to ~Schwandorf 🚴🇪🇺🇩🇪
+  - "5715851214" # Day 1 - BBQ by Tegernsee 🚴🇪🇺🇩🇪
+  - "5721348134" # Day 2: Tegensee to Fusch 🚴🇪🇺🇩🇪🇦🇹
+  - "5726139628" # Day 3.1 - Grossglockner 🚴🇪🇺🇦🇹
+  - "14992147210" # Filling in a gap from 2021
+  - "5727831041" # Day 3.2 🚴🇪🇺🇦🇹
+  - "5733598831" # Day 4 - Italy 🚴🇪🇺🇦🇹🇮🇹
+  - "5738696741" # Day 5 - Trieste - Slovenia - Cres 🚴🇪🇺🇮🇹🇸🇮🇭🇷
+  - "5745332772" # Ferry - Mali Losinj - Zadar
+  - "5745320059" # Day 6.1 - Cres - Mali Losinj 🚴🇪🇺🇭🇷
+  - "5750059027" # Day 7 - Zadar - Dubrovnik 🚴🇪🇺🇭🇷
+  - "8114329845" # Dubrovnik to Podgorica 🚴🇪🇺🇭🇷🇲🇪
+  - "8118520965" # Podgorica to Pristina 🚴🇪🇺🇲🇪🇦🇱🇽🇰
+  - "8122936063" # Pristina to Dojran Lake 🚴🇪🇺🇽🇰🇲🇰
+  - "8127253146" # Dorian Lake to Kavala 🚴🇪🇺🇲🇰🇬🇷
+  - "8132462476" # Kavala to Keşan 🚴🇪🇺🇬🇷🇹🇷
+  - "8136340589" # Keşan to Istanbul 🚴🇪🇺🇹🇷
