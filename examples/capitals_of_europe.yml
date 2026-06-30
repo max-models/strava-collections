@@ -17,7 +17,8 @@ description:
     "
 output_dir: "docs/source/"
 activity_ids:
-  - "7609035405" # Oslo to Strömstad 🚴🇪🇺🇳🇴🇸🇪
+  # - "7609035405" # Oslo to Strömstad 🚴🇪🇺🇳🇴🇸🇪
+  - "19024509444F" # NC26
   - "7575170664F" # Sightseeing in Denmark 🚴🇪🇺🇩🇪🇩🇰
   - "7565316218F" # Short warmup ride (escaping Hamburg) 🚴🇪🇺🇩🇪
   - "7067014667" # 1. Hamburg - Oldenburg 🚴🇪🇺🇩🇪
