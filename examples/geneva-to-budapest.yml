@@ -1,0 +1,9 @@
+collection_name: "Geneva to Budapest"
+output_dir: "docs/source/"
+activity_ids:
+  - "1133646946F" # Col de Sanetsch to CERN 🚴🇪🇺🇨🇭
+  - "1131819135F" # Sion to Col de Sanetsch (2133m elevation gain) 🚴🇪🇺🇨🇭
+  - "7787652169" # 1. From Switzerland, over Furkapass to Lichtenstein-Austria 🚴🇪🇺🇨🇭🇦🇹🇱🇮
+  - "7791850673" # 2. Rainy ride home (Bodensee to Munich) 🚴🇪🇺🇦🇹🇩🇪
+  - "18163186400"
+  - "18519318991"
