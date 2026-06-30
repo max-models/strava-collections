@@ -1,0 +1,27 @@
+collection_name: "Europe - north to south"
+output_dir: "docs/source/"
+activity_ids:
+  # - "7603766442F" # Røldal to Bergen 🚴🇪🇺🇳🇴
+  # - "7591809739F" # To Røldal 🚴🇪🇺🇳🇴
+  # - "7588727912F" # Moss to Totak 🚴🇪🇺🇳🇴
+  # - "7609035405" # Oslo to Strömstad 🚴🇪🇺🇳🇴🇸🇪
+  - "7575170664F" # Sightseeing in Denmark 🚴🇪🇺🇩🇪🇩🇰
+  - "7565316218F" # Short warmup ride (escaping Hamburg) 🚴🇪🇺🇩🇪
+  - "7067014667" # 1. Hamburg - Oldenburg 🚴🇪🇺🇩🇪
+  - "7073100394" # 2. Oldenburg - Brussels 🚴🇪🇺🇩🇪🇳🇱🇧🇪
+  - "7078529322" # 3. Brussels - Paris 🚴🇪🇺🇧🇪🇫🇷
+  - "7352360345" # Connecting the trips 🚴🇪🇺🇫🇷
+  - "7328018729" # 24h Paris to Geneva 🚴🇪🇺🇫🇷🇨🇭
+  - "10143696942" # Day 1 post PhD 🚴🇪🇺🇨🇭🇫🇷
+  - "10148790717" # Day 2 - Valence to Sete 🚴🇪🇺🇫🇷
+  - "10154431803" # Day 3 - a very windy workout 🚴🇪🇺🇫🇷
+  - "10159084440" # Day 4 - Climb up to Salardu 🚴🇪🇺🇫🇷🇪🇸
+  - "10171756726" # Day 5 - Crossing the Pyrenees 🚴🇪🇺🇪🇸
+  - "10177904347" # Day 6 - Finish (of part 1) in Valencia! 🚴🇪🇺🇪🇸
+  - "10253094711" # Start of part 2! Valencia to Jumilla 🚴🇪🇺🇪🇸
+  - "10258438586" # Jumilla to Baza 🚴🇪🇺🇪🇸
+  - "10263187008" # Baza to Laroles 🚴🇪🇺🇪🇸
+  - "10268437202" # Laroles to Moraima 🚴🇪🇺🇪🇸
+  - "10274894269" # Cycling the gravel route up Pico de Veleta 3395m! 🚴🇪🇺🇪🇸
+  - "10281645686" # Exploring every single beach between Malaga and Gibraltar 🚴🇪🇺🇪🇸
+  - "10284899004" # Finish in Tarifa! 🚴🇪🇺🇪🇸
