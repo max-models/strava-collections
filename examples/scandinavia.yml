@@ -6,9 +6,9 @@ planned_routes:
   - "temporary-strava-activities/routes/bergen_to_bodo.gpx"
 activity_ids:
   - "18997389038" # Nordic chase 2026
-  # - "7588727912" # Moss to Totak 🚴🇪🇺🇳🇴
-  # - "7591809739" # To Røldal 🚴🇪🇺🇳🇴
-  # - "7603766442" # Røldal to Bergen 🚴🇪🇺🇳🇴
+  - "7588727912" # Moss to Totak 🚴🇪🇺🇳🇴
+  - "7591809739" # To Røldal 🚴🇪🇺🇳🇴
+  - "7603766442" # Røldal to Bergen 🚴🇪🇺🇳🇴
   - "19024509444"
   - "19039071801"
   - "19052318131"
