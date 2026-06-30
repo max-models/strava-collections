@@ -1,9 +1,9 @@
 collection_name: "Scandinavian traverse"
 output_dir: "docs/source/"
 # garmin_livetrack_url: "https://livetrack.garmin.com/session/a4262b4a-16ac-8fc8-aed9-74133b077f00/token/5CC4DB35EDFEC4D9C1DA6D8E4B7D5ADB"
-planned_routes:
-  - "temporary-strava-activities/routes/NC26_CPH-OSL_Road.gpx"
-  - "temporary-strava-activities/routes/bergen_to_bodo.gpx"
+# planned_routes:
+#   - "temporary-strava-activities/routes/NC26_CPH-OSL_Road.gpx"
+#   - "temporary-strava-activities/routes/bergen_to_bodo.gpx"
 activity_ids:
   - "18997389038" # Nordic chase 2026
   - "7588727912" # Moss to Totak 🚴🇪🇺🇳🇴
