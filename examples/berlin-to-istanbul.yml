@@ -1,0 +1,7 @@
+collection_name: "Berlin to Tarifa"
+output_dir: "docs/source/"
+activity_ids:
+  - "8766382217F" # Dresden to Berlin 🚴🇪🇺🇩🇪
+  - "8741391139F" # To Dresden 🚴🇪🇺🇨🇿🇩🇪
+  - "8736885309F" # Hilly ride to Karlovy Vary 🚴🇪🇺🇩🇪🇨🇿
+  - "8730837773F" # Munich to ~Schwandorf 🚴🇪🇺🇩🇪
