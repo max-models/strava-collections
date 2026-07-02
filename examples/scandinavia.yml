@@ -5,6 +5,7 @@ output_dir: "docs/source/"
 #   - "temporary-strava-activities/routes/NC26_CPH-OSL_Road.gpx"
 #   - "temporary-strava-activities/routes/bergen_to_bodo.gpx"
 activity_ids:
+  - "7575170664F" # Sightseeing in Denmark 🚴🇪🇺🇩🇪🇩🇰
   - "18997389038" # Nordic chase 2026
   - "7588727912" # Moss to Totak 🚴🇪🇺🇳🇴
   - "7591809739" # To Røldal 🚴🇪🇺🇳🇴
