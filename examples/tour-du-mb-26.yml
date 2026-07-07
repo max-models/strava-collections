@@ -1,6 +1,6 @@
-collection_name: "Scandinavian traverse"
+collection_name: "Tour du Mont Blanc 2026"
 output_dir: "docs/source/"
-garmin_livetrack_url: "https://live.garmin.com/whereismaxtoday"
+# garmin_livetrack_url: "https://live.garmin.com/whereismaxtoday"
 planned_routes:
   - "temporary-strava-activities/routes/tmb26/Routes-Dag_1,_uppvärmningen.gpx"
   - "temporary-strava-activities/routes/tmb26/Routes-Dag_2,_extra_i_slutet.gpx"
@@ -21,8 +21,4 @@ places:
     lat: 45.8144
     lon: 6.9650
 description: |
-  Tour du Mont Blanc 2026
-
-  Should be a great adventure, following the UTMB route with a few extra peaks here and there!
-
-  Hopefully it should take 5 days of running!
+  It will be a great 5-day adventure, following the UTMB route with a few extra peaks here and there!
