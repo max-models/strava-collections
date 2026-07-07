@@ -1,0 +1,28 @@
+collection_name: "Scandinavian traverse"
+output_dir: "docs/source/"
+garmin_livetrack_url: "https://live.garmin.com/whereismaxtoday"
+planned_routes:
+  - "temporary-strava-activities/routes/tmb26/Routes-Dag_1,_uppvärmningen.gpx"
+  - "temporary-strava-activities/routes/tmb26/Routes-Dag_2,_extra_i_slutet.gpx"
+  - "temporary-strava-activities/routes/tmb26/Routes-Dag_2,_standard.gpx"
+  - "temporary-strava-activities/routes/tmb26/Routes-Dag_3,_minimum.gpx"
+  - "temporary-strava-activities/routes/tmb26/Routes-Dag_3,_spexig_och_luftig.gpx"
+  - "temporary-strava-activities/routes/tmb26/Routes-Dag_3,_standard.gpx"
+  - "temporary-strava-activities/routes/tmb26/Routes-Dag_4,_minimum.gpx"
+  - "temporary-strava-activities/routes/tmb26/Routes-Dag_4,_standard.gpx"
+  - "temporary-strava-activities/routes/tmb26/Routes-Dag_5,_standard.gpx"
+# activity_ids:
+#   - "" # Sightseeing in Denmark 🚴🇪🇺🇩🇪🇩🇰
+places:
+  - name: "Chamonix"
+    lat: 45.9237
+    lon: 6.8694
+  - name: "Courmayeur"
+    lat: 45.8144
+    lon: 6.9650
+description: |
+  Tour du Mont Blanc 2026
+
+  Should be a great adventure, following the UTMB route with a few extra peaks here and there!
+
+  Hopefully it should take 5 days of running!
