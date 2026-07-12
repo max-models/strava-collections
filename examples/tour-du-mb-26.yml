@@ -11,8 +11,8 @@ planned_routes:
   - "temporary-strava-activities/routes/tmb26/Routes-Dag_4,_minimum.gpx"
   - "temporary-strava-activities/routes/tmb26/Routes-Dag_4,_standard.gpx"
   - "temporary-strava-activities/routes/tmb26/Routes-Dag_5,_standard.gpx"
-# activity_ids:
-#   - "" # Sightseeing in Denmark 🚴🇪🇺🇩🇪🇩🇰
+activity_ids:
+  - "19284928894" # day 0
 places:
   - name: "Chamonix"
     lat: 45.9237
