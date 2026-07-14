@@ -13,6 +13,7 @@ planned_routes:
   - "temporary-strava-activities/routes/tmb26/Routes-Dag_5,_standard.gpx"
 activity_ids:
   - "19284928894" # day 0
+  - "19297052131" # day 1
 places:
   - name: "Chamonix"
     lat: 45.9237
