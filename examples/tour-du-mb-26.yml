@@ -15,6 +15,7 @@ activity_ids:
   - "19284928894" # day 0
   - "19297052131" # day 1
   - "19310582550" # day 2
+  - "19325638740" # day 3
 places:
   - name: "Chamonix"
     lat: 45.9237
