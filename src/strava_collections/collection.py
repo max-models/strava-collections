@@ -11,7 +11,7 @@ import pandas as pd
 import plotly.colors as pc
 import plotly.graph_objects as go
 
-from strava_collections.activity import StravaActivity, embed_iframe, embed_image
+from strava_collections.activity import StravaActivity
 from strava_collections.astro_page import (
     prepare_collection_markup,
     render_activity_page,
