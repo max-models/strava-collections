@@ -14,6 +14,19 @@ const { id, timeSeries, height = 320 } = Astro.props;
 const seriesKeys = Object.keys(timeSeries?.series || {});
 const hasDistance = (timeSeries?.distanceKm || []).length > 0;
 
+const METRIC_COLORS: Record<string, string> = {
+  elevation: '#16a34a',
+  speed: '#0ea5e9',
+  heartrate: '#ef4444',
+  cadence: '#a855f7',
+  power: '#fc4c02',
+  grade: '#f59e0b',
+  temperature: '#64748b',
+};
+const FALLBACK_COLORS = ['#fc4c02', '#0ea5e9', '#16a34a', '#a855f7', '#ef4444', '#f59e0b', '#64748b'];
+const colorForKey = (key: string, index: number): string =>
+  METRIC_COLORS[key] || FALLBACK_COLORS[index % FALLBACK_COLORS.length];
+
 const serializeDataForScript = (value: unknown): string => {
   const json = JSON.stringify(value || {});
   return json.replace(/</g, "\u003c").replace(/>/g, "\u003e").replace(/&/g, "\u0026");
@@ -23,14 +36,25 @@ const serializeDataForScript = (value: unknown): string => {
 {seriesKeys.length > 0 && (
   <div class="time-trace">
     <div class="time-trace-controls">
-      <label class="time-trace-control">
-        <span>Metric</span>
-        <select id={`${id}-metric`}>
-          {seriesKeys.map((key) => (
-            <option value={key}>{timeSeries.series[key].label}</option>
+      <div class="time-trace-control">
+        <span>Metrics</span>
+        <div class="time-trace-metrics" id={`${id}-metrics`}>
+          {seriesKeys.map((key, index) => (
+            <label
+              class="time-trace-metric-pill"
+              style={`--metric-color: ${colorForKey(key, index)};`}
+            >
+              <input
+                type="checkbox"
+                name={`${id}-metric`}
+                value={key}
+                checked={index === 0}
+              />
+              <span>{timeSeries.series[key].label}</span>
+            </label>
           ))}
-        </select>
-      </label>
+        </div>
+      </div>
       <label class="time-trace-control">
         <span>X-axis</span>
         <select id={`${id}-xaxis`} disabled={!hasDistance}>
@@ -51,6 +75,21 @@ const serializeDataForScript = (value: unknown): string => {
 
 <script is:inline define:vars={{ id }}>
   (function () {
+    const METRIC_COLORS = {
+      elevation: '#16a34a',
+      speed: '#0ea5e9',
+      heartrate: '#ef4444',
+      cadence: '#a855f7',
+      power: '#fc4c02',
+      grade: '#f59e0b',
+      temperature: '#64748b',
+    };
+    const FALLBACK_COLORS = ['#fc4c02', '#0ea5e9', '#16a34a', '#a855f7', '#ef4444', '#f59e0b', '#64748b'];
+
+    function colorForKey(key, index) {
+      return METRIC_COLORS[key] || FALLBACK_COLORS[index % FALLBACK_COLORS.length];
+    }
+
     function movingAverage(values, radius) {
       if (radius <= 0) return values.slice();
       const n = values.length;
@@ -72,6 +111,59 @@ const serializeDataForScript = (value: unknown): string => {
       return result;
     }
 
+    // Builds one y-axis per selected metric. The first two use the
+    // standard left/right axes; any further axes are "free" and offset
+    // outward from the plot area so they don't overlap each other.
+    function buildYAxes(selectedKeys, allKeys) {
+      const axes = {};
+      const extra = Math.max(0, selectedKeys.length - 2);
+      const leftExtra = Math.ceil(extra / 2);
+      const rightExtra = Math.floor(extra / 2);
+      const step = 0.07;
+      const domainStart = leftExtra * step;
+      const domainEnd = 1 - rightExtra * step;
+
+      let leftOffset = 0;
+      let rightOffset = 0;
+
+      selectedKeys.forEach((key, idx) => {
+        const globalIndex = allKeys.indexOf(key);
+        const color = colorForKey(key, globalIndex);
+        const axisName = idx === 0 ? 'yaxis' : `yaxis${idx + 1}`;
+        const isLeft = idx % 2 === 0;
+
+        const axis = {
+          tickfont: { size: 9, color },
+          showgrid: idx === 0,
+          gridcolor: '#f1f5f9',
+          zeroline: false,
+        };
+
+        if (idx === 0) {
+          axis.side = 'left';
+        } else if (idx === 1) {
+          axis.overlaying = 'y';
+          axis.side = 'right';
+        } else {
+          axis.overlaying = 'y';
+          axis.anchor = 'free';
+          if (isLeft) {
+            axis.side = 'left';
+            axis.position = Math.max(0, domainStart - step * leftOffset);
+            leftOffset += 1;
+          } else {
+            axis.side = 'right';
+            axis.position = Math.min(1, domainEnd + step * rightOffset);
+            rightOffset += 1;
+          }
+        }
+
+        axes[axisName] = axis;
+      });
+
+      return { axes, xaxisDomain: [domainStart, domainEnd] };
+    }
+
     function init() {
       const container = document.getElementById(id);
       const dataEl = document.getElementById(`${id}-data`);
@@ -81,7 +173,9 @@ const serializeDataForScript = (value: unknown): string => {
       const seriesKeys = Object.keys(timeSeries.series || {});
       if (seriesKeys.length === 0) return;
 
-      const metricSelect = document.getElementById(`${id}-metric`);
+      const metricInputs = Array.from(
+        document.querySelectorAll(`input[name="${id}-metric"]`),
+      );
       const xaxisSelect = document.getElementById(`${id}-xaxis`);
       const smoothingInput = document.getElementById(`${id}-smoothing`);
       const smoothingLabel = document.getElementById(`${id}-smoothing-value`);
@@ -96,37 +190,51 @@ const serializeDataForScript = (value: unknown): string => {
 
       const height = container.clientHeight || 320;
 
+      function selectedKeys() {
+        return metricInputs.filter((input) => input.checked).map((input) => input.value);
+      }
+
       function render() {
-        const metricKey = metricSelect ? metricSelect.value : seriesKeys[0];
-        const metric = timeSeries.series[metricKey];
-        if (!metric) return;
+        const keys = selectedKeys();
+        if (keys.length === 0) return;
 
         const useDistance = !!xaxisSelect && xaxisSelect.value === 'distance' && distanceKm.length > 0;
         const xValues = useDistance ? distanceKm : timeMinutes;
         const radius = smoothingInput ? parseInt(smoothingInput.value, 10) || 0 : 0;
-        const yValues = movingAverage(metric.values, radius);
 
         if (smoothingLabel) {
           smoothingLabel.textContent = radius > 0 ? String(radius) : 'Off';
         }
 
-        const hoverPrefix = useDistance ? '%{x:.2f} km' : '%{x:.1f} min';
+        const { axes, xaxisDomain } = buildYAxes(keys, seriesKeys);
 
-        const trace = {
-          x: xValues,
-          y: yValues,
-          type: 'scatter',
-          mode: 'lines',
-          line: { color: '#fc4c02', width: 2 },
-          connectgaps: false,
-          hovertemplate: `${hoverPrefix}: %{y:.1f} ${metric.unit}<extra></extra>`,
-        };
+        const traces = keys.map((key, idx) => {
+          const metric = timeSeries.series[key];
+          const color = colorForKey(key, seriesKeys.indexOf(key));
+          const yValues = movingAverage(metric.values, radius);
+          const axisNum = idx === 0 ? '' : String(idx + 1);
+          const hoverPrefix = useDistance ? '%{x:.2f} km' : '%{x:.1f} min';
+
+          return {
+            x: xValues,
+            y: yValues,
+            name: `${metric.label} (${metric.unit})`,
+            type: 'scatter',
+            mode: 'lines',
+            line: { color, width: 2 },
+            connectgaps: false,
+            yaxis: `y${axisNum}`,
+            hovertemplate: `${hoverPrefix}: %{y:.1f} ${metric.unit}<extra>${metric.label}</extra>`,
+          };
+        });
 
         const layout = {
           height,
           margin: { l: 55, r: 20, t: 10, b: 40 },
-          showlegend: false,
+          showlegend: keys.length > 1,
+          legend: { orientation: 'h', y: 1.15, font: { size: 10 } },
           xaxis: {
+            domain: xaxisDomain,
             title: {
               text: useDistance ? 'Distance (km)' : 'Time (min)',
               font: { size: 11, color: '#64748b' },
@@ -136,28 +244,28 @@ const serializeDataForScript = (value: unknown): string => {
             zeroline: false,
             tickfont: { size: 10, color: '#94a3b8' },
           },
-          yaxis: {
-            title: {
-              text: `${metric.label} (${metric.unit})`,
-              font: { size: 11, color: '#64748b' },
-            },
-            showgrid: true,
-            gridcolor: '#f1f5f9',
-            zeroline: false,
-            tickfont: { size: 10, color: '#94a3b8' },
-          },
           paper_bgcolor: 'rgba(0,0,0,0)',
           plot_bgcolor: 'rgba(0,0,0,0)',
+          ...axes,
         };
 
-        window.Plotly.react(id, [trace], layout, {
+        window.Plotly.react(id, traces, layout, {
           responsive: true,
           displayModeBar: false,
         });
       }
 
       render();
-      metricSelect?.addEventListener('change', render);
+
+      metricInputs.forEach((input) => {
+        input.addEventListener('change', () => {
+          if (selectedKeys().length === 0) {
+            input.checked = true;
+            return;
+          }
+          render();
+        });
+      });
       xaxisSelect?.addEventListener('change', render);
       smoothingInput?.addEventListener('input', render);
     }
@@ -189,12 +297,39 @@ const serializeDataForScript = (value: unknown): string => {
   .time-trace-control {
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
+    gap: 0.35rem;
     font-size: 0.75rem;
     font-weight: 600;
     color: #64748b;
     text-transform: uppercase;
     letter-spacing: 0.03em;
+  }
+
+  .time-trace-metrics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .time-trace-metric-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.3rem 0.65rem;
+    border-radius: 999px;
+    border: 1.5px solid var(--metric-color);
+    background: color-mix(in srgb, var(--metric-color) 10%, white);
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #0f172a;
+    text-transform: none;
+    letter-spacing: normal;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .time-trace-metric-pill input {
+    accent-color: var(--metric-color);
   }
 
   .time-trace-control select {
