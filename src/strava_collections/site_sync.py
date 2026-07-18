@@ -6,6 +6,7 @@ from strava_collections.astro_page import (
     markdown_to_body_html,
     metadata_from_astro,
     render_collection_page,
+    route_slug_from_activity_filename,
     route_slug_from_filename,
     title_from_astro,
     title_from_markdown,
@@ -92,6 +93,29 @@ def sync_collections(paths: SitePaths) -> None:
     )
 
 
+def sync_activities(paths: SitePaths) -> None:
+    paths.activity_page_dir.mkdir(parents=True, exist_ok=True)
+
+    synced_filenames = set()
+    for astro_file in sorted(paths.source_dir.glob("activity-*.astro")):
+        route_slug = route_slug_from_activity_filename(astro_file.stem)
+        target_filename = f"{route_slug}.astro"
+        target_file = paths.activity_page_dir / target_filename
+        synced_filenames.add(target_filename)
+        target_file.write_text(
+            astro_file.read_text(encoding="utf-8"), encoding="utf-8"
+        )
+        print(f"Synced activity page: {display_path(target_file, paths.site_root)}")
+
+    # Clean up obsolete pages
+    for old_file in paths.activity_page_dir.glob("*.astro"):
+        if old_file.name not in synced_filenames:
+            old_file.unlink()
+            print(
+                f"Removed obsolete activity page: {display_path(old_file, paths.site_root)}"
+            )
+
+
 def sync_static(paths: SitePaths) -> None:
     source_static = paths.source_dir / "_static"
     paths.public_static_dir.mkdir(parents=True, exist_ok=True)
@@ -130,5 +154,6 @@ def sync_static(paths: SitePaths) -> None:
 def sync_site(site_root: str | Path) -> SitePaths:
     paths = build_site_paths(site_root)
     sync_collections(paths)
+    sync_activities(paths)
     sync_static(paths)
     return paths

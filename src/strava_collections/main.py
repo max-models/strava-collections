@@ -221,6 +221,11 @@ def generate_collection(
             activity_elevation_extension=elevation_extension,
             prettify=getattr(args, "prettify", False),
         )
+        collection.generate_activity_astro_pages(
+            output_dir=output_dir,
+            prettify=getattr(args, "prettify", False),
+            verbose=verbose,
+        )
 
     if legacy_markdown_path.exists():
         legacy_markdown_path.unlink()

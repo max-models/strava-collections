@@ -394,7 +394,11 @@ class StravaActivity:
         # Heading
         # out_str += f"## {self.name}\n\n"
         out_str += '<div class="description-box">\n'
-        out_str += f'<h2 class="description-title">{self.name}</h2>\n'
+        out_str += (
+            '<h2 class="description-title">'
+            f'<a href="/activities/{self.activity_id}/">{self.name}</a>'
+            "</h2>\n"
+        )
 
         out_str += "<div>\n"
 
@@ -454,6 +458,81 @@ class StravaActivity:
                 out_str += "</div>"
         # out_str += "</div>"
         out_str += "</div>\n\n\n"
+        return out_str
+
+    def generate_activity_page_metadata(self) -> dict:
+        """Return stats and identifiers used to render this activity's own page."""
+        activity = self.activity
+        moving_time = (
+            str(timedelta(seconds=activity.moving_time))
+            if activity.moving_time
+            else None
+        )
+        elapsed_time = (
+            str(timedelta(seconds=activity.elapsed_time))
+            if activity.elapsed_time
+            else None
+        )
+        avg_speed_kmh = (
+            round(float(activity.average_speed) * 3.6, 1)
+            if activity.average_speed
+            else None
+        )
+        max_speed_kmh = (
+            round(float(activity.max_speed) * 3.6, 1) if activity.max_speed else None
+        )
+        start_date = activity.start_date_local or activity.start_date
+
+        return {
+            "activityId": self.activity_id,
+            "flip": self.flip,
+            "title": activity.name or f"Activity {self.activity_id}",
+            "date": str(start_date.date()) if start_date else None,
+            "activityType": str(activity.type) if activity.type else None,
+            "stravaLink": self.link,
+            "distanceKm": round(float(activity.distance) * 1e-3, 1)
+            if activity.distance
+            else None,
+            "elevationGainM": round(float(activity.total_elevation_gain))
+            if activity.total_elevation_gain
+            else None,
+            "movingTime": moving_time,
+            "elapsedTime": elapsed_time,
+            "avgSpeedKmh": avg_speed_kmh,
+            "maxSpeedKmh": max_speed_kmh,
+            "avgHeartRate": round(float(activity.average_heartrate))
+            if getattr(activity, "average_heartrate", None)
+            else None,
+            "maxHeartRate": round(float(activity.max_heartrate))
+            if getattr(activity, "max_heartrate", None)
+            else None,
+            "avgWatts": round(float(activity.average_watts))
+            if getattr(activity, "average_watts", None)
+            else None,
+            "calories": round(float(activity.calories))
+            if getattr(activity, "calories", None)
+            else None,
+        }
+
+    def generate_activity_page_body_html(self) -> str:
+        """Return the description + photo gallery markup for this activity's own page."""
+        out_str = ""
+        description = self.activity.description
+        if description:
+            out_str += f'<div class="description-text">{description}</div>\n'
+
+        if self.photos:
+            out_str += '<div class="gallery">'
+            for index, photo in enumerate(self.photos, start=1):
+                size = list(photo["urls"].keys())[0]
+                url = photo["urls"][str(size)]
+                out_str += (
+                    f'<img src="{url}" height="200" class="lightbox-trigger" '
+                    f'loading="lazy" decoding="async" '
+                    f'alt="{self.activity.name} photo {index}">'
+                )
+            out_str += "</div>\n"
+
         return out_str
 
     @property
