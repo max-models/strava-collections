@@ -150,6 +150,31 @@ def is_running_activity_type(activity_type: str | None) -> bool:
     return bool(activity_type) and "run" in activity_type.lower()
 
 
+# (seconds, label) pairs for the best-effort duration curves.
+PROFILE_CURVE_WINDOWS: list[tuple[int, str]] = [
+    (5, "5s"),
+    (10, "10s"),
+    (20, "20s"),
+    (30, "30s"),
+    (60, "60s"),
+    (120, "2min"),
+    (300, "5min"),
+    (600, "10min"),
+    (1200, "20min"),
+    (1800, "30min"),
+    (3600, "1h"),
+]
+
+
+def best_rolling_mean(values_1hz: np.ndarray, window_s: int) -> float | None:
+    """Return the highest mean of `values_1hz` over any contiguous window_s-second span."""
+    if values_1hz.size < window_s:
+        return None
+    cumulative = np.cumsum(np.insert(values_1hz, 0, 0.0))
+    window_sums = cumulative[window_s:] - cumulative[:-window_s]
+    return float(np.max(window_sums)) / window_s
+
+
 class StravaActivity:
     """Wrapper around stravalib's DetailedActivity with convenience methods."""
 
@@ -554,6 +579,7 @@ class StravaActivity:
                 if getattr(activity, "calories", None)
                 else None
             ),
+            "profileCurves": self.compute_profile_curves(),
         }
 
     def generate_activity_page_body_html(self) -> str:
@@ -576,6 +602,95 @@ class StravaActivity:
             out_str += "</div>\n"
 
         return out_str
+
+    def compute_profile_curves(self) -> dict:
+        """Best-effort duration curves (log-log "power curve" style profiles).
+
+        For each window in PROFILE_CURVE_WINDOWS, finds the highest average
+        power (W), speed (km/h), and elevation gain rate (m/h) sustained over
+        any contiguous span of that duration within the activity.
+        """
+        curves = {
+            "windowsSeconds": [],
+            "windowLabels": [],
+            "power": [],
+            "speedKmh": [],
+            "elevationGainMH": [],
+        }
+
+        time_stream = self.activity_stream.get("time")
+        if not time_stream or len(time_stream.data) < 2:
+            return curves
+
+        t_raw = np.array(time_stream.data, dtype=float)
+        duration_s = int(t_raw[-1])
+        if duration_s < PROFILE_CURVE_WINDOWS[0][0]:
+            return curves
+
+        t_1hz = np.arange(0, duration_s + 1, dtype=float)
+
+        watts_stream = self.activity_stream.get("watts")
+        watts_1hz = (
+            np.interp(t_1hz, t_raw, np.array(watts_stream.data, dtype=float))
+            if watts_stream
+            else None
+        )
+
+        speed_1hz = None
+        if self.activity_stream.get("velocity_smooth"):
+            speed_1hz = np.interp(
+                t_1hz,
+                t_raw,
+                np.array(self.activity_stream["velocity_smooth"].data, dtype=float),
+            )
+        elif self.activity_stream.get("distance"):
+            distance_1hz = np.interp(
+                t_1hz,
+                t_raw,
+                np.array(self.activity_stream["distance"].data, dtype=float),
+            )
+            speed_1hz = np.gradient(distance_1hz, t_1hz)
+
+        altitude_stream = self.activity_stream.get("altitude")
+        gain_1hz = None
+        if altitude_stream:
+            altitude_1hz = np.interp(
+                t_1hz, t_raw, np.array(altitude_stream.data, dtype=float)
+            )
+            gain_1hz = np.clip(np.diff(altitude_1hz, prepend=altitude_1hz[0]), 0, None)
+
+        for window_s, label in PROFILE_CURVE_WINDOWS:
+            if window_s > duration_s:
+                break
+
+            power_value = (
+                best_rolling_mean(watts_1hz, window_s) if watts_1hz is not None else None
+            )
+            speed_value = (
+                best_rolling_mean(speed_1hz, window_s) if speed_1hz is not None else None
+            )
+            gain_value = (
+                best_rolling_mean(gain_1hz, window_s) if gain_1hz is not None else None
+            )
+
+            curves["windowsSeconds"].append(window_s)
+            curves["windowLabels"].append(label)
+            curves["power"].append(round(power_value) if power_value is not None else None)
+            curves["speedKmh"].append(
+                round(speed_value * 3.6, 2) if speed_value is not None else None
+            )
+            curves["elevationGainMH"].append(
+                round(gain_value * 3600) if gain_value is not None else None
+            )
+
+        if watts_1hz is None or all(v is None for v in curves["power"]):
+            curves["power"] = []
+        if speed_1hz is None or all(v is None for v in curves["speedKmh"]):
+            curves["speedKmh"] = []
+        if gain_1hz is None or all(v is None for v in curves["elevationGainMH"]):
+            curves["elevationGainMH"] = []
+
+        return curves
 
     @property
     def activity_id(self):
