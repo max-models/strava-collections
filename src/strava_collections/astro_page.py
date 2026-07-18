@@ -277,7 +277,9 @@ def render_collection_page(
     )
 
 
-def render_activity_page(title: str, body_html: str, metadata: dict | None = None) -> str:
+def render_activity_page(
+    title: str, body_html: str, metadata: dict | None = None
+) -> str:
     markup, headings = body_html_to_astro_markup(body_html)
     metadata_json = json.dumps(metadata or {}, indent=2)
 

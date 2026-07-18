@@ -520,30 +520,40 @@ class StravaActivity:
             "date": str(start_date.date()) if start_date else None,
             "activityType": activity_type,
             "stravaLink": self.link,
-            "distanceKm": round(float(activity.distance) * 1e-3, 1)
-            if activity.distance
-            else None,
-            "elevationGainM": round(float(activity.total_elevation_gain))
-            if activity.total_elevation_gain
-            else None,
+            "distanceKm": (
+                round(float(activity.distance) * 1e-3, 1) if activity.distance else None
+            ),
+            "elevationGainM": (
+                round(float(activity.total_elevation_gain))
+                if activity.total_elevation_gain
+                else None
+            ),
             "movingTime": moving_time,
             "elapsedTime": elapsed_time,
             "avgSpeedKmh": avg_speed_kmh,
             "maxSpeedKmh": max_speed_kmh,
             "avgPace": avg_pace,
             "maxPace": max_pace,
-            "avgHeartRate": round(float(activity.average_heartrate))
-            if getattr(activity, "average_heartrate", None)
-            else None,
-            "maxHeartRate": round(float(activity.max_heartrate))
-            if getattr(activity, "max_heartrate", None)
-            else None,
-            "avgWatts": round(float(activity.average_watts))
-            if getattr(activity, "average_watts", None)
-            else None,
-            "calories": round(float(activity.calories))
-            if getattr(activity, "calories", None)
-            else None,
+            "avgHeartRate": (
+                round(float(activity.average_heartrate))
+                if getattr(activity, "average_heartrate", None)
+                else None
+            ),
+            "maxHeartRate": (
+                round(float(activity.max_heartrate))
+                if getattr(activity, "max_heartrate", None)
+                else None
+            ),
+            "avgWatts": (
+                round(float(activity.average_watts))
+                if getattr(activity, "average_watts", None)
+                else None
+            ),
+            "calories": (
+                round(float(activity.calories))
+                if getattr(activity, "calories", None)
+                else None
+            ),
         }
 
     def generate_activity_page_body_html(self) -> str:

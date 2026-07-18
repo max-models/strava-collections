@@ -102,9 +102,7 @@ def sync_activities(paths: SitePaths) -> None:
         target_filename = f"{route_slug}.astro"
         target_file = paths.activity_page_dir / target_filename
         synced_filenames.add(target_filename)
-        target_file.write_text(
-            astro_file.read_text(encoding="utf-8"), encoding="utf-8"
-        )
+        target_file.write_text(astro_file.read_text(encoding="utf-8"), encoding="utf-8")
         print(f"Synced activity page: {display_path(target_file, paths.site_root)}")
 
     # Clean up obsolete pages
