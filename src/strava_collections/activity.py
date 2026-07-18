@@ -665,10 +665,14 @@ class StravaActivity:
                 break
 
             power_value = (
-                best_rolling_mean(watts_1hz, window_s) if watts_1hz is not None else None
+                best_rolling_mean(watts_1hz, window_s)
+                if watts_1hz is not None
+                else None
             )
             speed_value = (
-                best_rolling_mean(speed_1hz, window_s) if speed_1hz is not None else None
+                best_rolling_mean(speed_1hz, window_s)
+                if speed_1hz is not None
+                else None
             )
             gain_value = (
                 best_rolling_mean(gain_1hz, window_s) if gain_1hz is not None else None
@@ -676,7 +680,9 @@ class StravaActivity:
 
             curves["windowsSeconds"].append(window_s)
             curves["windowLabels"].append(label)
-            curves["power"].append(round(power_value) if power_value is not None else None)
+            curves["power"].append(
+                round(power_value) if power_value is not None else None
+            )
             curves["speedKmh"].append(
                 round(speed_value * 3.6, 2) if speed_value is not None else None
             )
@@ -722,7 +728,12 @@ class StravaActivity:
         altitude_stream = self.activity_stream.get("altitude")
         if altitude_stream:
             metric_specs.append(
-                ("elevation", "Elevation", "m", np.array(altitude_stream.data, dtype=float))
+                (
+                    "elevation",
+                    "Elevation",
+                    "m",
+                    np.array(altitude_stream.data, dtype=float),
+                )
             )
 
         velocity_stream = self.activity_stream.get("velocity_smooth")
@@ -736,13 +747,23 @@ class StravaActivity:
         heartrate_stream = self.activity_stream.get("heartrate")
         if heartrate_stream:
             metric_specs.append(
-                ("heartrate", "Heart Rate", "bpm", np.array(heartrate_stream.data, dtype=float))
+                (
+                    "heartrate",
+                    "Heart Rate",
+                    "bpm",
+                    np.array(heartrate_stream.data, dtype=float),
+                )
             )
 
         cadence_stream = self.activity_stream.get("cadence")
         if cadence_stream:
             metric_specs.append(
-                ("cadence", "Cadence", "rpm", np.array(cadence_stream.data, dtype=float))
+                (
+                    "cadence",
+                    "Cadence",
+                    "rpm",
+                    np.array(cadence_stream.data, dtype=float),
+                )
             )
 
         watts_stream = self.activity_stream.get("watts")
@@ -760,7 +781,12 @@ class StravaActivity:
         temp_stream = self.activity_stream.get("temp")
         if temp_stream:
             metric_specs.append(
-                ("temperature", "Temperature", "°C", np.array(temp_stream.data, dtype=float))
+                (
+                    "temperature",
+                    "Temperature",
+                    "°C",
+                    np.array(temp_stream.data, dtype=float),
+                )
             )
 
         if not metric_specs:
