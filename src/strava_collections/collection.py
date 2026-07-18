@@ -702,12 +702,13 @@ class StravaCollection:
         verbose: bool = False,
     ):
         """Generate an individual Astro page for each activity in the collection."""
+        asset_dir = output_dir / "_static"
         for activity in self.activities:
             metadata = activity.generate_activity_page_metadata()
             body_html = activity.generate_activity_page_body_html()
             page_source = render_activity_page(
                 title=metadata["title"],
-                body_html=body_html,
+                body_html=prepare_collection_markup(body_html, asset_dir=asset_dir),
                 metadata=metadata,
             )
 

@@ -137,6 +137,19 @@ def get_activity_photos_from_web(activity_id, access_token, size=5000):
         print("Error:", response.status_code, response.text)
 
 
+def format_pace_min_per_km(speed_mps: float | None) -> str | None:
+    """Format a speed in m/s as a running pace string like "5:12 /km"."""
+    if not speed_mps:
+        return None
+    pace_seconds_per_km = 1000.0 / speed_mps
+    minutes, seconds = divmod(round(pace_seconds_per_km), 60)
+    return f"{minutes}:{seconds:02d} /km"
+
+
+def is_running_activity_type(activity_type: str | None) -> bool:
+    return bool(activity_type) and "run" in activity_type.lower()
+
+
 class StravaActivity:
     """Wrapper around stravalib's DetailedActivity with convenience methods."""
 
@@ -473,14 +486,31 @@ class StravaActivity:
             if activity.elapsed_time
             else None
         )
-        avg_speed_kmh = (
-            round(float(activity.average_speed) * 3.6, 1)
-            if activity.average_speed
+        activity_type = (
+            getattr(activity.type, "root", None) or str(activity.type)
+            if activity.type
             else None
         )
-        max_speed_kmh = (
-            round(float(activity.max_speed) * 3.6, 1) if activity.max_speed else None
-        )
+        is_running = is_running_activity_type(activity_type)
+
+        avg_speed_kmh = None
+        max_speed_kmh = None
+        avg_pace = None
+        max_pace = None
+        if is_running:
+            avg_pace = format_pace_min_per_km(activity.average_speed)
+            max_pace = format_pace_min_per_km(activity.max_speed)
+        else:
+            avg_speed_kmh = (
+                round(float(activity.average_speed) * 3.6, 1)
+                if activity.average_speed
+                else None
+            )
+            max_speed_kmh = (
+                round(float(activity.max_speed) * 3.6, 1)
+                if activity.max_speed
+                else None
+            )
         start_date = activity.start_date_local or activity.start_date
 
         return {
@@ -488,7 +518,7 @@ class StravaActivity:
             "flip": self.flip,
             "title": activity.name or f"Activity {self.activity_id}",
             "date": str(start_date.date()) if start_date else None,
-            "activityType": str(activity.type) if activity.type else None,
+            "activityType": activity_type,
             "stravaLink": self.link,
             "distanceKm": round(float(activity.distance) * 1e-3, 1)
             if activity.distance
@@ -500,6 +530,8 @@ class StravaActivity:
             "elapsedTime": elapsed_time,
             "avgSpeedKmh": avg_speed_kmh,
             "maxSpeedKmh": max_speed_kmh,
+            "avgPace": avg_pace,
+            "maxPace": max_pace,
             "avgHeartRate": round(float(activity.average_heartrate))
             if getattr(activity, "average_heartrate", None)
             else None,
