@@ -580,6 +580,7 @@ class StravaActivity:
                 else None
             ),
             "profileCurves": self.compute_profile_curves(),
+            "timeSeries": self.compute_time_series(),
         }
 
     def generate_activity_page_body_html(self) -> str:
@@ -691,6 +692,100 @@ class StravaActivity:
             curves["elevationGainMH"] = []
 
         return curves
+
+    def compute_time_series(self, max_points: int = 1500) -> dict:
+        """Downsampled time-series traces for every relevant stream.
+
+        Returns a dict with a shared `timeS`/`distanceKm` x-axis (in the
+        activity's original sample order) plus one entry per available
+        metric under `series`, each an object with `label`, `unit`, and
+        `values` aligned to the shared x-axis.
+        """
+        result: dict = {"timeS": [], "distanceKm": [], "series": {}}
+
+        time_stream = self.activity_stream.get("time")
+        if not time_stream or len(time_stream.data) < 2:
+            return result
+
+        t = np.array(time_stream.data, dtype=float)
+        n = t.size
+
+        distance_stream = self.activity_stream.get("distance")
+        distance_km = (
+            np.array(distance_stream.data, dtype=float) / 1000.0
+            if distance_stream
+            else None
+        )
+
+        metric_specs: list[tuple[str, str, str, np.ndarray]] = []
+
+        altitude_stream = self.activity_stream.get("altitude")
+        if altitude_stream:
+            metric_specs.append(
+                ("elevation", "Elevation", "m", np.array(altitude_stream.data, dtype=float))
+            )
+
+        velocity_stream = self.activity_stream.get("velocity_smooth")
+        if velocity_stream:
+            speed_kmh = np.array(velocity_stream.data, dtype=float) * 3.6
+            metric_specs.append(("speed", "Speed", "km/h", speed_kmh))
+        elif distance_stream is not None and n > 1:
+            speed_kmh = np.gradient(distance_km * 1000.0, t) * 3.6
+            metric_specs.append(("speed", "Speed", "km/h", speed_kmh))
+
+        heartrate_stream = self.activity_stream.get("heartrate")
+        if heartrate_stream:
+            metric_specs.append(
+                ("heartrate", "Heart Rate", "bpm", np.array(heartrate_stream.data, dtype=float))
+            )
+
+        cadence_stream = self.activity_stream.get("cadence")
+        if cadence_stream:
+            metric_specs.append(
+                ("cadence", "Cadence", "rpm", np.array(cadence_stream.data, dtype=float))
+            )
+
+        watts_stream = self.activity_stream.get("watts")
+        if watts_stream:
+            metric_specs.append(
+                ("power", "Power", "W", np.array(watts_stream.data, dtype=float))
+            )
+
+        grade_stream = self.activity_stream.get("grade_smooth")
+        if grade_stream:
+            metric_specs.append(
+                ("grade", "Grade", "%", np.array(grade_stream.data, dtype=float))
+            )
+
+        temp_stream = self.activity_stream.get("temp")
+        if temp_stream:
+            metric_specs.append(
+                ("temperature", "Temperature", "°C", np.array(temp_stream.data, dtype=float))
+            )
+
+        if not metric_specs:
+            return result
+
+        if n > max_points:
+            indices = np.unique(np.linspace(0, n - 1, max_points).round().astype(int))
+        else:
+            indices = np.arange(n)
+
+        result["timeS"] = [round(v) for v in t[indices].tolist()]
+        if distance_km is not None:
+            result["distanceKm"] = [round(v, 3) for v in distance_km[indices].tolist()]
+
+        for key, label, unit, values in metric_specs:
+            sampled = values[indices]
+            result["series"][key] = {
+                "label": label,
+                "unit": unit,
+                "values": [
+                    round(float(v), 2) if np.isfinite(v) else None for v in sampled
+                ],
+            }
+
+        return result
 
     @property
     def activity_id(self):

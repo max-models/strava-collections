@@ -1,0 +1,221 @@
+---
+interface Props {
+  id: string;
+  timeSeries: {
+    timeS: number[];
+    distanceKm: number[];
+    series: Record<string, { label: string; unit: string; values: (number | null)[] }>;
+  };
+  height?: number;
+}
+
+const { id, timeSeries, height = 320 } = Astro.props;
+
+const seriesKeys = Object.keys(timeSeries?.series || {});
+const hasDistance = (timeSeries?.distanceKm || []).length > 0;
+
+const serializeDataForScript = (value: unknown): string => {
+  const json = JSON.stringify(value || {});
+  return json.replace(/</g, "\u003c").replace(/>/g, "\u003e").replace(/&/g, "\u0026");
+};
+---
+
+{seriesKeys.length > 0 && (
+  <div class="time-trace">
+    <div class="time-trace-controls">
+      <label class="time-trace-control">
+        <span>Metric</span>
+        <select id={`${id}-metric`}>
+          {seriesKeys.map((key) => (
+            <option value={key}>{timeSeries.series[key].label}</option>
+          ))}
+        </select>
+      </label>
+      <label class="time-trace-control">
+        <span>X-axis</span>
+        <select id={`${id}-xaxis`} disabled={!hasDistance}>
+          <option value="time">Time</option>
+          {hasDistance && <option value="distance">Distance</option>}
+        </select>
+      </label>
+      <label class="time-trace-control time-trace-control--slider">
+        <span>Smoothing: <span id={`${id}-smoothing-value`}>Off</span></span>
+        <input type="range" id={`${id}-smoothing`} min="0" max="100" value="0" step="1" />
+      </label>
+    </div>
+    <div id={id} style={`height: ${height}px; width: 100%;`}></div>
+  </div>
+)}
+
+<script id={`${id}-data`} type="application/json" set:html={serializeDataForScript(timeSeries)}></script>
+
+<script is:inline define:vars={{ id }}>
+  (function () {
+    function movingAverage(values, radius) {
+      if (radius <= 0) return values.slice();
+      const n = values.length;
+      const result = new Array(n);
+      for (let i = 0; i < n; i++) {
+        const lo = Math.max(0, i - radius);
+        const hi = Math.min(n - 1, i + radius);
+        let sum = 0;
+        let count = 0;
+        for (let j = lo; j <= hi; j++) {
+          const v = values[j];
+          if (v != null) {
+            sum += v;
+            count++;
+          }
+        }
+        result[i] = count > 0 ? sum / count : null;
+      }
+      return result;
+    }
+
+    function init() {
+      const container = document.getElementById(id);
+      const dataEl = document.getElementById(`${id}-data`);
+      if (!container || !dataEl?.textContent || !window.Plotly) return;
+
+      const timeSeries = JSON.parse(dataEl.textContent);
+      const seriesKeys = Object.keys(timeSeries.series || {});
+      if (seriesKeys.length === 0) return;
+
+      const metricSelect = document.getElementById(`${id}-metric`);
+      const xaxisSelect = document.getElementById(`${id}-xaxis`);
+      const smoothingInput = document.getElementById(`${id}-smoothing`);
+      const smoothingLabel = document.getElementById(`${id}-smoothing-value`);
+
+      const timeMinutes = (timeSeries.timeS || []).map((t) => t / 60);
+      const distanceKm = timeSeries.distanceKm || [];
+
+      const maxRadius = Math.max(1, Math.min(200, Math.floor(timeMinutes.length / 6)));
+      if (smoothingInput) {
+        smoothingInput.max = String(maxRadius);
+      }
+
+      const height = container.clientHeight || 320;
+
+      function render() {
+        const metricKey = metricSelect ? metricSelect.value : seriesKeys[0];
+        const metric = timeSeries.series[metricKey];
+        if (!metric) return;
+
+        const useDistance = !!xaxisSelect && xaxisSelect.value === 'distance' && distanceKm.length > 0;
+        const xValues = useDistance ? distanceKm : timeMinutes;
+        const radius = smoothingInput ? parseInt(smoothingInput.value, 10) || 0 : 0;
+        const yValues = movingAverage(metric.values, radius);
+
+        if (smoothingLabel) {
+          smoothingLabel.textContent = radius > 0 ? String(radius) : 'Off';
+        }
+
+        const hoverPrefix = useDistance ? '%{x:.2f} km' : '%{x:.1f} min';
+
+        const trace = {
+          x: xValues,
+          y: yValues,
+          type: 'scatter',
+          mode: 'lines',
+          line: { color: '#fc4c02', width: 2 },
+          connectgaps: false,
+          hovertemplate: `${hoverPrefix}: %{y:.1f} ${metric.unit}<extra></extra>`,
+        };
+
+        const layout = {
+          height,
+          margin: { l: 55, r: 20, t: 10, b: 40 },
+          showlegend: false,
+          xaxis: {
+            title: {
+              text: useDistance ? 'Distance (km)' : 'Time (min)',
+              font: { size: 11, color: '#64748b' },
+            },
+            showgrid: true,
+            gridcolor: '#f1f5f9',
+            zeroline: false,
+            tickfont: { size: 10, color: '#94a3b8' },
+          },
+          yaxis: {
+            title: {
+              text: `${metric.label} (${metric.unit})`,
+              font: { size: 11, color: '#64748b' },
+            },
+            showgrid: true,
+            gridcolor: '#f1f5f9',
+            zeroline: false,
+            tickfont: { size: 10, color: '#94a3b8' },
+          },
+          paper_bgcolor: 'rgba(0,0,0,0)',
+          plot_bgcolor: 'rgba(0,0,0,0)',
+        };
+
+        window.Plotly.react(id, [trace], layout, {
+          responsive: true,
+          displayModeBar: false,
+        });
+      }
+
+      render();
+      metricSelect?.addEventListener('change', render);
+      xaxisSelect?.addEventListener('change', render);
+      smoothingInput?.addEventListener('input', render);
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init, { once: true });
+    } else {
+      init();
+    }
+    document.addEventListener('astro:after-swap', init);
+  })();
+</script>
+
+<style>
+  .time-trace {
+    background: #ffffff;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .time-trace-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .time-trace-control {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  .time-trace-control select {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #0f172a;
+    text-transform: none;
+    letter-spacing: normal;
+    padding: 0.4rem 0.6rem;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    background: #ffffff;
+  }
+
+  .time-trace-control--slider {
+    min-width: 180px;
+    flex: 1 1 220px;
+  }
+
+  .time-trace-control--slider input[type='range'] {
+    width: 100%;
+    accent-color: #fc4c02;
+  }
+</style>
