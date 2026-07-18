@@ -10,6 +10,7 @@ class SitePaths:
     source_dir: Path
     astro_dir: Path
     page_dir: Path
+    activity_page_dir: Path
     generated_dir: Path
     manifest_path: Path
     public_static_dir: Path
@@ -24,6 +25,7 @@ def build_site_paths(site_root: str | Path) -> SitePaths:
         source_dir=root / "source",
         astro_dir=astro_dir,
         page_dir=astro_dir / "src" / "pages" / "collections",
+        activity_page_dir=astro_dir / "src" / "pages" / "activities",
         generated_dir=generated_dir,
         manifest_path=generated_dir / "collections.ts",
         public_static_dir=astro_dir / "public" / "_static",
@@ -42,6 +44,7 @@ def ensure_site_template(site_root: str | Path) -> SitePaths:
     paths.source_dir.mkdir(parents=True, exist_ok=True)
     (paths.source_dir / "_static").mkdir(parents=True, exist_ok=True)
     paths.page_dir.mkdir(parents=True, exist_ok=True)
+    paths.activity_page_dir.mkdir(parents=True, exist_ok=True)
     paths.generated_dir.mkdir(parents=True, exist_ok=True)
     paths.public_static_dir.mkdir(parents=True, exist_ok=True)
 

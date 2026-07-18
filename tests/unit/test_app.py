@@ -61,6 +61,9 @@ def test_main_uses_plotly_html_for_yaml_input(monkeypatch, tmp_path):
         def generate_astro(self, filepath, **kwargs):
             calls["generate_astro"] = (filepath, kwargs)
 
+        def generate_activity_astro_pages(self, output_dir, **kwargs):
+            calls["generate_activity_astro_pages"] = (output_dir, kwargs)
+
     monkeypatch.setattr("strava_collections.main.StravaCollection", FakeCollection)
     monkeypatch.setattr("strava_collections.collection.mapbox_token", "test-token")
     monkeypatch.setattr(
@@ -120,6 +123,9 @@ def test_main_generates_map_assets_without_mapbox_token(monkeypatch, tmp_path):
 
         def generate_astro(self, filepath, **kwargs):
             calls["generate_astro"] = (filepath, kwargs)
+
+        def generate_activity_astro_pages(self, output_dir, **kwargs):
+            calls["generate_activity_astro_pages"] = (output_dir, kwargs)
 
     monkeypatch.setattr("strava_collections.main.StravaCollection", FakeCollection)
     monkeypatch.setattr("strava_collections.collection.mapbox_token", None)
@@ -182,6 +188,9 @@ def test_main_accepts_multiple_yaml_inputs(monkeypatch, tmp_path):
         def generate_astro(self, filepath, **kwargs):
             calls["generate_astro"].append((filepath, kwargs))
 
+        def generate_activity_astro_pages(self, output_dir, **kwargs):
+            pass
+
     monkeypatch.setattr("strava_collections.main.StravaCollection", FakeCollection)
     monkeypatch.setattr("strava_collections.collection.mapbox_token", "test-token")
     monkeypatch.setattr(
@@ -230,6 +239,9 @@ def test_main_defaults_to_docs_site_output(monkeypatch, tmp_path, capsys):
 
         def generate_astro(self, filepath, **kwargs):
             Path(filepath).write_text("---\n", encoding="utf-8")
+
+        def generate_activity_astro_pages(self, output_dir, **kwargs):
+            pass
 
     monkeypatch.chdir(tmp_path)
     monkeypatch.setattr("strava_collections.main.StravaCollection", FakeCollection)
@@ -292,6 +304,9 @@ def test_main_output_scaffolds_site_template(monkeypatch, tmp_path, capsys):
 
         def generate_astro(self, filepath, **kwargs):
             Path(filepath).write_text("---\n", encoding="utf-8")
+
+        def generate_activity_astro_pages(self, output_dir, **kwargs):
+            pass
 
     monkeypatch.setattr("strava_collections.main.StravaCollection", FakeCollection)
     monkeypatch.setattr("strava_collections.collection.mapbox_token", "test-token")
@@ -367,6 +382,9 @@ def test_main_output_generates_yaml_map_assets_without_mapbox_token(
         def generate_astro(self, filepath, **kwargs):
             Path(filepath).write_text("---\n", encoding="utf-8")
 
+        def generate_activity_astro_pages(self, output_dir, **kwargs):
+            pass
+
     monkeypatch.setattr("strava_collections.main.StravaCollection", FakeCollection)
     monkeypatch.setattr("strava_collections.collection.mapbox_token", None)
     monkeypatch.setattr("strava_collections.main.sync_site", lambda site_root: None)
@@ -427,6 +445,9 @@ def test_main_expands_globbed_yaml_inputs(monkeypatch, tmp_path):
 
         def generate_astro(self, filepath, **kwargs):
             return None
+
+        def generate_activity_astro_pages(self, output_dir, **kwargs):
+            pass
 
     monkeypatch.setattr("strava_collections.main.StravaCollection", FakeCollection)
     monkeypatch.setattr("strava_collections.collection.mapbox_token", "test-token")
@@ -504,7 +525,10 @@ def test_activity_summary_gallery_images_keep_lightbox_class_and_accessibility()
 
     markdown = activity.generate_markdown_summary(include_elevation=False)
 
-    assert '<h2 class="description-title">Day 1</h2>' in markdown
+    assert (
+        '<h2 class="description-title">'
+        '<a href="/activities/1324271479/">Day 1</a></h2>' in markdown
+    )
     assert 'class="lightbox-trigger"' in markdown
     assert 'loading="lazy"' in markdown
     assert 'decoding="async"' in markdown
@@ -842,6 +866,9 @@ def test_main_parses_places_from_yaml(monkeypatch, tmp_path):
 
         def generate_astro(self, filepath, **kwargs):
             Path(filepath).write_text("---\n", encoding="utf-8")
+
+        def generate_activity_astro_pages(self, output_dir, **kwargs):
+            pass
 
     monkeypatch.setattr("strava_collections.main.StravaCollection", FakeCollection)
     monkeypatch.setattr("strava_collections.collection.mapbox_token", "test-token")

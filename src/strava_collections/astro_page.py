@@ -15,6 +15,7 @@ SCRIPT_TAG_RE = re.compile(r"<script(?P<attrs>[^>]*)>")
 STATIC_ASSET_ATTR_RE = re.compile(
     r'(?P<attr>src|href)="(?P<prefix>/?_static/)(?P<asset>[^"]+)"'
 )
+INTERNAL_LINK_ATTR_RE = re.compile(r'href="/(?P<path>activities/[^"]+/)"')
 IFRAME_WRAPPER_RE = re.compile(
     r"<div[^>]*>\s*<iframe[^>]*src=\"(?P<src>/ ?_static/[^\">]+\.html)\"[^>]*></iframe>\s*</div>",
     re.DOTALL,
@@ -62,6 +63,10 @@ def strip_frontmatter(text: str) -> str:
 
 def route_slug_from_filename(file_slug: str) -> str:
     return file_slug.removeprefix("collection-")
+
+
+def route_slug_from_activity_filename(file_slug: str) -> str:
+    return file_slug.removeprefix("activity-")
 
 
 def title_from_markdown(source_text: str) -> str:
@@ -215,6 +220,14 @@ def rewrite_static_asset_paths_for_astro(markup: str) -> str:
     return STATIC_ASSET_ATTR_RE.sub(replace_attr, markup)
 
 
+def rewrite_internal_links_for_astro(markup: str) -> str:
+    def replace_attr(match: re.Match[str]) -> str:
+        path = match.group("path")
+        return f"href={{`${{base}}{path}`}}"
+
+    return INTERNAL_LINK_ATTR_RE.sub(replace_attr, markup)
+
+
 def inline_scripts_for_astro(markup: str) -> str:
     def replace_script(match: re.Match[str]) -> str:
         attrs = match.group("attrs")
@@ -228,6 +241,7 @@ def inline_scripts_for_astro(markup: str) -> str:
 def body_html_to_astro_markup(body_html: str) -> tuple[str, list[dict[str, str]]]:
     markup_with_ids, headings = add_heading_ids_and_collect(body_html.strip())
     markup = rewrite_static_asset_paths_for_astro(markup_with_ids)
+    markup = rewrite_internal_links_for_astro(markup)
     return inline_scripts_for_astro(markup), headings
 
 
@@ -257,6 +271,25 @@ def render_collection_page(
         headings_json=json.dumps(headings, indent=2),
         metadata_json=metadata_json,
         fullscreen_map_url=fullscreen_map_url,
+        title=title,
+        headings=headings,
+        markup=markup,
+    )
+
+
+def render_activity_page(
+    title: str, body_html: str, metadata: dict | None = None
+) -> str:
+    markup, headings = body_html_to_astro_markup(body_html)
+    metadata_json = json.dumps(metadata or {}, indent=2)
+
+    template_path = Path(__file__).parent / "templates" / "activity_page.astro.j2"
+    template = template_path.read_text()
+
+    return template.format(
+        title_json=json.dumps(title),
+        headings_json=json.dumps(headings, indent=2),
+        metadata_json=metadata_json,
         title=title,
         headings=headings,
         markup=markup,

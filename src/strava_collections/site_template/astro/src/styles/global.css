@@ -30,6 +30,16 @@
   line-height: 1.2;
 }
 
+.description-title a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.description-title a:hover {
+  color: #fc4c02;
+  text-decoration: underline;
+}
+
 .description-text {
   font-size: 0.95rem;
   color: #374151;

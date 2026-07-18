@@ -11,9 +11,10 @@ import pandas as pd
 import plotly.colors as pc
 import plotly.graph_objects as go
 
-from strava_collections.activity import StravaActivity, embed_iframe, embed_image
+from strava_collections.activity import StravaActivity
 from strava_collections.astro_page import (
     prepare_collection_markup,
+    render_activity_page,
     render_collection_page,
 )
 from strava_collections.utils import (
@@ -693,6 +694,44 @@ class StravaCollection:
             f.write(page_source)
         if verbose:
             print(f"Saved Astro page to {filepath}")
+
+    def generate_activity_astro_pages(
+        self,
+        output_dir: Path,
+        prettify: bool = False,
+        verbose: bool = False,
+    ):
+        """Generate an individual Astro page for each activity in the collection."""
+        asset_dir = output_dir / "_static"
+        for activity in self.activities:
+            metadata = activity.generate_activity_page_metadata()
+            body_html = activity.generate_activity_page_body_html()
+            page_source = render_activity_page(
+                title=metadata["title"],
+                body_html=prepare_collection_markup(body_html, asset_dir=asset_dir),
+                metadata=metadata,
+            )
+
+            if prettify:
+                with tempfile.NamedTemporaryFile(
+                    "w+", suffix=".astro", delete=False, encoding="utf-8"
+                ) as tmp_file:
+                    tmp_file.write(page_source)
+                    tmp_file.flush()
+                    tmp_path = Path(tmp_file.name)
+                    tmp_folder = tmp_path.parent
+                subprocess.run(
+                    ["prettier", "--write", str(tmp_path)], check=True, cwd=tmp_folder
+                )
+
+                with open(tmp_path, "r", encoding="utf-8") as f:
+                    page_source = f.read()
+
+            filepath = output_dir / f"activity-{activity.activity_id}.astro"
+            with open(filepath, "w", encoding="utf-8") as f:
+                f.write(page_source)
+            if verbose:
+                print(f"Saved Activity Astro page to {filepath}")
 
     def to_yaml(self, output_dir, filename: str | None = None):
         yaml_str = ""
