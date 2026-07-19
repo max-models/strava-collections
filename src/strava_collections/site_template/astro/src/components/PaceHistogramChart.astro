@@ -1,18 +1,16 @@
 ---
 interface Props {
   id: string;
-  histogram: {
-    labels: string[];
-    minutes: number[];
-    unit: string;
-    isPace: boolean;
+  histograms: {
+    metrics: Record<string, { label: string; unit: string; labels: string[]; minutes: number[] }>;
+    order: string[];
   };
   height?: number;
 }
 
-const { id, histogram, height = 260 } = Astro.props;
+const { id, histograms, height = 260 } = Astro.props;
 
-const hasData = !!histogram && (histogram.minutes || []).some((v) => v > 0);
+const order = (histograms?.order || []).filter((key) => histograms?.metrics?.[key]);
 
 const serializeDataForScript = (value: unknown): string => {
   const json = JSON.stringify(value || {});
@@ -20,13 +18,28 @@ const serializeDataForScript = (value: unknown): string => {
 };
 ---
 
-{hasData && (
-  <div class="pace-histogram-chart">
+{order.length > 0 && (
+  <div class="distribution-chart">
+    <div class="distribution-chart-controls">
+      <div class="distribution-chart-metrics" id={`${id}-metrics`}>
+        {order.map((key, index) => (
+          <label class="distribution-chart-metric-pill">
+            <input
+              type="radio"
+              name={`${id}-metric`}
+              value={key}
+              checked={index === 0}
+            />
+            <span>{histograms.metrics[key].label}</span>
+          </label>
+        ))}
+      </div>
+    </div>
     <div id={id} style={`height: ${height}px; width: 100%;`}></div>
   </div>
 )}
 
-<script id={`${id}-data`} type="application/json" set:html={serializeDataForScript(histogram)}></script>
+<script id={`${id}-data`} type="application/json" set:html={serializeDataForScript(histograms)}></script>
 
 <script is:inline define:vars={{ id }}>
   (function () {
@@ -35,43 +48,62 @@ const serializeDataForScript = (value: unknown): string => {
       const dataEl = document.getElementById(`${id}-data`);
       if (!container || !dataEl?.textContent || !window.Plotly) return;
 
-      const histogram = JSON.parse(dataEl.textContent);
-      if (!histogram.labels || histogram.labels.length === 0) return;
+      const histograms = JSON.parse(dataEl.textContent);
+      const metricInputs = Array.from(
+        document.querySelectorAll(`input[name="${id}-metric"]`),
+      );
+      if (metricInputs.length === 0) return;
 
-      const trace = {
-        x: histogram.labels,
-        y: histogram.minutes,
-        type: 'bar',
-        marker: { color: '#fc4c02' },
-        hovertemplate: `%{x} ${histogram.unit}: %{y:.1f} min<extra></extra>`,
-      };
+      function selectedKey() {
+        const checked = metricInputs.find((input) => input.checked);
+        return checked ? checked.value : metricInputs[0].value;
+      }
 
-      const layout = {
-        height: container.clientHeight || 260,
-        margin: { l: 55, r: 20, t: 20, b: 55 },
-        showlegend: false,
-        xaxis: {
-          title: {
-            text: histogram.isPace ? 'Pace (min/km)' : 'Speed (km/h)',
-            font: { size: 11, color: '#64748b' },
+      function render() {
+        const metric = histograms.metrics[selectedKey()];
+        if (!metric) return;
+
+        const trace = {
+          x: metric.labels,
+          y: metric.minutes,
+          type: 'bar',
+          marker: { color: '#fc4c02' },
+          hovertemplate: `%{x} ${metric.unit}: %{y:.1f} min<extra></extra>`,
+        };
+
+        const layout = {
+          height: container.clientHeight || 260,
+          margin: { l: 55, r: 20, t: 20, b: 55 },
+          showlegend: false,
+          xaxis: {
+            title: {
+              text: `${metric.label} (${metric.unit})`,
+              font: { size: 11, color: '#64748b' },
+            },
+            tickfont: { size: 10, color: '#94a3b8' },
+            showgrid: false,
           },
-          tickfont: { size: 10, color: '#94a3b8' },
-          showgrid: false,
-        },
-        yaxis: {
-          title: { text: 'Moving time (min)', font: { size: 11, color: '#64748b' } },
-          showgrid: true,
-          gridcolor: '#f1f5f9',
-          zeroline: false,
-          tickfont: { size: 10, color: '#94a3b8' },
-        },
-        paper_bgcolor: 'rgba(0,0,0,0)',
-        plot_bgcolor: 'rgba(0,0,0,0)',
-      };
+          yaxis: {
+            title: { text: 'Moving time (min)', font: { size: 11, color: '#64748b' } },
+            showgrid: true,
+            gridcolor: '#f1f5f9',
+            zeroline: false,
+            tickfont: { size: 10, color: '#94a3b8' },
+          },
+          paper_bgcolor: 'rgba(0,0,0,0)',
+          plot_bgcolor: 'rgba(0,0,0,0)',
+        };
 
-      window.Plotly.newPlot(id, [trace], layout, {
-        responsive: true,
-        displayModeBar: false,
+        window.Plotly.react(id, [trace], layout, {
+          responsive: true,
+          displayModeBar: false,
+        });
+      }
+
+      render();
+
+      metricInputs.forEach((input) => {
+        input.addEventListener('change', render);
       });
     }
 
@@ -85,9 +117,48 @@ const serializeDataForScript = (value: unknown): string => {
 </script>
 
 <style>
-  .pace-histogram-chart {
+  .distribution-chart {
     background: var(--color-card-bg);
     border-radius: 12px;
     overflow: hidden;
+  }
+
+  .distribution-chart-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .distribution-chart-metrics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .distribution-chart-metric-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.3rem 0.65rem;
+    border-radius: 999px;
+    border: 1.5px solid var(--color-border);
+    background: var(--color-card-bg);
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--color-text);
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .distribution-chart-metric-pill:has(input:checked) {
+    border-color: #fc4c02;
+    background: color-mix(in srgb, #fc4c02 10%, var(--color-card-bg));
+    color: #fc4c02;
+  }
+
+  .distribution-chart-metric-pill input {
+    accent-color: #fc4c02;
   }
 </style>

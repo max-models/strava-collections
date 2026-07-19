@@ -85,7 +85,7 @@ const hasProfileCurves = ['power', 'speedKmh', 'elevationGainMH'].some(
 
 const timeSeries = metadata.timeSeries || {{ timeS: [], distanceKm: [], series: {{}} }};
 const stopTimeHistogram = metadata.stopTimeHistogram || {{}};
-const paceHistogram = metadata.paceHistogram || {{ labels: [], minutes: [] }};
+const metricHistograms = metadata.metricHistograms || {{ metrics: {{}}, order: [] }};
 const splitsData = metadata.splits || {{ splits: [], isPace: false }};
 ---
 
@@ -127,17 +127,15 @@ const splitsData = metadata.splits || {{ splits: [], isPace: false }};
 
   {{hasProfileCurves && (
     <section class="activity-profiles-section mb-12 w-full overflow-hidden">
-      <h2 class="text-xl font-bold text-slate-900 dark:text-slate-100 mb-4">Effort Profile</h2>
+      <h2 class="text-xl font-bold text-slate-900 dark:text-slate-100 mb-4">Best Efforts</h2>
       <ProfileChartGroup id="activity-profile" curves={{profileCurves}} height={{320}} />
     </section>
   )}}
 
-  {{paceHistogram.minutes && paceHistogram.minutes.some((v) => v > 0) && (
-    <section class="activity-pace-histogram-section mb-12 w-full overflow-hidden">
-      <h2 class="text-xl font-bold text-slate-900 dark:text-slate-100 mb-4">
-        {{paceHistogram.isPace ? 'Pace Distribution' : 'Speed Distribution'}}
-      </h2>
-      <PaceHistogramChart id="activity-pace-histogram" histogram={{paceHistogram}} height={{260}} />
+  {{metricHistograms.order && metricHistograms.order.length > 0 && (
+    <section class="activity-distribution-section mb-12 w-full overflow-hidden">
+      <h2 class="text-xl font-bold text-slate-900 dark:text-slate-100 mb-4">Distribution</h2>
+      <PaceHistogramChart id="activity-distribution" histograms={{metricHistograms}} height={{260}} />
     </section>
   )}}
 
