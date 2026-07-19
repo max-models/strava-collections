@@ -175,6 +175,20 @@ def best_rolling_mean(values_1hz: np.ndarray, window_s: int) -> float | None:
     return float(np.max(window_sums)) / window_s
 
 
+# (lower bound seconds, upper bound seconds or None for unbounded, label) for
+# the stop-duration histogram buckets.
+STOP_TIME_BINS: list[tuple[float, float | None, str]] = [
+    (15, 30, "15-30s"),
+    (30, 60, "30s-1min"),
+    (60, 300, "1-5min"),
+    (300, 600, "5-10min"),
+    (600, 1200, "10-20min"),
+    (1200, 1800, "20-30min"),
+    (1800, 3600, "30-60min"),
+    (3600, None, "1h+"),
+]
+
+
 class StravaActivity:
     """Wrapper around stravalib's DetailedActivity with convenience methods."""
 
@@ -581,6 +595,7 @@ class StravaActivity:
             ),
             "profileCurves": self.compute_profile_curves(),
             "timeSeries": self.compute_time_series(),
+            "stopTimeHistogram": self.compute_stop_time_histogram(),
         }
 
     def generate_activity_page_body_html(self) -> str:
@@ -811,6 +826,61 @@ class StravaActivity:
                 ],
             }
 
+        return result
+
+    def compute_stop_time_histogram(self) -> dict:
+        """Bucket contiguous non-moving spans by duration, per STOP_TIME_BINS.
+
+        Uses the `moving` stream to find every contiguous stretch where the
+        athlete wasn't moving, then buckets each stop's duration into the
+        length ranges in STOP_TIME_BINS, tracking both the accumulated time
+        and the number of stops per bucket.
+        """
+        result = {
+            "labels": [label for _, _, label in STOP_TIME_BINS],
+            "totalMinutes": [0.0] * len(STOP_TIME_BINS),
+            "counts": [0] * len(STOP_TIME_BINS),
+            "totalStoppedMinutes": 0.0,
+            "totalStopsCount": 0,
+        }
+
+        moving_stream = self.activity_stream.get("moving")
+        time_stream = self.activity_stream.get("time")
+        if not moving_stream or not time_stream:
+            return result
+
+        n = min(len(moving_stream.data), len(time_stream.data))
+        if n < 2:
+            return result
+
+        moving = np.array(moving_stream.data[:n], dtype=bool)
+        t = np.array(time_stream.data[:n], dtype=float)
+
+        min_stop_seconds = STOP_TIME_BINS[0][0]
+        durations = []
+        i = 0
+        while i < n:
+            if not moving[i]:
+                start = i
+                while i < n and not moving[i]:
+                    i += 1
+                end_index = i if i < n else n - 1
+                duration = t[end_index] - t[start]
+                if duration >= min_stop_seconds:
+                    durations.append(duration)
+            else:
+                i += 1
+
+        for duration in durations:
+            for bin_index, (lower, upper, _) in enumerate(STOP_TIME_BINS):
+                if duration >= lower and (upper is None or duration < upper):
+                    result["totalMinutes"][bin_index] += duration / 60.0
+                    result["counts"][bin_index] += 1
+                    break
+
+        result["totalMinutes"] = [round(v, 1) for v in result["totalMinutes"]]
+        result["totalStoppedMinutes"] = round(sum(durations) / 60.0, 1)
+        result["totalStopsCount"] = len(durations)
         return result
 
     @property

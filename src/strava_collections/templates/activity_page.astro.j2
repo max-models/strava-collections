@@ -4,6 +4,7 @@ import Map from '../../components/Map.astro';
 import ElevationChart from '../../components/ElevationChart.astro';
 import ProfileChart from '../../components/ProfileChart.astro';
 import TimeSeriesChart from '../../components/TimeSeriesChart.astro';
+import StopTimeChart from '../../components/StopTimeChart.astro';
 import {{ loadStravaRouteData }} from '../../scripts/data-helpers';
 
 const title = {title_json};
@@ -101,6 +102,7 @@ const profileCharts = [
 ].filter((chart) => chart.values && chart.values.length > 0);
 
 const timeSeries = metadata.timeSeries || {{ timeS: [], distanceKm: [], series: {{}} }};
+const stopTimeHistogram = metadata.stopTimeHistogram || {{}};
 ---
 
 <CollectionPage title={{title}} headings={{headings}}>
@@ -153,6 +155,13 @@ const timeSeries = metadata.timeSeries || {{ timeS: [], distanceKm: [], series: 
     <section class="activity-trace-section mb-12 w-full overflow-hidden">
       <h2 class="text-xl font-bold text-slate-900 mb-4">Time Trace</h2>
       <TimeSeriesChart id="activity-trace" timeSeries={{timeSeries}} height={{320}} />
+    </section>
+  )}}
+
+  {{stopTimeHistogram.totalStopsCount > 0 && (
+    <section class="activity-stops-section mb-12 w-full overflow-hidden">
+      <h2 class="text-xl font-bold text-slate-900 mb-4">Stops</h2>
+      <StopTimeChart id="activity-stops" histogram={{stopTimeHistogram}} height={{260}} />
     </section>
   )}}
 
