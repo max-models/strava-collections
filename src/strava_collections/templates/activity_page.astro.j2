@@ -116,17 +116,17 @@ const splitsData = metadata.splits || {{ splits: [], isPace: false }};
     </>
   )}}
 
-  {{hasProfileCurves && (
-    <section class="activity-profiles-section mb-12 w-full overflow-hidden">
-      <h2 class="text-xl font-bold text-slate-900 mb-4">Effort Profile</h2>
-      <ProfileChartGroup id="activity-profile" curves={{profileCurves}} height={{320}} />
-    </section>
-  )}}
-
   {{Object.keys(timeSeries.series || {{}}).length > 0 && (
     <section class="activity-trace-section mb-12 w-full overflow-hidden">
       <h2 class="text-xl font-bold text-slate-900 mb-4">Time Trace</h2>
       <TimeSeriesChart id="activity-trace" timeSeries={{timeSeries}} height={{320}} />
+    </section>
+  )}}
+
+  {{hasProfileCurves && (
+    <section class="activity-profiles-section mb-12 w-full overflow-hidden">
+      <h2 class="text-xl font-bold text-slate-900 mb-4">Effort Profile</h2>
+      <ProfileChartGroup id="activity-profile" curves={{profileCurves}} height={{320}} />
     </section>
   )}}
 

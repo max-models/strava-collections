@@ -74,14 +74,27 @@
 /* ── Gallery ──────────────────────────────────────────────────────── */
 
 .gallery {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
-  gap: 14px;
+  column-count: 4;
+  column-gap: 10px;
   margin-top: 16px;
+}
+
+@media (max-width: 1024px) {
+  .gallery {
+    column-count: 3;
+  }
+}
+
+@media (max-width: 640px) {
+  .gallery {
+    column-count: 2;
+  }
 }
 
 .gallery a {
   display: block;
+  break-inside: avoid;
+  margin-bottom: 10px;
   border-radius: 14px;
   overflow: hidden;
   max-width: 100%;
@@ -90,8 +103,7 @@
 .gallery img {
   width: 100%;
   max-width: 100%;
-  height: clamp(180px, 24vw, 240px);
-  object-fit: cover;
+  height: auto;
   display: block;
   border-radius: 14px;
   cursor: pointer;
