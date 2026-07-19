@@ -1,3 +1,4 @@
+import math
 import os
 import pickle
 import sys
@@ -173,6 +174,54 @@ def best_rolling_mean(values_1hz: np.ndarray, window_s: int) -> float | None:
     cumulative = np.cumsum(np.insert(values_1hz, 0, 0.0))
     window_sums = cumulative[window_s:] - cumulative[:-window_s]
     return float(np.max(window_sums)) / window_s
+
+
+def nice_bin_step(raw_step: float) -> float:
+    """Round `raw_step` up to a "nice" 1/2/5-times-a-power-of-ten width."""
+    if raw_step <= 0:
+        return 1.0
+    magnitude = 10 ** math.floor(math.log10(raw_step))
+    residual = raw_step / magnitude
+    if residual <= 1:
+        nice = 1
+    elif residual <= 2:
+        nice = 2
+    elif residual <= 5:
+        nice = 5
+    else:
+        nice = 10
+    return nice * magnitude
+
+
+def time_in_band_histogram(
+    values: np.ndarray, dt_seconds: np.ndarray, target_bins: int = 8
+) -> tuple[list[str], list[float]]:
+    """Bucket `dt_seconds` into ~target_bins nice-width bands of `values`.
+
+    Used for generic "time spent in band X" distribution charts (heart
+    rate, power, cadence, grade, elevation, temperature) where, unlike
+    pace/speed, there's no natural fixed set of bucket boundaries.
+    """
+    if values.size == 0:
+        return [], []
+
+    vmin = float(np.min(values))
+    vmax = float(np.max(values))
+    if vmax <= vmin:
+        return [], []
+
+    step = nice_bin_step((vmax - vmin) / target_bins)
+    start = math.floor(vmin / step) * step
+    stop = math.ceil(vmax / step) * step
+    edges = np.arange(start, stop + step, step)
+
+    minutes = [0.0] * (len(edges) - 1)
+    bin_index = np.clip(((values - start) // step).astype(int), 0, len(minutes) - 1)
+    for idx, delta in zip(bin_index, dt_seconds):
+        minutes[idx] += float(delta) / 60.0
+
+    labels = [f"{edges[i]:g}-{edges[i + 1]:g}" for i in range(len(minutes))]
+    return labels, [round(v, 1) for v in minutes]
 
 
 # (lower bound seconds, upper bound seconds or None for unbounded, label) for
@@ -626,7 +675,7 @@ class StravaActivity:
             "profileCurves": self.compute_profile_curves(),
             "timeSeries": self.compute_time_series(),
             "stopTimeHistogram": self.compute_stop_time_histogram(),
-            "paceHistogram": self.compute_pace_histogram(),
+            "metricHistograms": self.compute_metric_histograms(),
             "splits": self.compute_splits(),
         }
 
@@ -652,18 +701,27 @@ class StravaActivity:
         return out_str
 
     def compute_profile_curves(self) -> dict:
-        """Best-effort duration curves (log-log "power curve" style profiles).
+        """Best-effort duration curves ("Best Efforts", log-log power-curve style).
 
-        For each window in PROFILE_CURVE_WINDOWS, finds the highest average
-        power (W), speed (km/h), and elevation gain rate (m/h) sustained over
-        any contiguous span of that duration within the activity.
+        For each window in PROFILE_CURVE_WINDOWS, finds the highest average of
+        every available timeline metric (power, speed, elevation, heart
+        rate, cadence, grade, temperature) sustained over any contiguous span
+        of that duration within the activity. Also records the distance
+        covered during each window's best speed-effort, which the chart uses
+        as its default x-axis instead of the raw duration.
         """
-        curves = {
+        curves: dict = {
             "windowsSeconds": [],
             "windowLabels": [],
+            "windowsDistanceKm": [],
             "power": [],
             "speedKmh": [],
             "elevationGainMH": [],
+            "elevation": [],
+            "heartrate": [],
+            "cadence": [],
+            "grade": [],
+            "temperature": [],
         }
 
         time_stream = self.activity_stream.get("time")
@@ -677,72 +735,79 @@ class StravaActivity:
 
         t_1hz = np.arange(0, duration_s + 1, dtype=float)
 
-        watts_stream = self.activity_stream.get("watts")
-        watts_1hz = (
-            np.interp(t_1hz, t_raw, np.array(watts_stream.data, dtype=float))
-            if watts_stream
+        def interp_1hz(stream_key: str) -> np.ndarray | None:
+            stream = self.activity_stream.get(stream_key)
+            if not stream:
+                return None
+            return np.interp(t_1hz, t_raw, np.array(stream.data, dtype=float))
+
+        watts_1hz = interp_1hz("watts")
+
+        speed_1hz = interp_1hz("velocity_smooth")
+        if speed_1hz is None and self.activity_stream.get("distance"):
+            distance_1hz = interp_1hz("distance")
+            speed_1hz = np.gradient(distance_1hz, t_1hz)
+
+        altitude_1hz = interp_1hz("altitude")
+        gain_1hz = (
+            np.clip(np.diff(altitude_1hz, prepend=altitude_1hz[0]), 0, None)
+            if altitude_1hz is not None
             else None
         )
 
-        speed_1hz = None
-        if self.activity_stream.get("velocity_smooth"):
-            speed_1hz = np.interp(
-                t_1hz,
-                t_raw,
-                np.array(self.activity_stream["velocity_smooth"].data, dtype=float),
-            )
-        elif self.activity_stream.get("distance"):
-            distance_1hz = np.interp(
-                t_1hz,
-                t_raw,
-                np.array(self.activity_stream["distance"].data, dtype=float),
-            )
-            speed_1hz = np.gradient(distance_1hz, t_1hz)
+        heartrate_1hz = interp_1hz("heartrate")
+        cadence_1hz = interp_1hz("cadence")
+        grade_1hz = interp_1hz("grade_smooth")
+        temperature_1hz = interp_1hz("temp")
 
-        altitude_stream = self.activity_stream.get("altitude")
-        gain_1hz = None
-        if altitude_stream:
-            altitude_1hz = np.interp(
-                t_1hz, t_raw, np.array(altitude_stream.data, dtype=float)
-            )
-            gain_1hz = np.clip(np.diff(altitude_1hz, prepend=altitude_1hz[0]), 0, None)
+        # (curve key, 1hz values, unit scale factor, rounding decimals)
+        metric_streams: list[tuple[str, np.ndarray | None, float, int]] = [
+            ("power", watts_1hz, 1.0, 0),
+            ("speedKmh", speed_1hz, 3.6, 2),
+            ("elevationGainMH", gain_1hz, 3600.0, 0),
+            ("elevation", altitude_1hz, 1.0, 1),
+            ("heartrate", heartrate_1hz, 1.0, 0),
+            ("cadence", cadence_1hz, 1.0, 0),
+            ("grade", grade_1hz, 1.0, 1),
+            ("temperature", temperature_1hz, 1.0, 1),
+        ]
 
         for window_s, label in PROFILE_CURVE_WINDOWS:
             if window_s > duration_s:
                 break
 
-            power_value = (
-                best_rolling_mean(watts_1hz, window_s)
-                if watts_1hz is not None
-                else None
-            )
+            curves["windowsSeconds"].append(window_s)
+            curves["windowLabels"].append(label)
+
             speed_value = (
                 best_rolling_mean(speed_1hz, window_s)
                 if speed_1hz is not None
                 else None
             )
-            gain_value = (
-                best_rolling_mean(gain_1hz, window_s) if gain_1hz is not None else None
+            curves["windowsDistanceKm"].append(
+                round(speed_value * window_s / 1000.0, 3)
+                if speed_value is not None
+                else None
             )
 
-            curves["windowsSeconds"].append(window_s)
-            curves["windowLabels"].append(label)
-            curves["power"].append(
-                round(power_value) if power_value is not None else None
-            )
-            curves["speedKmh"].append(
-                round(speed_value * 3.6, 2) if speed_value is not None else None
-            )
-            curves["elevationGainMH"].append(
-                round(gain_value * 3600) if gain_value is not None else None
-            )
+            for key, values_1hz, scale, decimals in metric_streams:
+                value = (
+                    best_rolling_mean(values_1hz, window_s)
+                    if values_1hz is not None
+                    else None
+                )
+                if value is None:
+                    curves[key].append(None)
+                elif decimals == 0:
+                    curves[key].append(round(value * scale))
+                else:
+                    curves[key].append(round(value * scale, decimals))
 
-        if watts_1hz is None or all(v is None for v in curves["power"]):
-            curves["power"] = []
-        if speed_1hz is None or all(v is None for v in curves["speedKmh"]):
-            curves["speedKmh"] = []
-        if gain_1hz is None or all(v is None for v in curves["elevationGainMH"]):
-            curves["elevationGainMH"] = []
+        if all(v is None for v in curves["windowsDistanceKm"]):
+            curves["windowsDistanceKm"] = []
+        for key, *_ in metric_streams:
+            if all(v is None for v in curves[key]):
+                curves[key] = []
 
         return curves
 
@@ -997,6 +1062,74 @@ class StravaActivity:
         result["minutes"] = [round(v, 1) for v in minutes]
         result["unit"] = unit
         result["isPace"] = is_pace
+        return result
+
+    def compute_metric_histograms(self) -> dict:
+        """Time-in-band bar-chart data for every available timeline metric.
+
+        Speed/pace uses the curated bands from compute_pace_histogram();
+        heart rate, power, cadence, grade, elevation, and temperature use
+        automatically sized "nice" bands (see nice_bin_step()) so the chart
+        works regardless of each athlete's/activity's actual value range.
+        """
+        result: dict = {"metrics": {}, "order": []}
+
+        time_stream = self.activity_stream.get("time")
+        if not time_stream or len(time_stream.data) < 2:
+            return result
+
+        t = np.array(time_stream.data, dtype=float)
+        dt_full = np.diff(t)
+        if dt_full.size == 0:
+            return result
+
+        pace_histogram = self.compute_pace_histogram()
+        if pace_histogram["labels"] and any(v > 0 for v in pace_histogram["minutes"]):
+            result["metrics"]["speed"] = {
+                "label": "Pace" if pace_histogram["isPace"] else "Speed",
+                "unit": pace_histogram["unit"],
+                "labels": pace_histogram["labels"],
+                "minutes": pace_histogram["minutes"],
+            }
+            result["order"].append("speed")
+
+        def add_generic_metric(
+            key: str, label: str, unit: str, stream_key: str
+        ) -> None:
+            stream = self.activity_stream.get(stream_key)
+            if not stream or len(stream.data) < 2:
+                return
+
+            values = np.array(stream.data, dtype=float)
+            n = min(values.size, t.size)
+            if n < 2:
+                return
+
+            values_mid = (values[: n - 1] + values[1:n]) / 2.0
+            dt = dt_full[: n - 1]
+            valid = np.isfinite(values_mid)
+            if not np.any(valid):
+                return
+
+            labels, minutes = time_in_band_histogram(values_mid[valid], dt[valid])
+            if not labels or not any(v > 0 for v in minutes):
+                return
+
+            result["metrics"][key] = {
+                "label": label,
+                "unit": unit,
+                "labels": labels,
+                "minutes": minutes,
+            }
+            result["order"].append(key)
+
+        add_generic_metric("heartrate", "Heart Rate", "bpm", "heartrate")
+        add_generic_metric("power", "Power", "W", "watts")
+        add_generic_metric("cadence", "Cadence", "rpm", "cadence")
+        add_generic_metric("grade", "Grade", "%", "grade_smooth")
+        add_generic_metric("elevation", "Elevation", "m", "altitude")
+        add_generic_metric("temperature", "Temperature", "°C", "temp")
+
         return result
 
     def compute_splits(self, split_distance_km: float = 1.0) -> dict:

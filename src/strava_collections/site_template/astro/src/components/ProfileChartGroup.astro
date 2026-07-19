@@ -4,9 +4,15 @@ interface Props {
   curves: {
     windowsSeconds: number[];
     windowLabels: string[];
+    windowsDistanceKm?: number[];
     power: (number | null)[];
     speedKmh: (number | null)[];
     elevationGainMH: (number | null)[];
+    elevation?: (number | null)[];
+    heartrate?: (number | null)[];
+    cadence?: (number | null)[];
+    grade?: (number | null)[];
+    temperature?: (number | null)[];
   };
   height?: number;
 }
@@ -17,6 +23,11 @@ const METRIC_DEFS: Array<{ key: string; label: string; unit: string; color: stri
   { key: 'power', label: 'Power', unit: 'W', color: '#16a34a' },
   { key: 'speedKmh', label: 'Speed', unit: 'km/h', color: '#0ea5e9' },
   { key: 'elevationGainMH', label: 'Elevation Gain Rate', unit: 'm/h', color: '#0d9488' },
+  { key: 'elevation', label: 'Elevation', unit: 'm', color: '#84cc16' },
+  { key: 'heartrate', label: 'Heart Rate', unit: 'bpm', color: '#ef4444' },
+  { key: 'cadence', label: 'Cadence', unit: 'rpm', color: '#a855f7' },
+  { key: 'grade', label: 'Grade', unit: '%', color: '#f59e0b' },
+  { key: 'temperature', label: 'Temperature', unit: '°C', color: '#64748b' },
 ];
 
 const availableMetrics = METRIC_DEFS.filter(
@@ -121,8 +132,23 @@ const serializeDataForScript = (value: unknown): string => {
       const metricDefs = metricDefsEl?.textContent ? JSON.parse(metricDefsEl.textContent) : [];
       const metricByKey = Object.fromEntries(metricDefs.map((m) => [m.key, m]));
 
-      const xValues = curves.windowsSeconds || [];
-      const xLabels = curves.windowLabels || [];
+      const durationValues = curves.windowsSeconds || [];
+      const durationLabels = curves.windowLabels || [];
+      const distanceValues = curves.windowsDistanceKm || [];
+      // Default to a distance x-axis (best effort was reached over roughly
+      // this much ground); fall back to duration if no speed/distance
+      // stream was available to derive it (e.g. an indoor power-only ride).
+      const hasDistanceAxis =
+        distanceValues.length === durationValues.length && distanceValues.length > 0;
+
+      function formatDistance(km) {
+        if (km == null) return '';
+        return km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(km < 10 ? 2 : 1)} km`;
+      }
+
+      const xValues = hasDistanceAxis ? distanceValues : durationValues;
+      const xTickText = hasDistanceAxis ? distanceValues.map(formatDistance) : durationLabels;
+      const xAxisTitle = hasDistanceAxis ? 'Distance' : 'Duration';
       if (xValues.length === 0) return;
 
       const metricInputs = Array.from(
@@ -147,8 +173,8 @@ const serializeDataForScript = (value: unknown): string => {
           const metric = metricByKey[key];
           const values = curves[key] || [];
           const points = xValues
-            .map((x, i) => ({ x, y: values[i], label: xLabels[i] }))
-            .filter((point) => point.y != null);
+            .map((x, i) => ({ x, y: values[i], label: durationLabels[i] }))
+            .filter((point) => point.y != null && point.x != null && point.x > 0);
 
           const color = colorForKey(key);
           const axisNum = idx === 0 ? '' : String(idx + 1);
@@ -176,7 +202,8 @@ const serializeDataForScript = (value: unknown): string => {
             type: 'log',
             domain: xaxisDomain,
             tickvals: xValues,
-            ticktext: xLabels,
+            ticktext: xTickText,
+            title: { text: xAxisTitle, font: { size: 11, color: '#64748b' } },
             showgrid: true,
             gridcolor: '#f1f5f9',
             zeroline: false,
