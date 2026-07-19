@@ -200,7 +200,9 @@ PACE_HISTOGRAM_BINS_MIN_PER_KM: list[tuple[float, float | None, str]] = [
     (6.0, 7.0, "6:00-7:00"),
     (7.0, 8.0, "7:00-8:00"),
     (8.0, 10.0, "8:00-10:00"),
-    (10.0, None, "10:00+"),
+    (10.0, 20.0, "10-20min"),
+    (20.0, 30.0, "20-30min"),
+    (30.0, None, "30min+"),
 ]
 
 # (lower bound, upper bound or None for unbounded, label) buckets for the
@@ -859,12 +861,17 @@ class StravaActivity:
         return result
 
     def compute_stop_time_histogram(self) -> dict:
-        """Bucket contiguous non-moving spans by duration, per STOP_TIME_BINS.
+        """Bucket contiguous stopped spans by duration, per STOP_TIME_BINS.
 
-        Uses the `moving` stream to find every contiguous stretch where the
-        athlete wasn't moving, then buckets each stop's duration into the
-        length ranges in STOP_TIME_BINS, tracking both the accumulated time
-        and the number of stops per bucket.
+        A sample-to-sample interval counts as "stopped" if either the
+        `moving` stream says so, or the gap between consecutive samples is
+        much larger than the activity's typical recording interval — which
+        is how a Garmin "resume later" pause (or any long recording gap)
+        shows up, since the device simply stops emitting samples for the
+        duration of the pause rather than logging `moving: false` points.
+        Contiguous stopped intervals (from either signal) are merged into a
+        single stop so the two detection paths never double-count the same
+        span.
         """
         result = {
             "labels": [label for _, _, label in STOP_TIME_BINS],
@@ -874,28 +881,44 @@ class StravaActivity:
             "totalStopsCount": 0,
         }
 
-        moving_stream = self.activity_stream.get("moving")
         time_stream = self.activity_stream.get("time")
-        if not moving_stream or not time_stream:
+        if not time_stream:
             return result
 
-        n = min(len(moving_stream.data), len(time_stream.data))
+        n = len(time_stream.data)
+        moving_stream = self.activity_stream.get("moving")
+        if moving_stream:
+            n = min(n, len(moving_stream.data))
         if n < 2:
             return result
 
-        moving = np.array(moving_stream.data[:n], dtype=bool)
         t = np.array(time_stream.data[:n], dtype=float)
+        moving = (
+            np.array(moving_stream.data[:n], dtype=bool)
+            if moving_stream
+            else np.ones(n, dtype=bool)
+        )
+
+        dt = np.diff(t)
+        positive_dt = dt[dt > 0]
+        median_dt = float(np.median(positive_dt)) if positive_dt.size else 1.0
+        gap_threshold = max(60.0, median_dt * 6.0)
+
+        # Interval i (between sample i and i+1) is "stopped" if the athlete
+        # wasn't moving at sample i, or the recording gap to the next sample
+        # is an outlier (device paused/"resume later" rather than logging).
+        interval_stopped = (~moving[:-1]) | (dt > gap_threshold)
 
         min_stop_seconds = STOP_TIME_BINS[0][0]
         durations = []
+        num_intervals = interval_stopped.size
         i = 0
-        while i < n:
-            if not moving[i]:
+        while i < num_intervals:
+            if interval_stopped[i]:
                 start = i
-                while i < n and not moving[i]:
+                while i < num_intervals and interval_stopped[i]:
                     i += 1
-                end_index = i if i < n else n - 1
-                duration = t[end_index] - t[start]
+                duration = t[i] - t[start]
                 if duration >= min_stop_seconds:
                     durations.append(duration)
             else:

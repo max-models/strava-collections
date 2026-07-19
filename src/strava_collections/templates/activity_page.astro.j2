@@ -109,13 +109,6 @@ const splitsData = metadata.splits || {{ splits: [], isPace: false }};
     </div>
   </section>
 
-  {{splitsData.splits.length > 0 && (
-    <section class="activity-splits-section mb-12 w-full overflow-hidden">
-      <h2 class="text-xl font-bold text-slate-900 mb-4">Splits</h2>
-      <SplitsTable splits={{splitsData.splits}} isPace={{splitsData.isPace}} />
-    </section>
-  )}}
-
   {{routeData?.status === "ok" && (
     <>
       <ElevationChart id="activity-elevation" data={{elevationData}} height={{240}} />
@@ -154,6 +147,13 @@ const splitsData = metadata.splits || {{ splits: [], isPace: false }};
   )}}
 
   {markup}
+
+  {{splitsData.splits.length > 0 && (
+    <section class="activity-splits-section mb-12 w-full overflow-hidden">
+      <h2 class="text-xl font-bold text-slate-900 mb-4">Splits</h2>
+      <SplitsTable splits={{splitsData.splits}} isPace={{splitsData.isPace}} />
+    </section>
+  )}}
 
   {{metadata.stravaLink && (
     <p class="mt-8">
