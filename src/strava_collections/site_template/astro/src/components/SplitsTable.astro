@@ -4,6 +4,7 @@ interface Split {
   distanceKm: number;
   time: string;
   paceOrSpeed: string | null;
+  speedKmh: number | null;
   elevationGainM: number | null;
   avgHeartRate: number | null;
   avgPower: number | null;
@@ -19,6 +20,22 @@ const { splits, isPace } = Astro.props;
 const hasElevation = splits.some((split) => split.elevationGainM != null);
 const hasHeartRate = splits.some((split) => split.avgHeartRate != null);
 const hasPower = splits.some((split) => split.avgPower != null);
+
+// Bar length represents speed (faster = longer bar), even when the label
+// shown is pace, so a quick glance at the bars reads as "effort" either way.
+const speedValues = splits
+  .map((split) => split.speedKmh)
+  .filter((value): value is number => value != null);
+const minSpeed = speedValues.length ? Math.min(...speedValues) : 0;
+const maxSpeed = speedValues.length ? Math.max(...speedValues) : 0;
+const speedRange = maxSpeed - minSpeed;
+
+const MIN_BAR_PERCENT = 12;
+const barPercentFor = (speedKmh: number | null): number => {
+  if (speedKmh == null || speedRange <= 0) return 100;
+  const normalized = (speedKmh - minSpeed) / speedRange;
+  return MIN_BAR_PERCENT + normalized * (100 - MIN_BAR_PERCENT);
+};
 ---
 
 {splits.length > 0 && (
@@ -41,7 +58,15 @@ const hasPower = splits.some((split) => split.avgPower != null);
             <td>{split.index}</td>
             <td>{split.distanceKm} km</td>
             <td>{split.time}</td>
-            <td>{split.paceOrSpeed ?? '-'}</td>
+            <td class="splits-table-pace-cell">
+              <div class="splits-pace-bar-track">
+                <div
+                  class="splits-pace-bar"
+                  style={`width: ${barPercentFor(split.speedKmh)}%;`}
+                />
+                <span class="splits-pace-bar-label">{split.paceOrSpeed ?? '-'}</span>
+              </div>
+            </td>
             {hasElevation && <td>{split.elevationGainM != null ? `${split.elevationGainM} m` : '-'}</td>}
             {hasHeartRate && <td>{split.avgHeartRate != null ? `${split.avgHeartRate} bpm` : '-'}</td>}
             {hasPower && <td>{split.avgPower != null ? `${split.avgPower} W` : '-'}</td>}
@@ -88,5 +113,37 @@ const hasPower = splits.some((split) => split.avgPower != null);
 
   .splits-table tbody tr:hover {
     background: #f8fafc;
+  }
+
+  .splits-table-pace-cell {
+    min-width: 160px;
+    padding: 6px 14px;
+  }
+
+  .splits-pace-bar-track {
+    position: relative;
+    display: flex;
+    align-items: center;
+    height: 24px;
+  }
+
+  .splits-pace-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    min-width: 4px;
+    border-radius: 5px;
+    background: linear-gradient(90deg, #fc4c02, #fdba8c);
+    opacity: 0.55;
+  }
+
+  .splits-pace-bar-label {
+    position: relative;
+    z-index: 1;
+    padding-left: 8px;
+    font-weight: 600;
+    color: #334155;
+    white-space: nowrap;
   }
 </style>

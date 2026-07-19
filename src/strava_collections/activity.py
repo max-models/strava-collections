@@ -1065,12 +1065,14 @@ class StravaActivity:
             )
 
             pace_or_speed = None
+            speed_kmh = None
             if split_distance > 0 and split_time > 0:
                 speed_mps = (split_distance * 1000.0) / split_time
+                speed_kmh = round(speed_mps * 3.6, 2)
                 pace_or_speed = (
                     format_pace_min_per_km(speed_mps)
                     if is_pace
-                    else f"{round(speed_mps * 3.6, 1)} km/h"
+                    else f"{round(speed_kmh, 1)} km/h"
                 )
 
             splits.append(
@@ -1079,6 +1081,7 @@ class StravaActivity:
                     "distanceKm": split_distance,
                     "time": str(timedelta(seconds=round(split_time))),
                     "paceOrSpeed": pace_or_speed,
+                    "speedKmh": speed_kmh,
                     "elevationGainM": elevation_gain,
                     "avgHeartRate": avg_heartrate,
                     "avgPower": avg_power,
