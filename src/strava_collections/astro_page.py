@@ -249,7 +249,10 @@ def render_collection_page(
     title: str, body_html: str, metadata: dict | None = None
 ) -> str:
     markup, headings = body_html_to_astro_markup(body_html)
-    metadata_json = json.dumps(metadata or {}, indent=2)
+    # Compact (no indent): metadata can embed large numeric arrays (e.g. an
+    # activity's time-series), and pretty-printing those blows up the
+    # frontmatter text size enough to OOM the Astro compiler in CI.
+    metadata_json = json.dumps(metadata or {}, separators=(",", ":"))
 
     # Add Live Tracking to headings if garminLivetrackUrl exists
     if metadata and metadata.get("garminLivetrackUrl"):
@@ -281,7 +284,11 @@ def render_activity_page(
     title: str, body_html: str, metadata: dict | None = None
 ) -> str:
     markup, headings = body_html_to_astro_markup(body_html)
-    metadata_json = json.dumps(metadata or {}, indent=2)
+    # Compact (no indent): metadata embeds the activity's time-series data
+    # (up to ~1500 points x 7 metrics), and pretty-printing those numeric
+    # arrays blows up the frontmatter text size enough to OOM the Astro
+    # compiler in CI.
+    metadata_json = json.dumps(metadata or {}, separators=(",", ":"))
 
     template_path = Path(__file__).parent / "templates" / "activity_page.astro.j2"
     template = template_path.read_text()

@@ -746,7 +746,7 @@ class StravaActivity:
 
         return curves
 
-    def compute_time_series(self, max_points: int = 1500) -> dict:
+    def compute_time_series(self, max_points: int = 800) -> dict:
         """Downsampled time-series traces for every relevant stream.
 
         Returns a dict with a shared `timeS`/`distanceKm` x-axis (in the
