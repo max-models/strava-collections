@@ -261,22 +261,27 @@ def generate_collection_from_yaml(
 
 def main():
     """Main method called from the command line."""
-    parser = argparse.ArgumentParser(
-        description="Strava Collections: Analyze, build and serve your adventures.",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    )
-    parser.add_argument(
+    verbose_parser = argparse.ArgumentParser(add_help=False)
+    verbose_parser.add_argument(
         "-v",
         "--verbose",
         action="store_true",
         help="Enable verbose output",
     )
 
+    parser = argparse.ArgumentParser(
+        description="Strava Collections: Analyze, build and serve your adventures.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        parents=[verbose_parser],
+    )
+
     subparsers = parser.add_subparsers(dest="command", help="Command to execute")
 
     # Command: build
     build_parser = subparsers.add_parser(
-        "build", help="Process collections and generate pages/assets"
+        "build",
+        help="Process collections and generate pages/assets",
+        parents=[verbose_parser],
     )
     build_parser.add_argument(
         "ids",
@@ -358,7 +363,9 @@ def main():
 
     # Command: analyze
     analyze_parser = subparsers.add_parser(
-        "analyze", help="Analyze collections and show statistics without building"
+        "analyze",
+        help="Analyze collections and show statistics without building",
+        parents=[verbose_parser],
     )
     analyze_parser.add_argument(
         "-i",
@@ -375,35 +382,43 @@ def main():
     )
 
     # Command: site
-    site_parser = subparsers.add_parser("site", help="Manage the Astro website")
+    site_parser = subparsers.add_parser(
+        "site", help="Manage the Astro website", parents=[verbose_parser]
+    )
     site_subparsers = site_parser.add_subparsers(
         dest="site_command", help="Site sub-command"
     )
 
     site_init_parser = site_subparsers.add_parser(
-        "init", help="Initialize/update the Astro template"
+        "init", help="Initialize/update the Astro template", parents=[verbose_parser]
     )
     site_init_parser.add_argument("-o", "--output", help="Site directory")
 
     site_sync_parser = site_subparsers.add_parser(
-        "sync", help="Sync generated source files to the Astro site"
+        "sync",
+        help="Sync generated source files to the Astro site",
+        parents=[verbose_parser],
     )
     site_sync_parser.add_argument("-o", "--output", help="Site directory")
 
     site_build_parser = site_subparsers.add_parser(
-        "build", help="Run npm build for the Astro site"
+        "build", help="Run npm build for the Astro site", parents=[verbose_parser]
     )
     site_build_parser.add_argument("-o", "--output", help="Site directory")
 
     # Command: serve
-    serve_parser = subparsers.add_parser("serve", help="Run the development server")
+    serve_parser = subparsers.add_parser(
+        "serve", help="Run the development server", parents=[verbose_parser]
+    )
     serve_parser.add_argument("-o", "--output", help="Site directory")
     serve_parser.add_argument(
         "--host", action="store_true", help="Expose server to host"
     )
 
     # Command: activities
-    act_parser = subparsers.add_parser("activities", help="Individual activity tasks")
+    act_parser = subparsers.add_parser(
+        "activities", help="Individual activity tasks", parents=[verbose_parser]
+    )
     act_parser.add_argument("ids", nargs="+", help="Strava activity IDs")
     act_parser.add_argument(
         "--download", action="store_true", help="Download activity streams to JSON"
@@ -438,6 +453,11 @@ def main():
                 sys.argv.insert(1, "activities")
 
     args = parser.parse_args()
+    # argparse subparsers re-parse into a fresh namespace and merge it back,
+    # so a -v/--verbose set at an outer level (e.g. before the subcommand)
+    # gets clobbered by the inner subparser's default. Scanning argv directly
+    # sidesteps that and makes -v/--verbose work in any position.
+    args.verbose = args.verbose or "-v" in sys.argv or "--verbose" in sys.argv
 
     if getattr(args, "command", None) == "activities":
         if args.download:
