@@ -27,8 +27,11 @@ if (liveTrackingPath) {
   try {
     const liveTrackingConfig = yaml.load(fs.readFileSync(liveTrackingPath, 'utf8')) as {
       garminLivetrackUrl?: string;
+      active?: boolean;
     };
-    hasLiveTracking = !!liveTrackingConfig?.garminLivetrackUrl;
+    // `active: false` hides the banner even if a URL is still configured
+    // (e.g. keeping the session on file between tracking windows).
+    hasLiveTracking = liveTrackingConfig?.active !== false && !!liveTrackingConfig?.garminLivetrackUrl;
   } catch (error) {
     console.error('Error reading live-tracking.yaml:', error);
   }

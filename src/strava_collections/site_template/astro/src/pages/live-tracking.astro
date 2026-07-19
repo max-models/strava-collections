@@ -37,12 +37,15 @@ if (liveTrackingPath) {
       garminLivetrackUrl?: string;
       associatedCollection?: string;
       customText?: string;
+      active?: boolean;
     } | null;
 
     if (config) {
       sessionName = config.name || '';
       customText = config.customText || '';
-      garminUrl = config.garminLivetrackUrl || null;
+      // `active: false` hides the embed even if a URL is still configured
+      // (e.g. keeping the session on file between tracking windows).
+      garminUrl = config.active !== false ? config.garminLivetrackUrl || null : null;
 
       const associated = config.associatedCollection;
       if (associated) {
