@@ -1,10 +1,19 @@
-name: Villach to Zagreb
-garminLivetrackUrl: "https://livetrack.garmin.com/session/19e97698-b449-8624-b05a-7942e797fb00/token/5C552D8176DABA2497316FF881E69"
-# Optional: set to false to hide the embed/banner while keeping the URL on
-# file (e.g. between tracking windows). Defaults to true.
-active: true
-# Optional: title or slug of a Strava collection built by this pipeline.
-# If it matches, the live-tracking page shows a link box to that collection.
-associatedCollection: "Villach to Zagreb"
-customText: |
-  <p>Following the ride live.</p>
+collections:
+  - name: Villach to Zagreb
+    garminLivetrackUrl: "https://livetrack.garmin.com/session/19e97698-b449-8624-b05a-7942e797fb00/token/5C552D8176DABA2497316FF881E69"
+    # Optional: set to false to hide the embed/banner while keeping the URL
+    # on file (e.g. between tracking windows). Defaults to true.
+    active: true
+    # Optional: title or slug of a Strava collection built by this pipeline.
+    # If it matches, the live-tracking page shows a link box to that
+    # collection. The /live-tracking page never reads `activities` below —
+    # that's only used by the experimental live-tracking page.
+    associatedCollection: "Villach to Zagreb"
+    customText: |
+      <p>Following the ride live.</p>
+    routeGpxFile: "Villach_to_Ljubljana_to_Zagreb.gpx"
+    activities:
+      - stravaActivityId: "1324271479"
+        notes: Day 2 (Strava)
+      - garminLivetrackUrl: "https://livetrack.garmin.com/session/19e97698-b449-8624-b05a-7942e797fb00/token/5C552D8176DABA2497316FF881E69"
+        notes: Day 3

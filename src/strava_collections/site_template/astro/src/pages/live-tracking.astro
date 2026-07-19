@@ -30,24 +30,29 @@ let associatedCollectionTitle: string | null = null;
 
 if (liveTrackingPath) {
   try {
-    // Flat schema: this page just wraps a Garmin LiveTrack embed, with no
-    // notion of Strava activities.
+    // Same live-tracking.yaml the (untouched) experimental live-tracking
+    // page reads, so it keeps the `collections: [...]` wrapper that page
+    // expects. This page only ever reads the first entry's own fields —
+    // never `activities` — so there's no notion of Strava activities here.
     const config = yaml.load(fs.readFileSync(liveTrackingPath, 'utf8')) as {
-      name?: string;
-      garminLivetrackUrl?: string;
-      associatedCollection?: string;
-      customText?: string;
-      active?: boolean;
+      collections?: Array<{
+        name?: string;
+        garminLivetrackUrl?: string;
+        associatedCollection?: string;
+        customText?: string;
+        active?: boolean;
+      }>;
     } | null;
+    const entry = config?.collections?.[0];
 
-    if (config) {
-      sessionName = config.name || '';
-      customText = config.customText || '';
+    if (entry) {
+      sessionName = entry.name || '';
+      customText = entry.customText || '';
       // `active: false` hides the embed even if a URL is still configured
       // (e.g. keeping the session on file between tracking windows).
-      garminUrl = config.active !== false ? config.garminLivetrackUrl || null : null;
+      garminUrl = entry.active !== false ? entry.garminLivetrackUrl || null : null;
 
-      const associated = config.associatedCollection;
+      const associated = entry.associatedCollection;
       if (associated) {
         const normalized = String(associated).trim().toLowerCase();
         const match = collections.find(
