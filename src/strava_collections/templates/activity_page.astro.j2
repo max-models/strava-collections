@@ -5,6 +5,8 @@ import ElevationChart from '../../components/ElevationChart.astro';
 import ProfileChartGroup from '../../components/ProfileChartGroup.astro';
 import TimeSeriesChart from '../../components/TimeSeriesChart.astro';
 import StopTimeChart from '../../components/StopTimeChart.astro';
+import PaceHistogramChart from '../../components/PaceHistogramChart.astro';
+import SplitsTable from '../../components/SplitsTable.astro';
 import {{ loadStravaRouteData }} from '../../scripts/data-helpers';
 
 const title = {title_json};
@@ -83,6 +85,8 @@ const hasProfileCurves = ['power', 'speedKmh', 'elevationGainMH'].some(
 
 const timeSeries = metadata.timeSeries || {{ timeS: [], distanceKm: [], series: {{}} }};
 const stopTimeHistogram = metadata.stopTimeHistogram || {{}};
+const paceHistogram = metadata.paceHistogram || {{ labels: [], minutes: [] }};
+const splitsData = metadata.splits || {{ splits: [], isPace: false }};
 ---
 
 <CollectionPage title={{title}} headings={{headings}}>
@@ -105,6 +109,13 @@ const stopTimeHistogram = metadata.stopTimeHistogram || {{}};
     </div>
   </section>
 
+  {{splitsData.splits.length > 0 && (
+    <section class="activity-splits-section mb-12 w-full overflow-hidden">
+      <h2 class="text-xl font-bold text-slate-900 mb-4">Splits</h2>
+      <SplitsTable splits={{splitsData.splits}} isPace={{splitsData.isPace}} />
+    </section>
+  )}}
+
   {{routeData?.status === "ok" && (
     <>
       <ElevationChart id="activity-elevation" data={{elevationData}} height={{240}} />
@@ -123,6 +134,15 @@ const stopTimeHistogram = metadata.stopTimeHistogram || {{}};
     <section class="activity-trace-section mb-12 w-full overflow-hidden">
       <h2 class="text-xl font-bold text-slate-900 mb-4">Time Trace</h2>
       <TimeSeriesChart id="activity-trace" timeSeries={{timeSeries}} height={{320}} />
+    </section>
+  )}}
+
+  {{paceHistogram.minutes && paceHistogram.minutes.some((v) => v > 0) && (
+    <section class="activity-pace-histogram-section mb-12 w-full overflow-hidden">
+      <h2 class="text-xl font-bold text-slate-900 mb-4">
+        {{paceHistogram.isPace ? 'Pace Distribution' : 'Speed Distribution'}}
+      </h2>
+      <PaceHistogramChart id="activity-pace-histogram" histogram={{paceHistogram}} height={{260}} />
     </section>
   )}}
 

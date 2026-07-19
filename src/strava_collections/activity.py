@@ -188,6 +188,38 @@ STOP_TIME_BINS: list[tuple[float, float | None, str]] = [
     (3600, None, "1h+"),
 ]
 
+# (lower bound, upper bound or None for unbounded, label) buckets for the
+# moving-time-by-pace histogram, used for running activities.
+PACE_HISTOGRAM_BINS_MIN_PER_KM: list[tuple[float, float | None, str]] = [
+    (0, 3.5, "<3:30"),
+    (3.5, 4.0, "3:30-4:00"),
+    (4.0, 4.5, "4:00-4:30"),
+    (4.5, 5.0, "4:30-5:00"),
+    (5.0, 5.5, "5:00-5:30"),
+    (5.5, 6.0, "5:30-6:00"),
+    (6.0, 7.0, "6:00-7:00"),
+    (7.0, 8.0, "7:00-8:00"),
+    (8.0, 10.0, "8:00-10:00"),
+    (10.0, None, "10:00+"),
+]
+
+# (lower bound, upper bound or None for unbounded, label) buckets for the
+# moving-time-by-speed histogram, used for non-running activities.
+SPEED_HISTOGRAM_BINS_KMH: list[tuple[float, float | None, str]] = [
+    (0, 10, "<10"),
+    (10, 15, "10-15"),
+    (15, 20, "15-20"),
+    (20, 25, "20-25"),
+    (25, 30, "25-30"),
+    (30, 35, "30-35"),
+    (35, 40, "35-40"),
+    (40, None, "40+"),
+]
+
+# Speeds below this are treated as effectively stationary GPS/velocity noise
+# and excluded from the pace/speed histogram (the Stops chart covers them).
+PACE_HISTOGRAM_MIN_MOVING_SPEED_MPS = 0.3
+
 
 class StravaActivity:
     """Wrapper around stravalib's DetailedActivity with convenience methods."""
@@ -525,11 +557,7 @@ class StravaActivity:
             if activity.elapsed_time
             else None
         )
-        activity_type = (
-            getattr(activity.type, "root", None) or str(activity.type)
-            if activity.type
-            else None
-        )
+        activity_type = self._activity_type_label()
         is_running = is_running_activity_type(activity_type)
 
         avg_speed_kmh = None
@@ -596,6 +624,8 @@ class StravaActivity:
             "profileCurves": self.compute_profile_curves(),
             "timeSeries": self.compute_time_series(),
             "stopTimeHistogram": self.compute_stop_time_histogram(),
+            "paceHistogram": self.compute_pace_histogram(),
+            "splits": self.compute_splits(),
         }
 
     def generate_activity_page_body_html(self) -> str:
@@ -881,6 +911,158 @@ class StravaActivity:
         result["totalMinutes"] = [round(v, 1) for v in result["totalMinutes"]]
         result["totalStoppedMinutes"] = round(sum(durations) / 60.0, 1)
         result["totalStopsCount"] = len(durations)
+        return result
+
+    def _activity_type_label(self) -> str | None:
+        activity_type = getattr(self.activity, "type", None)
+        if not activity_type:
+            return None
+        return getattr(activity_type, "root", None) or str(activity_type)
+
+    def compute_pace_histogram(self) -> dict:
+        """Moving time spent at each pace (running) or speed (other) band.
+
+        Stationary/near-stationary samples are excluded since the Stops
+        chart already covers that time; see PACE_HISTOGRAM_MIN_MOVING_SPEED_MPS.
+        """
+        result = {"labels": [], "minutes": [], "unit": "", "isPace": False}
+
+        time_stream = self.activity_stream.get("time")
+        if not time_stream or len(time_stream.data) < 2:
+            return result
+
+        t = np.array(time_stream.data, dtype=float)
+
+        velocity_stream = self.activity_stream.get("velocity_smooth")
+        if velocity_stream:
+            speed = np.array(velocity_stream.data, dtype=float)
+        else:
+            distance_stream = self.activity_stream.get("distance")
+            if not distance_stream:
+                return result
+            speed = np.gradient(np.array(distance_stream.data, dtype=float), t)
+
+        if speed.size < 2:
+            return result
+
+        dt = np.diff(t)
+        speed_mid = (speed[:-1] + speed[1:]) / 2.0
+        moving = speed_mid > PACE_HISTOGRAM_MIN_MOVING_SPEED_MPS
+        dt = dt[moving]
+        speed_mid = speed_mid[moving]
+        if speed_mid.size == 0:
+            return result
+
+        is_pace = is_running_activity_type(self._activity_type_label())
+        if is_pace:
+            bins = PACE_HISTOGRAM_BINS_MIN_PER_KM
+            metric = 1000.0 / speed_mid / 60.0
+            unit = "min/km"
+        else:
+            bins = SPEED_HISTOGRAM_BINS_KMH
+            metric = speed_mid * 3.6
+            unit = "km/h"
+
+        minutes = [0.0] * len(bins)
+        for value, delta in zip(metric, dt):
+            for bin_index, (lower, upper, _) in enumerate(bins):
+                if value >= lower and (upper is None or value < upper):
+                    minutes[bin_index] += delta / 60.0
+                    break
+
+        result["labels"] = [label for _, _, label in bins]
+        result["minutes"] = [round(v, 1) for v in minutes]
+        result["unit"] = unit
+        result["isPace"] = is_pace
+        return result
+
+    def compute_splits(self, split_distance_km: float = 1.0) -> dict:
+        """Per-split (default 1 km) breakdown of pace/speed, elevation gain, HR, and power."""
+        result = {"splits": [], "isPace": False}
+
+        time_stream = self.activity_stream.get("time")
+        distance_stream = self.activity_stream.get("distance")
+        if not time_stream or not distance_stream or len(time_stream.data) < 2:
+            return result
+
+        t = np.array(time_stream.data, dtype=float)
+        d = np.array(distance_stream.data, dtype=float) / 1000.0
+
+        total_km = float(d[-1])
+        if total_km <= 0:
+            return result
+
+        is_pace = is_running_activity_type(self._activity_type_label())
+
+        altitude_stream = self.activity_stream.get("altitude")
+        altitude = (
+            np.array(altitude_stream.data, dtype=float) if altitude_stream else None
+        )
+        heartrate_stream = self.activity_stream.get("heartrate")
+        heartrate = (
+            np.array(heartrate_stream.data, dtype=float) if heartrate_stream else None
+        )
+        watts_stream = self.activity_stream.get("watts")
+        watts = np.array(watts_stream.data, dtype=float) if watts_stream else None
+
+        num_full_splits = int(total_km // split_distance_km)
+        boundaries = [round(i * split_distance_km, 6) for i in range(num_full_splits + 1)]
+        if total_km - boundaries[-1] > 0.01:
+            boundaries.append(round(total_km, 6))
+
+        splits = []
+        prev_time = 0.0
+        prev_index = 0
+        for split_number in range(1, len(boundaries)):
+            boundary_km = boundaries[split_number]
+            boundary_time = float(np.interp(boundary_km, d, t))
+            end_index = min(int(np.searchsorted(d, boundary_km, side="right")), len(d) - 1)
+
+            split_distance = round(boundary_km - boundaries[split_number - 1], 3)
+            split_time = boundary_time - prev_time
+
+            elevation_gain = None
+            if altitude is not None and end_index > prev_index:
+                diffs = np.diff(altitude[prev_index : end_index + 1])
+                elevation_gain = round(float(np.clip(diffs, 0, None).sum()))
+
+            avg_heartrate = (
+                round(float(np.mean(heartrate[prev_index : end_index + 1])))
+                if heartrate is not None and end_index > prev_index
+                else None
+            )
+            avg_power = (
+                round(float(np.mean(watts[prev_index : end_index + 1])))
+                if watts is not None and end_index > prev_index
+                else None
+            )
+
+            pace_or_speed = None
+            if split_distance > 0 and split_time > 0:
+                speed_mps = (split_distance * 1000.0) / split_time
+                pace_or_speed = (
+                    format_pace_min_per_km(speed_mps)
+                    if is_pace
+                    else f"{round(speed_mps * 3.6, 1)} km/h"
+                )
+
+            splits.append(
+                {
+                    "index": split_number,
+                    "distanceKm": split_distance,
+                    "time": str(timedelta(seconds=round(split_time))),
+                    "paceOrSpeed": pace_or_speed,
+                    "elevationGainM": elevation_gain,
+                    "avgHeartRate": avg_heartrate,
+                    "avgPower": avg_power,
+                }
+            )
+
+            prev_time = boundary_time
+            prev_index = end_index
+
+        result["splits"] = splits
+        result["isPace"] = is_pace
         return result
 
     @property
