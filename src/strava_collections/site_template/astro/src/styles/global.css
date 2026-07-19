@@ -2,14 +2,48 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Theme tokens ─────────────────────────────────────────────────── */
+/* Consumed by both this file and the scoped <style> blocks in other
+   components — CSS custom properties inherit through the DOM regardless
+   of Astro's style scoping, so components just use var(--color-*) and
+   automatically follow whichever theme is active on <html>. */
+
+:root {
+  --color-bg: #f8fafc;
+  --color-card-bg: #ffffff;
+  --color-card-bg-translucent: rgba(255, 255, 255, 0.9);
+  --color-muted-bg: #f1f5f9;
+  --color-hover-bg: #f8fafc;
+  --color-text: #0f172a;
+  --color-text-secondary: #475569;
+  --color-text-muted: #64748b;
+  --color-border: #e2e8f0;
+  --color-border-strong: #cbd5e1;
+  --color-shadow: rgba(15, 23, 42, 0.08);
+}
+
+[data-theme="dark"] {
+  --color-bg: #0b1120;
+  --color-card-bg: #1e293b;
+  --color-card-bg-translucent: rgba(30, 41, 59, 0.85);
+  --color-muted-bg: #172033;
+  --color-hover-bg: #1e293b;
+  --color-text: #e2e8f0;
+  --color-text-secondary: #cbd5e1;
+  --color-text-muted: #94a3b8;
+  --color-border: #334155;
+  --color-border-strong: #475569;
+  --color-shadow: rgba(0, 0, 0, 0.35);
+}
+
 /* ── Generated-content styles ──────────────────────────────────────── */
 /* These classes are emitted by the Python pipeline and must stay here. */
 
 .description-box {
-  background: #ffffff;
+  background: var(--color-card-bg);
   padding: 16px 20px;
   border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 12px var(--color-shadow);
   width: 100%;
   margin-bottom: 20px;
 }
@@ -23,7 +57,7 @@
 .description-title {
   font-weight: 700;
   font-size: clamp(1.25rem, 4vw, 1.6rem);
-  color: #0f172a;
+  color: var(--color-text);
   margin-bottom: 12px;
   letter-spacing: 0.3px;
   padding-bottom: 6px;
@@ -42,12 +76,12 @@
 
 .description-text {
   font-size: 0.95rem;
-  color: #374151;
+  color: var(--color-text-secondary);
   line-height: 1.6;
-  background: #f9fafb;
+  background: var(--color-muted-bg);
   border-radius: 12px;
   padding: 16px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-border);
   white-space: pre-wrap;
   margin-bottom: 12px;
   overflow-wrap: break-word;
@@ -58,7 +92,7 @@
   width: 100%;
   border-radius: 12px;
   margin-bottom: 20px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-border);
   z-index: 1;
 }
 
@@ -67,21 +101,34 @@
   width: 100%;
   border-radius: 12px;
   margin-bottom: 20px;
-  border: 1px solid #e5e7eb;
-  background: #ffffff;
+  border: 1px solid var(--color-border);
+  background: var(--color-card-bg);
 }
 
 /* ── Gallery ──────────────────────────────────────────────────────── */
 
 .gallery {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
-  gap: 14px;
+  column-count: 4;
+  column-gap: 10px;
   margin-top: 16px;
+}
+
+@media (max-width: 1024px) {
+  .gallery {
+    column-count: 3;
+  }
+}
+
+@media (max-width: 640px) {
+  .gallery {
+    column-count: 2;
+  }
 }
 
 .gallery a {
   display: block;
+  break-inside: avoid;
+  margin-bottom: 10px;
   border-radius: 14px;
   overflow: hidden;
   max-width: 100%;
@@ -90,8 +137,7 @@
 .gallery img {
   width: 100%;
   max-width: 100%;
-  height: clamp(180px, 24vw, 240px);
-  object-fit: cover;
+  height: auto;
   display: block;
   border-radius: 14px;
   cursor: pointer;
@@ -184,17 +230,17 @@ iframe {
   position: absolute;
   right: 10px;
   top: 10px;
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: var(--color-card-bg-translucent);
+  border: 1px solid var(--color-border);
   padding: 6px 8px;
   border-radius: 8px;
   font-size: 0.85rem;
-  color: #0f172a;
+  color: var(--color-text);
   text-decoration: none;
-  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 6px 16px var(--color-shadow);
   z-index: 20;
 }
 
 .plotly-embed__fullscreen-btn:hover {
-  background: #ffffff;
+  background: var(--color-card-bg);
 }

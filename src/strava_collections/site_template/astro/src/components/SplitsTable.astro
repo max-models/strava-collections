@@ -81,29 +81,30 @@ const barPercentFor = (speedKmh: number | null): number => {
   .splits-table-wrapper {
     overflow-x: auto;
     border-radius: 12px;
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--color-border);
   }
 
   .splits-table {
     width: 100%;
     border-collapse: collapse;
     font-size: 0.85rem;
+    background: var(--color-card-bg);
   }
 
   .splits-table th {
-    background: #f1f5f9;
+    background: var(--color-muted-bg);
     padding: 10px 14px;
     text-align: left;
     white-space: nowrap;
     font-weight: 600;
-    color: #334155;
-    border-bottom: 2px solid #e2e8f0;
+    color: var(--color-text-secondary);
+    border-bottom: 2px solid var(--color-border);
   }
 
   .splits-table td {
     padding: 8px 14px;
-    border-bottom: 1px solid #e2e8f0;
-    color: #475569;
+    border-bottom: 1px solid var(--color-border);
+    color: var(--color-text-secondary);
     white-space: nowrap;
   }
 
@@ -112,7 +113,7 @@ const barPercentFor = (speedKmh: number | null): number => {
   }
 
   .splits-table tbody tr:hover {
-    background: #f8fafc;
+    background: var(--color-hover-bg);
   }
 
   .splits-table-pace-cell {
@@ -143,7 +144,7 @@ const barPercentFor = (speedKmh: number | null): number => {
     z-index: 1;
     padding-left: 8px;
     font-weight: 600;
-    color: #334155;
+    color: var(--color-text-secondary);
     white-space: nowrap;
   }
 </style>
