@@ -1,0 +1,149 @@
+---
+interface Split {
+  index: number;
+  distanceKm: number;
+  time: string;
+  paceOrSpeed: string | null;
+  speedKmh: number | null;
+  elevationGainM: number | null;
+  avgHeartRate: number | null;
+  avgPower: number | null;
+}
+
+interface Props {
+  splits: Split[];
+  isPace: boolean;
+}
+
+const { splits, isPace } = Astro.props;
+
+const hasElevation = splits.some((split) => split.elevationGainM != null);
+const hasHeartRate = splits.some((split) => split.avgHeartRate != null);
+const hasPower = splits.some((split) => split.avgPower != null);
+
+// Bar length represents speed (faster = longer bar), even when the label
+// shown is pace, so a quick glance at the bars reads as "effort" either way.
+const speedValues = splits
+  .map((split) => split.speedKmh)
+  .filter((value): value is number => value != null);
+const minSpeed = speedValues.length ? Math.min(...speedValues) : 0;
+const maxSpeed = speedValues.length ? Math.max(...speedValues) : 0;
+const speedRange = maxSpeed - minSpeed;
+
+const MIN_BAR_PERCENT = 12;
+const barPercentFor = (speedKmh: number | null): number => {
+  if (speedKmh == null || speedRange <= 0) return 100;
+  const normalized = (speedKmh - minSpeed) / speedRange;
+  return MIN_BAR_PERCENT + normalized * (100 - MIN_BAR_PERCENT);
+};
+---
+
+{splits.length > 0 && (
+  <div class="splits-table-wrapper">
+    <table class="splits-table">
+      <thead>
+        <tr>
+          <th>Split</th>
+          <th>Distance</th>
+          <th>Time</th>
+          <th>{isPace ? 'Pace' : 'Speed'}</th>
+          {hasElevation && <th>Elev. Gain</th>}
+          {hasHeartRate && <th>Avg HR</th>}
+          {hasPower && <th>Avg Power</th>}
+        </tr>
+      </thead>
+      <tbody>
+        {splits.map((split) => (
+          <tr>
+            <td>{split.index}</td>
+            <td>{split.distanceKm} km</td>
+            <td>{split.time}</td>
+            <td class="splits-table-pace-cell">
+              <div class="splits-pace-bar-track">
+                <div
+                  class="splits-pace-bar"
+                  style={`width: ${barPercentFor(split.speedKmh)}%;`}
+                />
+                <span class="splits-pace-bar-label">{split.paceOrSpeed ?? '-'}</span>
+              </div>
+            </td>
+            {hasElevation && <td>{split.elevationGainM != null ? `${split.elevationGainM} m` : '-'}</td>}
+            {hasHeartRate && <td>{split.avgHeartRate != null ? `${split.avgHeartRate} bpm` : '-'}</td>}
+            {hasPower && <td>{split.avgPower != null ? `${split.avgPower} W` : '-'}</td>}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+)}
+
+<style>
+  .splits-table-wrapper {
+    overflow-x: auto;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+  }
+
+  .splits-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+  }
+
+  .splits-table th {
+    background: #f1f5f9;
+    padding: 10px 14px;
+    text-align: left;
+    white-space: nowrap;
+    font-weight: 600;
+    color: #334155;
+    border-bottom: 2px solid #e2e8f0;
+  }
+
+  .splits-table td {
+    padding: 8px 14px;
+    border-bottom: 1px solid #e2e8f0;
+    color: #475569;
+    white-space: nowrap;
+  }
+
+  .splits-table tr:last-child td {
+    border-bottom: none;
+  }
+
+  .splits-table tbody tr:hover {
+    background: #f8fafc;
+  }
+
+  .splits-table-pace-cell {
+    min-width: 160px;
+    padding: 6px 14px;
+  }
+
+  .splits-pace-bar-track {
+    position: relative;
+    display: flex;
+    align-items: center;
+    height: 24px;
+  }
+
+  .splits-pace-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    min-width: 4px;
+    border-radius: 5px;
+    background: linear-gradient(90deg, #fc4c02, #fdba8c);
+    opacity: 0.55;
+  }
+
+  .splits-pace-bar-label {
+    position: relative;
+    z-index: 1;
+    padding-left: 8px;
+    font-weight: 600;
+    color: #334155;
+    white-space: nowrap;
+  }
+</style>
