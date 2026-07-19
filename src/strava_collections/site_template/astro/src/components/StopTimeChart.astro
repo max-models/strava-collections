@@ -1,0 +1,105 @@
+---
+interface Props {
+  id: string;
+  histogram: {
+    labels: string[];
+    totalMinutes: number[];
+    counts: number[];
+    totalStoppedMinutes: number;
+    totalStopsCount: number;
+  };
+  height?: number;
+}
+
+const { id, histogram, height = 260 } = Astro.props;
+
+const hasData = !!histogram && histogram.totalStopsCount > 0;
+
+const serializeDataForScript = (value: unknown): string => {
+  const json = JSON.stringify(value || {});
+  return json.replace(/</g, "\u003c").replace(/>/g, "\u003e").replace(/&/g, "\u0026");
+};
+---
+
+{hasData && (
+  <div class="stop-time-chart">
+    <p class="stop-time-summary">
+      {histogram.totalStopsCount} stop{histogram.totalStopsCount === 1 ? '' : 's'} totaling{' '}
+      {histogram.totalStoppedMinutes} min
+    </p>
+    <div id={id} style={`height: ${height}px; width: 100%;`}></div>
+  </div>
+)}
+
+<script id={`${id}-data`} type="application/json" set:html={serializeDataForScript(histogram)}></script>
+
+<script is:inline define:vars={{ id }}>
+  (function () {
+    function init() {
+      const container = document.getElementById(id);
+      const dataEl = document.getElementById(`${id}-data`);
+      if (!container || !dataEl?.textContent || !window.Plotly) return;
+
+      const histogram = JSON.parse(dataEl.textContent);
+      if (!histogram.labels || histogram.labels.length === 0) return;
+
+      const trace = {
+        x: histogram.labels,
+        y: histogram.totalMinutes,
+        type: 'bar',
+        marker: { color: '#0ea5e9' },
+        text: histogram.counts.map((c) => (c > 0 ? `${c} stop${c === 1 ? '' : 's'}` : '')),
+        textposition: 'outside',
+        cliponaxis: false,
+        hovertemplate: '%{x}: %{y:.1f} min<br>%{text}<extra></extra>',
+      };
+
+      const layout = {
+        height: container.clientHeight || 260,
+        margin: { l: 55, r: 20, t: 30, b: 45 },
+        showlegend: false,
+        xaxis: {
+          tickfont: { size: 10, color: '#94a3b8' },
+          showgrid: false,
+        },
+        yaxis: {
+          title: { text: 'Stopped time (min)', font: { size: 11, color: '#64748b' } },
+          showgrid: true,
+          gridcolor: '#f1f5f9',
+          zeroline: false,
+          tickfont: { size: 10, color: '#94a3b8' },
+        },
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        plot_bgcolor: 'rgba(0,0,0,0)',
+      };
+
+      window.Plotly.newPlot(id, [trace], layout, {
+        responsive: true,
+        displayModeBar: false,
+      });
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init, { once: true });
+    } else {
+      init();
+    }
+    document.addEventListener('astro:after-swap', init);
+  })();
+</script>
+
+<style>
+  .stop-time-chart {
+    background: #ffffff;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .stop-time-summary {
+    font-size: 0.9rem;
+    color: #334155;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+  }
+
+</style>

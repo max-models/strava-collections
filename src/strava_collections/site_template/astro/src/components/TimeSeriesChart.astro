@@ -15,11 +15,11 @@ const seriesKeys = Object.keys(timeSeries?.series || {});
 const hasDistance = (timeSeries?.distanceKm || []).length > 0;
 
 const METRIC_COLORS: Record<string, string> = {
-  elevation: '#16a34a',
+  elevation: '#0d9488',
   speed: '#0ea5e9',
   heartrate: '#ef4444',
   cadence: '#a855f7',
-  power: '#fc4c02',
+  power: '#16a34a',
   grade: '#f59e0b',
   temperature: '#64748b',
 };
@@ -76,11 +76,11 @@ const serializeDataForScript = (value: unknown): string => {
 <script is:inline define:vars={{ id }}>
   (function () {
     const METRIC_COLORS = {
-      elevation: '#16a34a',
+      elevation: '#0d9488',
       speed: '#0ea5e9',
       heartrate: '#ef4444',
       cadence: '#a855f7',
-      power: '#fc4c02',
+      power: '#16a34a',
       grade: '#f59e0b',
       temperature: '#64748b',
     };
