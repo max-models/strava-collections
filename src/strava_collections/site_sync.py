@@ -170,7 +170,9 @@ def sync_livetrack_config(
             raise FileNotFoundError(f"Live-tracking YAML not found: {src}")
         source_yaml_path.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy(src, source_yaml_path)
-        print(f"Synced live-tracking config: {display_path(source_yaml_path, paths.site_root)}")
+        print(
+            f"Synced live-tracking config: {display_path(source_yaml_path, paths.site_root)}"
+        )
         return
 
     if source_yaml_path.exists():
