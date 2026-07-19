@@ -220,7 +220,7 @@ const serializeDataForScript = (value: unknown): string => {
 
 <style>
   .profile-trace {
-    background: #ffffff;
+    background: var(--color-card-bg);
     border-radius: 12px;
     overflow: hidden;
   }
@@ -239,7 +239,7 @@ const serializeDataForScript = (value: unknown): string => {
     gap: 0.35rem;
     font-size: 0.75rem;
     font-weight: 600;
-    color: #64748b;
+    color: var(--color-text-muted);
     text-transform: uppercase;
     letter-spacing: 0.03em;
   }
@@ -257,10 +257,10 @@ const serializeDataForScript = (value: unknown): string => {
     padding: 0.3rem 0.65rem;
     border-radius: 999px;
     border: 1.5px solid var(--metric-color);
-    background: color-mix(in srgb, var(--metric-color) 10%, white);
+    background: color-mix(in srgb, var(--metric-color) 10%, var(--color-card-bg));
     font-size: 0.8rem;
     font-weight: 500;
-    color: #0f172a;
+    color: var(--color-text);
     text-transform: none;
     letter-spacing: normal;
     cursor: pointer;
