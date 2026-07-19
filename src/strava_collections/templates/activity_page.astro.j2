@@ -2,7 +2,7 @@
 import CollectionPage from '../../components/CollectionPage.astro';
 import Map from '../../components/Map.astro';
 import ElevationChart from '../../components/ElevationChart.astro';
-import ProfileChart from '../../components/ProfileChart.astro';
+import ProfileChartGroup from '../../components/ProfileChartGroup.astro';
 import TimeSeriesChart from '../../components/TimeSeriesChart.astro';
 import StopTimeChart from '../../components/StopTimeChart.astro';
 import {{ loadStravaRouteData }} from '../../scripts/data-helpers';
@@ -77,29 +77,9 @@ const stats = [
 ].filter((stat) => stat.value != null);
 
 const profileCurves = metadata.profileCurves || {{}};
-const profileCharts = [
-  {{
-    id: 'profile-power',
-    title: 'Power Profile',
-    values: profileCurves.power,
-    unit: 'W',
-    color: '#fc4c02',
-  }},
-  {{
-    id: 'profile-speed',
-    title: 'Speed Profile',
-    values: profileCurves.speedKmh,
-    unit: 'km/h',
-    color: '#0ea5e9',
-  }},
-  {{
-    id: 'profile-elevation',
-    title: 'Elevation Gain Rate Profile',
-    values: profileCurves.elevationGainMH,
-    unit: 'm/h',
-    color: '#16a34a',
-  }},
-].filter((chart) => chart.values && chart.values.length > 0);
+const hasProfileCurves = ['power', 'speedKmh', 'elevationGainMH'].some(
+  (key) => Array.isArray(profileCurves[key]) && profileCurves[key].length > 0,
+);
 
 const timeSeries = metadata.timeSeries || {{ timeS: [], distanceKm: [], series: {{}} }};
 const stopTimeHistogram = metadata.stopTimeHistogram || {{}};
@@ -132,22 +112,10 @@ const stopTimeHistogram = metadata.stopTimeHistogram || {{}};
     </>
   )}}
 
-  {{profileCharts.length > 0 && (
+  {{hasProfileCurves && (
     <section class="activity-profiles-section mb-12 w-full overflow-hidden">
       <h2 class="text-xl font-bold text-slate-900 mb-4">Effort Profile</h2>
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
-        {{profileCharts.map((chart) => (
-          <ProfileChart
-            id={{chart.id}}
-            title={{chart.title}}
-            xValues={{profileCurves.windowsSeconds}}
-            xLabels={{profileCurves.windowLabels}}
-            yValues={{chart.values}}
-            yUnit={{chart.unit}}
-            color={{chart.color}}
-          />
-        ))}}
-      </div>
+      <ProfileChartGroup id="activity-profile" curves={{profileCurves}} height={{320}} />
     </section>
   )}}
 
