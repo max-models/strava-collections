@@ -1029,7 +1029,9 @@ class StravaActivity:
         watts = np.array(watts_stream.data, dtype=float) if watts_stream else None
 
         num_full_splits = int(total_km // split_distance_km)
-        boundaries = [round(i * split_distance_km, 6) for i in range(num_full_splits + 1)]
+        boundaries = [
+            round(i * split_distance_km, 6) for i in range(num_full_splits + 1)
+        ]
         if total_km - boundaries[-1] > 0.01:
             boundaries.append(round(total_km, 6))
 
@@ -1039,7 +1041,9 @@ class StravaActivity:
         for split_number in range(1, len(boundaries)):
             boundary_km = boundaries[split_number]
             boundary_time = float(np.interp(boundary_km, d, t))
-            end_index = min(int(np.searchsorted(d, boundary_km, side="right")), len(d) - 1)
+            end_index = min(
+                int(np.searchsorted(d, boundary_km, side="right")), len(d) - 1
+            )
 
             split_distance = round(boundary_km - boundaries[split_number - 1], 3)
             split_time = boundary_time - prev_time
