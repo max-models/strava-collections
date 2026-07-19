@@ -149,6 +149,37 @@ def sync_static(paths: SitePaths) -> None:
     )
 
 
+def sync_livetrack_config(
+    site_root: str | Path, livetrack_path: str | Path | None
+) -> None:
+    """Sync (or remove) the standalone /live-tracking page's config.
+
+    The /live-tracking page only exists in the built site when a
+    live-tracking YAML file is explicitly given via `--livetrack`. When
+    omitted, any previously-synced config and the page itself (re-added on
+    every `ensure_site_template` call from the shipped template) are
+    removed so the route isn't built.
+    """
+    paths = build_site_paths(site_root)
+    source_yaml_path = paths.source_dir / "live-tracking.yaml"
+    page_path = paths.astro_dir / "src" / "pages" / "live-tracking.astro"
+
+    if livetrack_path:
+        src = Path(livetrack_path)
+        if not src.exists():
+            raise FileNotFoundError(f"Live-tracking YAML not found: {src}")
+        source_yaml_path.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy(src, source_yaml_path)
+        print(f"Synced live-tracking config: {display_path(source_yaml_path, paths.site_root)}")
+        return
+
+    if source_yaml_path.exists():
+        source_yaml_path.unlink()
+    if page_path.exists():
+        page_path.unlink()
+        print(f"Removed live-tracking page: {display_path(page_path, paths.site_root)}")
+
+
 def sync_site(site_root: str | Path) -> SitePaths:
     paths = build_site_paths(site_root)
     sync_collections(paths)

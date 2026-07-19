@@ -1,16 +1,9 @@
-collections:
-  - name: Scandinavian traverse
-    customText: |
-      <p>Live tracking for my June bike trip</p>
-      <ul>
-        <li><strong>Route 1:</strong> Nordic Chase 2026 - Copenhagen to Oslo</li>
-        <li><strong>Route 2:</strong> Bergen to Bodö</li>
-      </ul>
-    routeGpxFile:
-      - "temporary-strava-activities/routes/NC26_CPH-OSL_Road.gpx"
-      - "temporary-strava-activities/routes/bergen_to_bodo.gpx"
-    activities:
-      - stravaActivityId: "18796354199"
-        notes: First activity (from strava)
-      - garminLivetrackUrl: "https://livetrack.garmin.com/session/51f7acad-a161-841b-974e-f1c214025f00/token/24A17584B115B88BD4E2FAA54DC8"
-        notes: Second activity (live)
+name: Scandinavian traverse
+garminLivetrackUrl: "https://livetrack.garmin.com/session/51f7acad-a161-841b-974e-f1c214025f00/token/24A17584B115B88BD4E2FAA54DC8"
+associatedCollection: "Scandinavian traverse"
+customText: |
+  <p>Live tracking for my June bike trip</p>
+  <ul>
+    <li><strong>Route 1:</strong> Nordic Chase 2026 - Copenhagen to Oslo</li>
+    <li><strong>Route 2:</strong> Bergen to Bodö</li>
+  </ul>

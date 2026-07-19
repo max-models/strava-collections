@@ -1,39 +1,60 @@
 ---
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import yaml from 'js-yaml';
 import Layout from '../layouts/Layout.astro';
+import { collections } from '../generated/collections';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// The Python build syncs to site_root/source/live-tracking.yaml when
+// --livetrack is given. Astro bundles page code into dist/.prerender/chunks/
+// at build time, so import.meta.url no longer points at the source
+// directory there — resolve relative to process.cwd() instead (typically
+// the astro/ project root), same approach as scripts/data-helpers.ts.
+const LIVE_TRACKING_YAML_CANDIDATES = [
+  path.join(process.cwd(), '../source/live-tracking.yaml'),
+  path.join(process.cwd(), 'source/live-tracking.yaml'),
+  path.join(process.cwd(), '../../source/live-tracking.yaml'),
+];
 
-function findLiveTrackingYaml(startDir: string): string | null {
-  let curr = startDir;
-  while (curr !== path.dirname(curr)) {
-    const p = path.join(curr, 'live-tracking.yaml');
-    if (fs.existsSync(p)) return p;
-    curr = path.dirname(curr);
-  }
-  return null;
-}
+const base = import.meta.env.BASE_URL.endsWith('/')
+  ? import.meta.env.BASE_URL
+  : `${import.meta.env.BASE_URL}/`;
 
-const liveTrackingPath = findLiveTrackingYaml(__dirname);
-let redirectUrl = '/';
-let collectionName = '';
+const liveTrackingPath = LIVE_TRACKING_YAML_CANDIDATES.find((p) => fs.existsSync(p)) || null;
+
+let sessionName = '';
+let customText = '';
+let garminUrl: string | null = null;
+let associatedCollectionHref: string | null = null;
+let associatedCollectionTitle: string | null = null;
 
 if (liveTrackingPath) {
   try {
-    const liveTrackingConfig = yaml.load(fs.readFileSync(liveTrackingPath, 'utf8')) as { collections: any[] };
-    const collection = liveTrackingConfig.collections[0];
-    
-    const hasGarminUrl = collection.activities?.some((a: any) => a.garminLivetrackUrl) || collection.garminLivetrackUrl;
-    
-    if (hasGarminUrl && collection.name) {
-      collectionName = collection.name;
-      const slug = collection.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-      const baseUrl = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
-      redirectUrl = `${baseUrl}collections/${slug}/#live-tracking`;
+    // Flat schema: this page just wraps a Garmin LiveTrack embed, with no
+    // notion of Strava activities.
+    const config = yaml.load(fs.readFileSync(liveTrackingPath, 'utf8')) as {
+      name?: string;
+      garminLivetrackUrl?: string;
+      associatedCollection?: string;
+      customText?: string;
+    } | null;
+
+    if (config) {
+      sessionName = config.name || '';
+      customText = config.customText || '';
+      garminUrl = config.garminLivetrackUrl || null;
+
+      const associated = config.associatedCollection;
+      if (associated) {
+        const normalized = String(associated).trim().toLowerCase();
+        const match = collections.find(
+          (c) => c.slug.toLowerCase() === normalized || c.title.toLowerCase() === normalized,
+        );
+        if (match) {
+          associatedCollectionHref = `${base}collections/${match.slug}/`;
+          associatedCollectionTitle = match.title;
+        }
+      }
     }
   } catch (error) {
     console.error('Error reading live-tracking.yaml:', error);
@@ -41,109 +62,52 @@ if (liveTrackingPath) {
 }
 ---
 
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Opening Live Tracking...</title>
-    <meta http-equiv="refresh" content={`0;url=${redirectUrl}`} />
-    <script define:vars={{ redirectUrl }}>
-      // Immediate client-side redirect
-      window.location.replace(redirectUrl);
-    </script>
-    <style>
-      body {
-        margin: 0;
-        padding: 0;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        background-color: #f8fafc;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        height: 100vh;
-        color: #1e293b;
-      }
-      .card {
-        background: white;
-        padding: 2.5rem;
-        border-radius: 24px;
-        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
-        text-align: center;
-        max-width: 400px;
-        width: 90%;
-        border: 1px solid #e2e8f0;
-      }
-      .icon-container {
-        position: relative;
-        width: 64px;
-        height: 64px;
-        margin: 0 auto 1.5rem;
-      }
-      .pulse {
-        position: absolute;
-        width: 100%;
-        height: 100%;
-        background: #fc4c02;
-        border-radius: 50%;
-        opacity: 0.2;
-        animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-      }
-      .icon {
-        position: relative;
-        width: 100%;
-        height: 100%;
-        background: #fc4c02;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-      }
-      h1 {
-        font-size: 1.25rem;
-        font-weight: 700;
-        margin: 0 0 0.5rem;
-        color: #0f172a;
-      }
-      p {
-        color: #64748b;
-        font-size: 0.95rem;
-        line-height: 1.5;
-        margin: 0 0 1.5rem;
-      }
-      .link {
-        color: #fc4c02;
-        text-decoration: none;
-        font-weight: 600;
-        font-size: 0.875rem;
-      }
-      .link:hover {
-        text-decoration: underline;
-      }
-      @keyframes pulse {
-        0%, 100% { transform: scale(1); opacity: 0.2; }
-        50% { transform: scale(1.4); opacity: 0; }
-      }
-    </style>
-  </head>
-  <body>
-    <div class="card">
-      <div class="icon-container">
-        <div class="pulse"></div>
-        <div class="icon">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 2a10 10 0 1 0 10 10H12V2z"></path>
-            <path d="M12 12L2.7 7.3"></path>
-          </svg>
-        </div>
-      </div>
-      <h1>Opening Live Tracking</h1>
-      {collectionName ? (
-        <p>Connecting to <strong>{collectionName}</strong>...</p>
-      ) : (
-        <p>Getting your live location...</p>
-      )}
-      <a href={redirectUrl} class="link">Click here if you aren't redirected automatically</a>
+<Layout title="Live Tracking">
+  <div class="mx-auto max-w-3xl">
+    <div class="mb-8">
+      <h1 class="mb-2 flex items-center gap-3 text-3xl font-bold text-slate-900 dark:text-slate-100 md:text-4xl">
+        <span class="inline-block h-3 w-3 animate-pulse rounded-full bg-red-500"></span>
+        Live Tracking
+      </h1>
+      {sessionName && <p class="text-lg text-slate-500 dark:text-slate-400">{sessionName}</p>}
     </div>
-  </body>
-</html>
+
+    {associatedCollectionHref && (
+      <a
+        href={associatedCollectionHref}
+        class="group mb-8 flex items-center justify-between gap-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-sm transition-colors hover:border-strava"
+      >
+        <div>
+          <span class="mb-1 block text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+            Associated Collection
+          </span>
+          <span class="text-lg font-semibold text-slate-900 dark:text-slate-100 transition-colors group-hover:text-strava">
+            {associatedCollectionTitle}
+          </span>
+        </div>
+        <svg
+          class="h-5 w-5 flex-shrink-0 text-slate-400 transition-colors group-hover:text-strava"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+        </svg>
+      </a>
+    )}
+
+    {customText && (
+      <div class="mb-8 leading-relaxed text-slate-600 dark:text-slate-400" set:html={customText} />
+    )}
+
+    {garminUrl ? (
+      <div class="overflow-hidden rounded-xl border-[3px] border-red-500 bg-slate-50 dark:bg-slate-900 shadow-sm">
+        <iframe src={garminUrl} class="h-[500px] w-full border-none md:h-[750px]" title="Garmin LiveTrack Map"></iframe>
+      </div>
+    ) : (
+      <div class="rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-8 py-20 text-center text-slate-400">
+        <p class="text-lg font-medium">No live tracking session is currently active.</p>
+      </div>
+    )}
+  </div>
+</Layout>
