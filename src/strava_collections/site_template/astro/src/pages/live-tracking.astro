@@ -5,15 +5,19 @@ import yaml from 'js-yaml';
 import Layout from '../layouts/Layout.astro';
 import { collections } from '../generated/collections';
 
-// The Python build syncs to site_root/source/live-tracking.yaml when
-// --livetrack is given. Astro bundles page code into dist/.prerender/chunks/
-// at build time, so import.meta.url no longer points at the source
-// directory there — resolve relative to process.cwd() instead (typically
-// the astro/ project root), same approach as scripts/data-helpers.ts.
+// The Python build syncs to site_root/source/livetrack.yaml when
+// --livetrack is given. Deliberately a different filename from
+// live-tracking.yaml, which the separate (untouched) experimental
+// live-tracking page looks for — this page's flat, single-collection
+// config never collides with that page's unrelated nested schema.
+// Astro bundles page code into dist/.prerender/chunks/ at build time, so
+// import.meta.url no longer points at the source directory there —
+// resolve relative to process.cwd() instead (typically the astro/
+// project root), same approach as scripts/data-helpers.ts.
 const LIVE_TRACKING_YAML_CANDIDATES = [
-  path.join(process.cwd(), '../source/live-tracking.yaml'),
-  path.join(process.cwd(), 'source/live-tracking.yaml'),
-  path.join(process.cwd(), '../../source/live-tracking.yaml'),
+  path.join(process.cwd(), '../source/livetrack.yaml'),
+  path.join(process.cwd(), 'source/livetrack.yaml'),
+  path.join(process.cwd(), '../../source/livetrack.yaml'),
 ];
 
 const base = import.meta.env.BASE_URL.endsWith('/')
@@ -30,29 +34,25 @@ let associatedCollectionTitle: string | null = null;
 
 if (liveTrackingPath) {
   try {
-    // Same live-tracking.yaml the (untouched) experimental live-tracking
-    // page reads, so it keeps the `collections: [...]` wrapper that page
-    // expects. This page only ever reads the first entry's own fields —
-    // never `activities` — so there's no notion of Strava activities here.
+    // Flat schema: this page just wraps a Garmin LiveTrack embed for a
+    // single session, optionally linked to one collection. No routes, no
+    // Strava activities, no list of collections.
     const config = yaml.load(fs.readFileSync(liveTrackingPath, 'utf8')) as {
-      collections?: Array<{
-        name?: string;
-        garminLivetrackUrl?: string;
-        associatedCollection?: string;
-        customText?: string;
-        active?: boolean;
-      }>;
+      name?: string;
+      garminLivetrackUrl?: string;
+      associatedCollection?: string;
+      customText?: string;
+      active?: boolean;
     } | null;
-    const entry = config?.collections?.[0];
 
-    if (entry) {
-      sessionName = entry.name || '';
-      customText = entry.customText || '';
+    if (config) {
+      sessionName = config.name || '';
+      customText = config.customText || '';
       // `active: false` hides the embed even if a URL is still configured
       // (e.g. keeping the session on file between tracking windows).
-      garminUrl = entry.active !== false ? entry.garminLivetrackUrl || null : null;
+      garminUrl = config.active !== false ? config.garminLivetrackUrl || null : null;
 
-      const associated = entry.associatedCollection;
+      const associated = config.associatedCollection;
       if (associated) {
         const normalized = String(associated).trim().toLowerCase();
         const match = collections.find(

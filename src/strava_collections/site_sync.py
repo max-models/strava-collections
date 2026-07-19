@@ -154,6 +154,12 @@ def sync_livetrack_config(
 ) -> None:
     """Sync (or remove) the standalone /live-tracking page's config.
 
+    Synced to source/livetrack.yaml — deliberately a different filename
+    from live-tracking.yaml, which the separate (untouched) experimental
+    live-tracking page looks for via its own directory walk-up. Keeping
+    the filenames distinct means this flat, single-collection config can
+    never collide with that page's unrelated nested schema.
+
     The /live-tracking page only exists in the built site when a
     live-tracking YAML file is explicitly given via `--livetrack`. When
     omitted, any previously-synced config and the page itself (re-added on
@@ -161,7 +167,7 @@ def sync_livetrack_config(
     removed so the route isn't built.
     """
     paths = build_site_paths(site_root)
-    source_yaml_path = paths.source_dir / "live-tracking.yaml"
+    source_yaml_path = paths.source_dir / "livetrack.yaml"
     page_path = paths.astro_dir / "src" / "pages" / "live-tracking.astro"
 
     if livetrack_path:
