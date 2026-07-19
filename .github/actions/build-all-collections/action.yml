@@ -5,6 +5,6 @@ runs:
   steps:
     - name: Loop over all collections and build
       shell: bash
-      run: strava-collections -i 'examples/*.yml'
+      run: strava-collections -i 'examples/*.yml' --livetrack livetrack.yaml
       env:
         STRAVA_CACHE_DIR: temporary-strava-activities

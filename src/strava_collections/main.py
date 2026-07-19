@@ -10,7 +10,7 @@ import yaml
 from strava_collections.collection import (
     StravaCollection,
 )
-from strava_collections.site_sync import sync_site
+from strava_collections.site_sync import sync_livetrack_config, sync_site
 from strava_collections.site_template import ensure_site_template
 
 
@@ -346,6 +346,14 @@ def main():
         action="store_true",
         help="Expose server to host",
     )
+    build_parser.add_argument(
+        "--livetrack",
+        help=(
+            "Path to a live-tracking YAML file (Garmin LiveTrack embed only). "
+            "If given, the site's /live-tracking page is built; otherwise it "
+            "is omitted entirely."
+        ),
+    )
     build_parser.set_defaults(include_activity_elevation=True)
 
     # Command: analyze
@@ -505,12 +513,7 @@ def main():
             return
 
         sync_site(site_root)
-        if os.path.exists("live-tracking.yaml"):
-            import shutil
-
-            shutil.copy(
-                "live-tracking.yaml", site_root / "source" / "live-tracking.yaml"
-            )
+        sync_livetrack_config(site_root, getattr(args, "livetrack", None))
         print_site_instructions(site_root)
 
         if getattr(args, "serve", False):

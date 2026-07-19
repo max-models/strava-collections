@@ -4,34 +4,38 @@ import CollectionCard from '../components/CollectionCard.astro';
 import { collections } from '../generated/collections';
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import yaml from 'js-yaml';
 
 const sorted = [...collections].sort((a, b) =>
   a.title.localeCompare(b.title)
 );
 
-// Check if live tracking is available
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-function findLiveTrackingYaml(startDir: string): string | null {
-  let curr = startDir;
-  while (curr !== path.dirname(curr)) {
-    const p = path.join(curr, 'live-tracking.yaml');
-    if (fs.existsSync(p)) return p;
-    curr = path.dirname(curr);
-  }
-  return null;
-}
+// The Python build syncs to site_root/source/livetrack.yaml when
+// --livetrack is given. Deliberately a different filename from
+// live-tracking.yaml, which the separate (untouched) experimental
+// live-tracking page looks for — this page's flat, single-collection
+// config never collides with that page's unrelated nested schema.
+// Astro bundles page code into dist/.prerender/chunks/ at build time, so
+// import.meta.url no longer points at the source directory there —
+// resolve relative to process.cwd() instead (typically the astro/
+// project root), same approach as scripts/data-helpers.ts.
+const LIVE_TRACKING_YAML_CANDIDATES = [
+  path.join(process.cwd(), '../source/livetrack.yaml'),
+  path.join(process.cwd(), 'source/livetrack.yaml'),
+  path.join(process.cwd(), '../../source/livetrack.yaml'),
+];
+const liveTrackingPath = LIVE_TRACKING_YAML_CANDIDATES.find((p) => fs.existsSync(p)) || null;
 
 let hasLiveTracking = false;
-const liveTrackingPath = findLiveTrackingYaml(__dirname);
 if (liveTrackingPath) {
   try {
-    const liveTrackingConfig = yaml.load(fs.readFileSync(liveTrackingPath, 'utf8')) as { collections: any[] };
-    const collection = liveTrackingConfig.collections[0];
-    hasLiveTracking = collection.activities?.some((a: any) => a.garminLivetrackUrl) || !!collection.garminLivetrackUrl;
+    const liveTrackingConfig = yaml.load(fs.readFileSync(liveTrackingPath, 'utf8')) as {
+      garminLivetrackUrl?: string;
+      active?: boolean;
+    };
+    // `active: false` hides the banner even if a URL is still configured
+    // (e.g. keeping the session on file between tracking windows).
+    hasLiveTracking = liveTrackingConfig?.active !== false && !!liveTrackingConfig?.garminLivetrackUrl;
   } catch (error) {
     console.error('Error reading live-tracking.yaml:', error);
   }
