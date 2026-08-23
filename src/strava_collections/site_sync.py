@@ -33,6 +33,16 @@ def render_collections_manifest(collections: list[dict]) -> str:
     )
 
 
+def render_activities_manifest(activities: list[dict]) -> str:
+    return (
+        "export type ActivitySummary = {\n"
+        "  slug: string;\n"
+        "  metadata: any;\n"
+        "};\n\n"
+        f"export const activities: ActivitySummary[] = {json.dumps(activities, separators=(',', ':'))};\n"
+    )
+
+
 def sync_collections(paths: SitePaths) -> None:
     paths.page_dir.mkdir(parents=True, exist_ok=True)
     paths.generated_dir.mkdir(parents=True, exist_ok=True)
@@ -97,12 +107,15 @@ def sync_activities(paths: SitePaths) -> None:
     paths.activity_page_dir.mkdir(parents=True, exist_ok=True)
 
     synced_filenames = set()
+    manifest = []
     for astro_file in sorted(paths.source_dir.glob("activity-*.astro")):
         route_slug = route_slug_from_activity_filename(astro_file.stem)
         target_filename = f"{route_slug}.astro"
         target_file = paths.activity_page_dir / target_filename
         synced_filenames.add(target_filename)
-        target_file.write_text(astro_file.read_text(encoding="utf-8"), encoding="utf-8")
+        source_text = astro_file.read_text(encoding="utf-8")
+        target_file.write_text(source_text, encoding="utf-8")
+        manifest.append({"slug": route_slug, "metadata": metadata_from_astro(source_text)})
         print(f"Synced activity page: {display_path(target_file, paths.site_root)}")
 
     # Clean up obsolete pages
@@ -112,6 +125,13 @@ def sync_activities(paths: SitePaths) -> None:
             print(
                 f"Removed obsolete activity page: {display_path(old_file, paths.site_root)}"
             )
+
+    (paths.generated_dir / "activities.ts").write_text(
+        render_activities_manifest(manifest), encoding="utf-8"
+    )
+    print(
+        f"Synced activity manifest: {display_path(paths.generated_dir / 'activities.ts', paths.site_root)}"
+    )
 
 
 def sync_static(paths: SitePaths) -> None:
