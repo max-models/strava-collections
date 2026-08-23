@@ -4,7 +4,6 @@ interface Props {
   curves: {
     windowsSeconds: number[];
     windowLabels: string[];
-    windowsDistanceKm?: number[];
     power: (number | null)[];
     speedKmh: (number | null)[];
     elevationGainMH: (number | null)[];
@@ -134,21 +133,9 @@ const serializeDataForScript = (value: unknown): string => {
 
       const durationValues = curves.windowsSeconds || [];
       const durationLabels = curves.windowLabels || [];
-      const distanceValues = curves.windowsDistanceKm || [];
-      // Default to a distance x-axis (best effort was reached over roughly
-      // this much ground); fall back to duration if no speed/distance
-      // stream was available to derive it (e.g. an indoor power-only ride).
-      const hasDistanceAxis =
-        distanceValues.length === durationValues.length && distanceValues.length > 0;
-
-      function formatDistance(km) {
-        if (km == null) return '';
-        return km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(km < 10 ? 2 : 1)} km`;
-      }
-
-      const xValues = hasDistanceAxis ? distanceValues : durationValues;
-      const xTickText = hasDistanceAxis ? distanceValues.map(formatDistance) : durationLabels;
-      const xAxisTitle = hasDistanceAxis ? 'Distance' : 'Duration';
+      const xValues = durationValues;
+      const xTickText = durationLabels;
+      const xAxisTitle = 'Time';
       if (xValues.length === 0) return;
 
       const metricInputs = Array.from(

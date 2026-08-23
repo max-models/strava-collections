@@ -707,8 +707,8 @@ class StravaActivity:
         every available timeline metric (power, speed, elevation, heart
         rate, cadence, grade, temperature) sustained over any contiguous span
         of that duration within the activity. Also records the distance
-        covered during each window's best speed-effort, which the chart uses
-        as its default x-axis instead of the raw duration.
+        covered during each window's best speed-effort for consumers that want
+        to relate the effort to distance.
         """
         curves: dict = {
             "windowsSeconds": [],
