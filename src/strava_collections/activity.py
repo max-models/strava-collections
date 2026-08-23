@@ -153,9 +153,7 @@ def is_running_activity_type(activity_type: str | None) -> bool:
 
 # (seconds, label) pairs for the best-effort duration curves.
 PROFILE_CURVE_WINDOWS: list[tuple[int, str]] = [
-    (5, "5s"),
     (10, "10s"),
-    (20, "20s"),
     (30, "30s"),
     (60, "60s"),
     (120, "2min"),
@@ -164,6 +162,9 @@ PROFILE_CURVE_WINDOWS: list[tuple[int, str]] = [
     (1200, "20min"),
     (1800, "30min"),
     (3600, "1h"),
+    (7200, "2h"),
+    (10800, "3h"),
+    (14400, "4h"),
 ]
 
 
