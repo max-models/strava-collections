@@ -71,7 +71,7 @@ const serializeDataForScript = (value: unknown): string => {
     // Builds one y-axis per selected metric. The first two use the
     // standard left/right axes; any further axes are "free" and offset
     // outward from the plot area so they don't overlap each other.
-    function buildYAxes(selectedKeys, colorForKey) {
+    function buildYAxes(selectedKeys, colorForKey, metricByKey) {
       const axes = {};
       const extra = Math.max(0, selectedKeys.length - 2);
       const leftExtra = Math.ceil(extra / 2);
@@ -90,6 +90,10 @@ const serializeDataForScript = (value: unknown): string => {
 
         const axis = {
           type: 'log',
+          title: {
+            text: `${metricByKey[key]?.label || key} (${metricByKey[key]?.unit || ''})`,
+            font: { size: 10, color },
+          },
           tickfont: { size: 9, color },
           showgrid: idx === 0,
           gridcolor: '#f1f5f9',
@@ -154,7 +158,7 @@ const serializeDataForScript = (value: unknown): string => {
         const keys = selectedKeys();
         if (keys.length === 0) return;
 
-        const { axes, xaxisDomain } = buildYAxes(keys, colorForKey);
+        const { axes, xaxisDomain } = buildYAxes(keys, colorForKey, metricByKey);
 
         const traces = keys.map((key, idx) => {
           const metric = metricByKey[key];
