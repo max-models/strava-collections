@@ -21,51 +21,63 @@ const serializeDataForScript = (value: unknown): string => {
         <p id="comparison-selection-status" class="mt-1 text-sm text-slate-500 dark:text-slate-400">
           Select 2 activities to compare.
         </p>
+        <div id="comparison-selected" class="mt-3 flex flex-wrap gap-2"></div>
+        <div class="mt-3 flex flex-wrap gap-2">
+          <button id="comparison-swap" type="button" class="rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:border-orange-400 hover:text-orange-600 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-600 dark:text-slate-300" disabled>Swap</button>
+          <button id="comparison-clear" type="button" class="rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:border-orange-400 hover:text-orange-600 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-600 dark:text-slate-300" disabled>Clear</button>
+        </div>
       </div>
-      <label class="block text-sm text-slate-600 dark:text-slate-300">
-        <span class="sr-only">Search activities</span>
-        <input
-          id="comparison-search"
-          type="search"
-          placeholder="Search activities…"
-          class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 sm:w-72"
-        />
-      </label>
+      <div class="flex flex-col gap-2 sm:items-end">
+        <label class="block text-sm text-slate-600 dark:text-slate-300">
+          <span class="sr-only">Search activities</span>
+          <input id="comparison-search" type="search" placeholder="Search by name, date, or type…" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 sm:w-80" />
+        </label>
+        <label class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+          Sort by
+          <select id="comparison-sort" class="rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200">
+            <option value="date">Newest first</option>
+            <option value="title">Name</option>
+            <option value="distance">Distance</option>
+          </select>
+        </label>
+        <label class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+          Type
+          <select id="comparison-type" class="rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200">
+            <option value="">All types</option>
+          </select>
+        </label>
+        <div class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+          <label>From <input id="comparison-date-from" type="date" class="rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200" /></label>
+          <label>To <input id="comparison-date-to" type="date" class="rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200" /></label>
+        </div>
+      </div>
     </div>
 
-    <div class="mt-4 overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
-      <table class="comparison-activity-table w-full text-left text-sm">
-        <thead class="bg-slate-50 dark:bg-slate-800">
-          <tr>
-            <th class="w-12 px-3 py-3"><span class="sr-only">Select</span></th>
-            <th class="px-3 py-3">Activity</th>
-            <th class="px-3 py-3">Date</th>
-            <th class="px-3 py-3">Type</th>
-            <th class="px-3 py-3">Distance</th>
-          </tr>
-        </thead>
-        <tbody id="comparison-activity-rows">
+    <div class="mt-4 rounded-xl border border-slate-200 dark:border-slate-700">
+      <div id="comparison-activity-rows" class="max-h-80 divide-y divide-slate-100 overflow-y-auto dark:divide-slate-800">
           {activities.map(({ slug, metadata }) => (
-            <tr data-activity-row data-search={`${metadata.title || ''} ${metadata.date || ''} ${metadata.activityType || ''}`.toLowerCase()} class="border-t border-slate-100 dark:border-slate-800">
-              <td class="px-3 py-3">
-                <input type="checkbox" data-activity-checkbox value={metadata.activityId} aria-label={`Select ${metadata.title || 'activity'}`} class="h-4 w-4 accent-orange-600" />
-              </td>
-              <td class="px-3 py-3 font-medium text-slate-900 dark:text-slate-100">
-                <a href={`${base}activities/${slug}/`} class="hover:text-orange-600 dark:hover:text-orange-400">{metadata.title || `Activity ${metadata.activityId}`}</a>
-              </td>
-              <td class="px-3 py-3 text-slate-500 dark:text-slate-400">{metadata.date || '—'}</td>
-              <td class="px-3 py-3 text-slate-500 dark:text-slate-400">{metadata.activityType || '—'}</td>
-              <td class="px-3 py-3 text-slate-500 dark:text-slate-400">{metadata.distanceKm != null ? `${metadata.distanceKm} km` : '—'}</td>
-            </tr>
+            <div data-activity-row data-search={`${metadata.title || ''} ${metadata.date || ''} ${metadata.activityType || ''}`.toLowerCase()} data-type={metadata.activityType || ''} data-date={metadata.date || ''} data-title={metadata.title || ''} data-distance={metadata.distanceKm || 0} class="flex items-center gap-3 px-3 py-3 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/70">
+              <input type="checkbox" data-activity-checkbox value={metadata.activityId} aria-label={`Select ${metadata.title || 'activity'}`} class="h-4 w-4 shrink-0 accent-orange-600" />
+              <div class="min-w-0 flex-1">
+                <div class="truncate font-medium text-slate-900 dark:text-slate-100">{metadata.title || `Activity ${metadata.activityId}`}</div>
+                <div class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{metadata.date || '—'} · {metadata.activityType || 'Activity'} · {metadata.distanceKm != null ? `${metadata.distanceKm} km` : '—'}</div>
+              </div>
+              <a href={`${base}activities/${slug}/`} class="shrink-0 rounded-lg px-2 py-1 text-xs text-slate-500 hover:bg-slate-200 hover:text-orange-600 dark:hover:bg-slate-700 dark:hover:text-orange-400">View</a>
+            </div>
           ))}
-        </tbody>
-      </table>
+      </div>
       <p id="comparison-no-results" class="hidden px-4 py-6 text-center text-sm text-slate-500">No matching activities.</p>
     </div>
   </section>
 
   <section id="comparison-results" class="mt-8 hidden">
     <div id="comparison-heading" class="mb-4"></div>
+    <div id="comparison-insights" class="mb-5 grid gap-3 sm:grid-cols-3"></div>
+    <div class="mb-5 flex flex-wrap items-center gap-4 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm dark:border-slate-700 dark:bg-slate-900">
+      <label class="flex items-center gap-2 text-slate-600 dark:text-slate-300"><input id="comparison-normalized" type="checkbox" class="h-4 w-4 accent-orange-600" /> Normalize time to 0–100%</label>
+      <label class="flex items-center gap-2 text-slate-600 dark:text-slate-300"><input id="comparison-smooth-elevation" type="checkbox" class="h-4 w-4 accent-orange-600" checked /> Smooth elevation</label>
+      <span class="text-xs text-slate-400">Hovering a chart highlights the same point in the others.</span>
+    </div>
     <div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
       <table class="w-full text-left text-sm">
         <thead id="comparison-stats-head" class="bg-slate-50 dark:bg-slate-800"></thead>
@@ -83,6 +95,15 @@ const serializeDataForScript = (value: unknown): string => {
     function init() {
       const dataEl = document.getElementById('comparison-activities-data');
       const search = document.getElementById('comparison-search');
+      const sort = document.getElementById('comparison-sort');
+      const typeFilter = document.getElementById('comparison-type');
+      const dateFrom = document.getElementById('comparison-date-from');
+      const dateTo = document.getElementById('comparison-date-to');
+      const selectedEl = document.getElementById('comparison-selected');
+      const swapButton = document.getElementById('comparison-swap');
+      const clearButton = document.getElementById('comparison-clear');
+      const normalizedToggle = document.getElementById('comparison-normalized');
+      const smoothElevationToggle = document.getElementById('comparison-smooth-elevation');
       const rows = Array.from(document.querySelectorAll('[data-activity-row]'));
       const checkboxes = Array.from(document.querySelectorAll('[data-activity-checkbox]'));
       const status = document.getElementById('comparison-selection-status');
@@ -91,6 +112,7 @@ const serializeDataForScript = (value: unknown): string => {
       const statsHead = document.getElementById('comparison-stats-head');
       const statsBody = document.getElementById('comparison-stats-body');
       const charts = document.getElementById('comparison-charts');
+      const insights = document.getElementById('comparison-insights');
       const noResults = document.getElementById('comparison-no-results');
       if (!dataEl || !status || !results || !heading || !statsHead || !statsBody || !charts) return;
 
@@ -99,6 +121,7 @@ const serializeDataForScript = (value: unknown): string => {
       const metricDefs = [
         ['elevation', 'Elevation', 'm', '#0d9488'],
         ['speed', 'Speed', 'km/h', '#0ea5e9'],
+        ['pace', 'Pace', 'min/km', '#2563eb'],
         ['heartrate', 'Heart Rate', 'bpm', '#ef4444'],
         ['cadence', 'Cadence', 'rpm', '#a855f7'],
         ['power', 'Power', 'W', '#16a34a'],
@@ -115,6 +138,8 @@ const serializeDataForScript = (value: unknown): string => {
         ['grade', 'Grade', '%', '#f59e0b'],
         ['temperature', 'Temperature', '°C', '#64748b'],
       ];
+      let chartNodes = [];
+      let selectedOrder = [];
 
       function escapeHtml(value) {
         return String(value ?? '').replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[char]);
@@ -125,22 +150,92 @@ const serializeDataForScript = (value: unknown): string => {
       }
 
       function selected() {
-        return checkboxes.filter((checkbox) => checkbox.checked).map((checkbox) => byId[String(checkbox.value)]).filter(Boolean);
+        return checkboxes.filter((checkbox) => checkbox.checked).map((checkbox) => byId[String(checkbox.value)]).filter(Boolean).sort((a, b) => selectedOrder.indexOf(String(a.metadata.activityId)) - selectedOrder.indexOf(String(b.metadata.activityId)));
+      }
+
+      function getSeries(entry, key) {
+        const series = entry.metadata.timeSeries?.series?.[key];
+        if (series) return series;
+        if (key !== 'pace') return null;
+        const speed = entry.metadata.timeSeries?.series?.speed;
+        if (!speed) return null;
+        return { label: 'Pace', unit: 'min/km', values: (speed.values || []).map((value) => value > 0 ? 60 / value : null) };
+      }
+
+      function chartTimes(entry) {
+        const times = entry.metadata.timeSeries?.timeS || [];
+        if (!normalizedToggle?.checked) return times.map((time) => time / 60);
+        const last = times[times.length - 1] || 1;
+        return times.map((time) => (time / last) * 100);
+      }
+
+      function smoothValues(values) {
+        if (!smoothElevationToggle?.checked) return values;
+        return values.map((value, index) => {
+          if (value == null) return null;
+          const window = values.slice(Math.max(0, index - 2), Math.min(values.length, index + 3)).filter((item) => item != null);
+          return window.length ? window.reduce((sum, item) => sum + item, 0) / window.length : value;
+        });
+      }
+
+      function renderSelected(entries) {
+        if (!selectedEl) return;
+        if (swapButton) swapButton.disabled = entries.length !== 2;
+        if (clearButton) clearButton.disabled = entries.length === 0;
+        selectedEl.innerHTML = entries.map((entry, index) => `<span class="inline-flex max-w-full items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium ${index === 0 ? 'border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-900 dark:bg-sky-950 dark:text-sky-300' : 'border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-900 dark:bg-orange-950 dark:text-orange-300'}"><span class="truncate">${escapeHtml(entry.metadata.title)}</span><button type="button" data-remove-id="${entry.metadata.activityId}" aria-label="Remove ${escapeHtml(entry.metadata.title)}" class="ml-1 text-base leading-none opacity-70 hover:opacity-100">×</button></span>`).join('');
+        selectedEl.querySelectorAll('[data-remove-id]').forEach((button) => button.addEventListener('click', () => {
+          const checkbox = checkboxes.find((input) => String(input.value) === button.dataset.removeId);
+          if (checkbox) checkbox.checked = false;
+          render();
+        }));
       }
 
       function renderPlots(entries) {
         charts.innerHTML = '';
-        const available = metricDefs.filter(([key]) => entries.some((entry) => entry.metadata.timeSeries?.series?.[key]));
+        chartNodes = [];
+        const available = metricDefs.filter(([key]) => entries.some((entry) => getSeries(entry, key)));
         const bestAvailable = bestEffortDefs.filter(([key]) => entries.some((entry) => entry.metadata.profileCurves?.[key]?.length));
         const cumulativeAvailable = entries.some((entry) => entry.metadata.timeSeries?.distanceKm?.length);
         const cumulativeElevationAvailable = entries.some((entry) => entry.metadata.timeSeries?.series?.elevation?.values?.length);
 
-        if (cumulativeAvailable || cumulativeElevationAvailable) {
-          charts.insertAdjacentHTML('beforeend', '<h2 class="pt-2 text-xl font-bold text-slate-900 dark:text-slate-100">Cumulative Progress</h2>');
+        function addHeading(text) {
+          const heading = document.createElement('h2');
+          heading.className = 'pt-2 text-xl font-bold text-slate-900 dark:text-slate-100';
+          heading.textContent = text;
+          charts.appendChild(heading);
+        }
+
+        function addPanel(title, unit, chartId, options) {
           const section = document.createElement('section');
           section.className = 'rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900';
-          section.innerHTML = '<h3 class="mb-2 text-base font-bold text-slate-900 dark:text-slate-100">Cumulative Distance <span class="font-normal text-slate-500">(km)</span></h3><div id="comparison-cumulative-distance" style="height: 300px; width: 100%;"></div>';
+          const controls = options.length > 1
+            ? `<label class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400"><span>Metric</span><select class="comparison-metric-select rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200">${options.map(([key, label]) => `<option value="${key}">${label}</option>`).join('')}</select></label>`
+            : '';
+          section.innerHTML = `<div class="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"><h3 class="text-base font-bold text-slate-900 dark:text-slate-100">${title} <span class="font-normal text-slate-500">(${unit})</span></h3>${controls}</div><div id="${chartId}" style="height: 300px; width: 100%;"></div>`;
           charts.appendChild(section);
+          return { section, chart: document.getElementById(chartId), select: section.querySelector('.comparison-metric-select') };
+        }
+
+        function activityName(entry) {
+          return entry.metadata.title || `Activity ${entry.metadata.activityId}`;
+        }
+
+        function baseLayout(yTitle) {
+          return {
+            height: 300,
+            margin: { l: 55, r: 20, t: 10, b: 45 },
+            xaxis: { title: { text: 'Time (min)' }, gridcolor: '#f1f5f9', zeroline: false },
+            yaxis: { title: { text: yTitle }, gridcolor: '#f1f5f9', zeroline: false },
+            legend: { orientation: 'h', y: 1.12 },
+            paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
+          };
+        }
+
+        if (cumulativeAvailable || cumulativeElevationAvailable) {
+          addHeading('Cumulative Progress');
+        }
+        if (cumulativeAvailable) {
+          const panel = addPanel('Cumulative Distance', 'km', 'comparison-cumulative-distance', [['distance', 'Distance']]);
           const traces = entries.map((entry, index) => {
             const timeSeries = entry.metadata.timeSeries;
             const times = timeSeries?.timeS || [];
@@ -148,7 +243,7 @@ const serializeDataForScript = (value: unknown): string => {
             if (!times.length || !distances.length) return null;
             const startDistance = distances[0] || 0;
             return {
-              x: times.map((time) => time / 60),
+              x: chartTimes(entry),
               y: distances.map((distance) => Math.max(0, distance - startDistance)),
               name: entry.metadata.title || `Activity ${entry.metadata.activityId}`,
               type: 'scatter',
@@ -158,27 +253,20 @@ const serializeDataForScript = (value: unknown): string => {
               hovertemplate: '%{x:.1f} min: %{y:.2f} km<extra>%{fullData.name}</extra>',
             };
           }).filter(Boolean);
-          if (window.Plotly && traces.length) {
-            window.Plotly.newPlot('comparison-cumulative-distance', traces, {
-              height: 300,
-              margin: { l: 55, r: 20, t: 10, b: 45 },
-              xaxis: { title: { text: 'Time (min)' }, gridcolor: '#f1f5f9', zeroline: false },
-              yaxis: { title: { text: 'Distance (km)' }, gridcolor: '#f1f5f9', zeroline: false },
-              legend: { orientation: 'h', y: 1.12 },
-              paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
-            }, { responsive: true, displayModeBar: false });
+          if (window.Plotly && traces.length && panel.chart) {
+            const layout = baseLayout('Distance (km)');
+            layout.xaxis.title.text = normalizedToggle?.checked ? 'Normalized time (%)' : 'Time (min)';
+            window.Plotly.newPlot(panel.chart, traces, layout, { responsive: true, displayModeBar: false });
+            chartNodes.push(panel.chart);
           }
         }
 
         if (cumulativeElevationAvailable) {
-          const section = document.createElement('section');
-          section.className = 'rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900';
-          section.innerHTML = '<h3 class="mb-2 text-base font-bold text-slate-900 dark:text-slate-100">Cumulative Elevation Gain <span class="font-normal text-slate-500">(m)</span></h3><div id="comparison-cumulative-elevation" style="height: 300px; width: 100%;"></div>';
-          charts.appendChild(section);
+          const panel = addPanel('Cumulative Elevation Gain', 'm', 'comparison-cumulative-elevation', [['elevation', 'Elevation gain']]);
           const traces = entries.map((entry, index) => {
             const timeSeries = entry.metadata.timeSeries;
             const times = timeSeries?.timeS || [];
-            const elevations = timeSeries?.series?.elevation?.values || [];
+            const elevations = smoothValues(timeSeries?.series?.elevation?.values || []);
             if (!times.length || !elevations.length) return null;
             let gain = 0;
             const cumulativeGain = elevations.map((elevation, pointIndex) => {
@@ -188,7 +276,7 @@ const serializeDataForScript = (value: unknown): string => {
               return gain;
             });
             return {
-              x: times.map((time) => time / 60),
+              x: chartTimes(entry),
               y: cumulativeGain,
               name: entry.metadata.title || `Activity ${entry.metadata.activityId}`,
               type: 'scatter',
@@ -198,134 +286,194 @@ const serializeDataForScript = (value: unknown): string => {
               hovertemplate: '%{x:.1f} min: %{y:.0f} m<extra>%{fullData.name}</extra>',
             };
           }).filter(Boolean);
-          if (window.Plotly && traces.length) {
-            window.Plotly.newPlot('comparison-cumulative-elevation', traces, {
-              height: 300,
-              margin: { l: 55, r: 20, t: 10, b: 45 },
-              xaxis: { title: { text: 'Time (min)' }, gridcolor: '#f1f5f9', zeroline: false },
-              yaxis: { title: { text: 'Elevation gain (m)' }, gridcolor: '#f1f5f9', zeroline: false },
-              legend: { orientation: 'h', y: 1.12 },
-              paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
-            }, { responsive: true, displayModeBar: false });
+          if (window.Plotly && traces.length && panel.chart) {
+            const layout = baseLayout('Elevation gain (m)');
+            layout.xaxis.title.text = normalizedToggle?.checked ? 'Normalized time (%)' : 'Time (min)';
+            window.Plotly.newPlot(panel.chart, traces, layout, { responsive: true, displayModeBar: false });
+            chartNodes.push(panel.chart);
           }
         }
 
         if (available.length) {
-          charts.insertAdjacentHTML('beforeend', '<h2 class="pt-2 text-xl font-bold text-slate-900 dark:text-slate-100">Time Series</h2>');
+          addHeading('Time Series');
+          const panel = addPanel(available[0][1], available[0][2], 'comparison-chart-time-series', available);
+          const renderTimeSeries = (key) => {
+            const definition = available.find(([metricKey]) => metricKey === key) || available[0];
+            const [metricKey, label, unit, color] = definition;
+            const traces = entries.map((entry, index) => {
+              const series = getSeries(entry, metricKey);
+              if (!series) return null;
+              const values = metricKey === 'elevation' ? smoothValues(series.values || []) : series.values || [];
+              return { x: chartTimes(entry), y: values, name: activityName(entry), type: 'scatter', mode: 'lines', line: { color: index === 0 ? color : '#fc4c02', width: 2 }, connectgaps: false, hovertemplate: '%{x:.1f} ' + (normalizedToggle?.checked ? '%' : 'min') + ': %{y:.1f} ' + unit + '<extra>%{fullData.name}</extra>' };
+            }).filter(Boolean);
+            if (window.Plotly && traces.length && panel.chart) {
+              const layout = baseLayout(`${label} (${unit})`);
+              layout.xaxis.title.text = normalizedToggle?.checked ? 'Normalized time (%)' : 'Time (min)';
+              window.Plotly.react(panel.chart, traces, layout, { responsive: true, displayModeBar: false });
+              if (!chartNodes.includes(panel.chart)) chartNodes.push(panel.chart);
+            }
+          };
+          panel.select?.addEventListener('change', () => renderTimeSeries(panel.select.value));
+          renderTimeSeries(available[0][0]);
         }
-
-        available.forEach(([key, label, unit, color]) => {
-          const section = document.createElement('section');
-          section.className = 'rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900';
-          const chartId = `comparison-chart-${key}`;
-          section.innerHTML = `<h3 class="mb-2 text-base font-bold text-slate-900 dark:text-slate-100">${label} <span class="font-normal text-slate-500">(${unit})</span></h3><div id="${chartId}" style="height: 300px; width: 100%;"></div>`;
-          charts.appendChild(section);
-          const traces = entries.map((entry, index) => {
-            const series = entry.metadata.timeSeries?.series?.[key];
-            if (!series) return null;
-            const times = entry.metadata.timeSeries?.timeS || [];
-            return {
-              x: times.map((time) => time / 60),
-              y: series.values || [],
-              name: entry.metadata.title || `Activity ${entry.metadata.activityId}`,
-              type: 'scatter',
-              mode: 'lines',
-              line: { color: index === 0 ? color : '#fc4c02', width: 2 },
-              connectgaps: false,
-              hovertemplate: '%{x:.1f} min: %{y:.1f} ' + unit + '<extra>%{fullData.name}</extra>',
-            };
-          }).filter(Boolean);
-          if (window.Plotly && traces.length) {
-            window.Plotly.newPlot(chartId, traces, {
-              height: 300,
-              margin: { l: 55, r: 20, t: 10, b: 45 },
-              xaxis: { title: { text: 'Time (min)' }, gridcolor: '#f1f5f9', zeroline: false },
-              yaxis: { title: { text: unit }, gridcolor: '#f1f5f9', zeroline: false },
-              legend: { orientation: 'h', y: 1.12 },
-              paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
-            }, { responsive: true, displayModeBar: false });
-          }
-        });
 
         if (bestAvailable.length) {
-          charts.insertAdjacentHTML('beforeend', '<h2 class="pt-2 text-xl font-bold text-slate-900 dark:text-slate-100">Best Efforts</h2>');
+          addHeading('Best Efforts');
+          const panel = addPanel(bestAvailable[0][1], bestAvailable[0][2], 'comparison-chart-best-effort', bestAvailable);
+          const renderBestEffort = (key) => {
+            const definition = bestAvailable.find(([metricKey]) => metricKey === key) || bestAvailable[0];
+            const [metricKey, label, unit, color] = definition;
+            const traces = entries.map((entry, index) => {
+              const curves = entry.metadata.profileCurves;
+              const values = curves?.[metricKey];
+              if (!Array.isArray(values)) return null;
+              return { x: (curves.windowsSeconds || []).map((time) => time / 60), y: values, text: curves.windowLabels || [], name: activityName(entry), type: 'scatter', mode: 'lines+markers', line: { color: index === 0 ? color : '#fc4c02', width: 2 }, marker: { size: 5 }, connectgaps: false, hovertemplate: '%{text}: %{y:.1f} ' + unit + '<extra>%{fullData.name}</extra>' };
+            }).filter(Boolean);
+            const layout = baseLayout(`${label} (${unit})`);
+            layout.xaxis.type = 'log';
+            layout.yaxis.type = 'log';
+            if (window.Plotly && traces.length && panel.chart) {
+              window.Plotly.react(panel.chart, traces, layout, { responsive: true, displayModeBar: false });
+              if (!chartNodes.includes(panel.chart)) chartNodes.push(panel.chart);
+            }
+          };
+          panel.select?.addEventListener('change', () => renderBestEffort(panel.select.value));
+          renderBestEffort(bestAvailable[0][0]);
         }
-        bestAvailable.forEach(([key, label, unit, color]) => {
-          const section = document.createElement('section');
-          section.className = 'rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900';
-          const chartId = `comparison-best-effort-${key}`;
-          section.innerHTML = `<h3 class="mb-2 text-base font-bold text-slate-900 dark:text-slate-100">${label} <span class="font-normal text-slate-500">(${unit})</span></h3><div id="${chartId}" style="height: 300px; width: 100%;"></div>`;
-          charts.appendChild(section);
-          const traces = entries.map((entry, index) => {
-            const curves = entry.metadata.profileCurves;
-            const values = curves?.[key];
-            const times = curves?.windowsSeconds || [];
-            if (!Array.isArray(values) || !times.length) return null;
-            return {
-              x: times.map((time) => time / 60),
-              y: values,
-              text: curves.windowLabels || [],
-              name: entry.metadata.title || `Activity ${entry.metadata.activityId}`,
-              type: 'scatter',
-              mode: 'lines+markers',
-              line: { color: index === 0 ? color : '#fc4c02', width: 2 },
-              marker: { size: 5 },
-              connectgaps: false,
-              hovertemplate: '%{text}: %{y:.1f} ' + unit + '<extra>%{fullData.name}</extra>',
-            };
-          }).filter(Boolean);
-          if (window.Plotly && traces.length) {
-            window.Plotly.newPlot(chartId, traces, {
-              height: 300,
-              margin: { l: 55, r: 20, t: 10, b: 45 },
-              xaxis: { type: 'log', title: { text: 'Time (min)' }, gridcolor: '#f1f5f9', zeroline: false },
-              yaxis: { type: 'log', title: { text: unit }, gridcolor: '#f1f5f9', zeroline: false },
-              legend: { orientation: 'h', y: 1.12 },
-              paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
-            }, { responsive: true, displayModeBar: false });
-          }
-        });
 
         if (!available.length && !bestAvailable.length && !cumulativeAvailable && !cumulativeElevationAvailable) charts.innerHTML = '<p class="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">These activities do not have comparable chart data.</p>';
+
+        chartNodes.forEach((chart) => {
+          chart.on?.('plotly_hover', (event) => {
+            const point = event?.points?.[0];
+            if (!point) return;
+            chartNodes.filter((other) => other !== chart).forEach((other) => window.Plotly?.Fx?.hover(other, { xval: point.x }));
+          });
+          chart.on?.('plotly_unhover', () => chartNodes.filter((other) => other !== chart).forEach((other) => window.Plotly?.Fx?.unhover(other)));
+        });
+      }
+
+      function renderInsights(entries) {
+        if (!insights) return;
+        const a = entries[0].metadata;
+        const b = entries[1].metadata;
+        const comparisons = [
+          ['Distance', a.distanceKm, b.distanceKm, ' km'],
+          ['Elevation gain', a.elevationGainM, b.elevationGainM, ' m'],
+          ['Average speed', a.avgSpeedKmh, b.avgSpeedKmh, ' km/h'],
+        ].filter(([, left, right]) => typeof left === 'number' && typeof right === 'number');
+        insights.innerHTML = comparisons.map(([label, left, right, unit]) => {
+          const difference = right - left;
+          const winner = difference === 0 ? 'Equal' : difference > 0 ? escapeHtml(b.title) : escapeHtml(a.title);
+          const amount = `${difference > 0 ? '+' : ''}${difference.toFixed(1)}${unit}`;
+          return `<div class="rounded-xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-900"><div class="text-xs font-semibold uppercase tracking-wide text-slate-400">${label}</div><div class="mt-1 text-sm font-semibold text-slate-800 dark:text-slate-100">${winner}</div><div class="mt-0.5 text-xs text-slate-500">B − A: ${amount}</div></div>`;
+        }).join('');
+      }
+
+      function updateURL(entries) {
+        const url = new URL(window.location.href);
+        if (entries.length) url.searchParams.set('a', entries.map((entry) => entry.metadata.activityId).join(','));
+        else url.searchParams.delete('a');
+        window.history.replaceState({}, '', url);
       }
 
       function render() {
         const entries = selected();
+        renderSelected(entries);
         status.textContent = entries.length === 2 ? 'Comparison ready.' : `Select ${2 - entries.length} more activity${entries.length === 1 ? '' : 'ies'} to compare.`;
         if (entries.length !== 2) {
           results.classList.add('hidden');
           return;
         }
         results.classList.remove('hidden');
+        renderInsights(entries);
         heading.innerHTML = `<h2 class="text-xl font-bold text-slate-900 dark:text-slate-100">${escapeHtml(entries[0].metadata.title)} <span class="font-normal text-slate-400">vs.</span> ${escapeHtml(entries[1].metadata.title)}</h2>`;
-        statsHead.innerHTML = `<tr><th class="px-4 py-3">Statistic</th>${entries.map((entry) => `<th class="px-4 py-3">${escapeHtml(entry.metadata.title)}</th>`).join('')}</tr>`;
+        statsHead.innerHTML = `<tr><th class="px-4 py-3">Statistic</th>${entries.map((entry) => `<th class="px-4 py-3">${escapeHtml(entry.metadata.title)}</th>`).join('')}<th class="px-4 py-3">B − A</th></tr>`;
         const stats = [
           ['Date', 'date', '', ''], ['Type', 'activityType', '', ''], ['Distance', 'distanceKm', ' km', ''],
           ['Moving time', 'movingTime', '', ''], ['Elapsed time', 'elapsedTime', '', ''], ['Elevation gain', 'elevationGainM', ' m', ''],
           ['Average speed', 'avgSpeedKmh', ' km/h', ''], ['Maximum speed', 'maxSpeedKmh', ' km/h', ''],
-          ['Average heart rate', 'avgHeartRate', ' bpm', ''], ['Maximum heart rate', 'maxHeartRate', ' bpm', ''],
+          ['Average heart rate', 'avgHeartRate', ' bpm'], ['Maximum heart rate', 'maxHeartRate', ' bpm'],
+          ['Average pace', 'avgPace', '', ''], ['Best pace', 'maxPace', '', ''],
           ['Average power', 'avgWatts', ' W'], ['Calories', 'calories', ' kcal'],
         ];
-        statsBody.innerHTML = stats.map(([label, key, suffix]) => `<tr class="border-t border-slate-100 dark:border-slate-800"><th class="px-4 py-3 font-medium text-slate-600 dark:text-slate-300">${label}</th>${entries.map((entry) => `<td class="px-4 py-3 text-slate-500 dark:text-slate-400">${formatValue(entry.metadata[key], suffix)}</td>`).join('')}</tr>`).join('');
+        statsBody.innerHTML = stats.map(([label, key, suffix]) => {
+          const left = entries[0].metadata[key];
+          const right = entries[1].metadata[key];
+          const difference = typeof left === 'number' && typeof right === 'number' ? `${right - left > 0 ? '+' : ''}${(right - left).toFixed(1)}${suffix || ''}` : '—';
+          return `<tr class="border-t border-slate-100 dark:border-slate-800"><th class="px-4 py-3 font-medium text-slate-600 dark:text-slate-300">${label}</th>${entries.map((entry) => `<td class="px-4 py-3 text-slate-500 dark:text-slate-400">${formatValue(entry.metadata[key], suffix)}</td>`).join('')}<td class="px-4 py-3 font-medium text-slate-600 dark:text-slate-300">${difference}</td></tr>`;
+        }).join('');
         renderPlots(entries);
       }
 
       function filterRows() {
         const query = (search?.value || '').trim().toLowerCase();
+        const selectedType = typeFilter?.value || '';
+        const from = dateFrom?.value || '';
+        const to = dateTo?.value || '';
         let visible = 0;
         rows.forEach((row) => {
-          const matches = !query || row.dataset.search.includes(query);
+          const matches = (!query || row.dataset.search.includes(query)) &&
+            (!selectedType || (row.dataset.type || '').toLowerCase() === selectedType.toLowerCase()) &&
+            (!from || (row.dataset.date || '') >= from) && (!to || (row.dataset.date || '') <= to);
           row.classList.toggle('hidden', !matches);
           if (matches) visible++;
         });
         noResults?.classList.toggle('hidden', visible !== 0);
       }
 
+      function sortRows() {
+        const mode = sort?.value || 'date';
+        rows.sort((a, b) => {
+          if (mode === 'title') return (a.dataset.title || '').localeCompare(b.dataset.title || '');
+          if (mode === 'distance') return Number(b.dataset.distance || 0) - Number(a.dataset.distance || 0);
+          return (b.dataset.date || '').localeCompare(a.dataset.date || '');
+        });
+        const rowContainer = document.getElementById('comparison-activity-rows');
+        rows.forEach((row) => rowContainer?.appendChild(row));
+      }
+
       checkboxes.forEach((checkbox) => checkbox.addEventListener('change', () => {
         if (selected().length > 2) checkbox.checked = false;
+        const id = String(checkbox.value);
+        if (checkbox.checked && !selectedOrder.includes(id)) selectedOrder.push(id);
+        if (!checkbox.checked) selectedOrder = selectedOrder.filter((item) => item !== id);
+        updateURL(selected());
         render();
       }));
       search?.addEventListener('input', filterRows);
+      typeFilter?.addEventListener('change', filterRows);
+      dateFrom?.addEventListener('change', filterRows);
+      dateTo?.addEventListener('change', filterRows);
+      normalizedToggle?.addEventListener('change', () => { if (selected().length === 2) render(); });
+      smoothElevationToggle?.addEventListener('change', () => { if (selected().length === 2) render(); });
+      swapButton?.addEventListener('click', () => {
+        if (selected().length !== 2) return;
+        selectedOrder = selectedOrder.reverse();
+        updateURL(selected());
+        render();
+      });
+      clearButton?.addEventListener('click', () => {
+        checkboxes.forEach((checkbox) => { checkbox.checked = false; });
+        selectedOrder = [];
+        updateURL([]);
+        render();
+      });
+      const types = [...new Set(activities.map((entry) => entry.metadata.activityType).filter(Boolean))].sort();
+      if (typeFilter) typeFilter.innerHTML += types.map((type) => `<option value="${escapeHtml(type)}">${escapeHtml(type)}</option>`).join('');
+      const sharedIds = new URLSearchParams(window.location.search).get('a')?.split(',').filter(Boolean) || [];
+      sharedIds.slice(0, 2).forEach((id) => {
+        const checkbox = checkboxes.find((input) => String(input.value) === id);
+        if (checkbox) {
+          checkbox.checked = true;
+          selectedOrder.push(id);
+        }
+      });
+      sort?.addEventListener('change', () => {
+        sortRows();
+        filterRows();
+      });
+      sortRows();
       filterRows();
       render();
     }
