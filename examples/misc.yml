@@ -2,3 +2,4 @@ collection_name: "Misc activities"
 output_dir: "docs/source/"
 activity_ids:
   - "19461340882" # mittenwalde via ferrata
+  - "19866682456" # zugspitze
