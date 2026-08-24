@@ -3,7 +3,7 @@ import subprocess
 import tempfile
 from html import escape
 from pathlib import Path
-from typing import List
+from typing import Any, List
 
 import fastrdp
 import numpy as np
@@ -217,28 +217,67 @@ class StravaCollection:
         garmin_livetrack_url: str | None = None,
         verbose: bool = False,
         places: list[dict] | None = None,
+        activity_objects: list[StravaActivity] | None = None,
     ) -> None:
+        if not isinstance(name, str) or not name.strip():
+            raise ValueError("Collection name must be a non-empty string")
+        if not isinstance(activities, list):
+            raise TypeError("activities must be a list of activity definitions")
+        for index, activity_def in enumerate(activities):
+            if not isinstance(activity_def, dict):
+                raise TypeError(f"activities[{index}] must be a mapping")
+
         self._name = name
         self._description = description
         self._route_gpx_file = route_gpx_file
         self._garmin_livetrack_url = garmin_livetrack_url
         self._places = places or []
 
-        self._activity_defs = activities
-        print(f"Loading collection '{self.name}':")
+        self._activity_defs = list(activities)
+        self._activities = list(activity_objects or [])
+        self._client = None
+        self._force_update = force_update
+        self._verbose = verbose
+        self._recompute_totals()
+
+    def load_activities(
+        self,
+        *,
+        force_update: bool | None = None,
+        verbose: bool | None = None,
+    ) -> list[StravaActivity]:
+        """Load configured activities; construction itself performs no I/O."""
         self._activities = []
-        for act_def in activities:
-            if "strava_id" in act_def:
-                parsed_id, flip = act_def["strava_id"]
-                self._activities.append(
-                    StravaActivity(
-                        parsed_id,
-                        flip=flip,
-                        force_update=force_update,
-                        verbose=verbose,
-                    )
+        force_update = self._force_update if force_update is None else force_update
+        verbose = self._verbose if verbose is None else verbose
+        print(f"Loading collection '{self.name}':")
+        for index, act_def in enumerate(self._activity_defs):
+            if "strava_id" not in act_def:
+                continue
+            activity_ref = act_def["strava_id"]
+            if (
+                not isinstance(activity_ref, tuple)
+                or len(activity_ref) != 2
+                or not isinstance(activity_ref[0], int)
+                or not isinstance(activity_ref[1], bool)
+            ):
+                raise ValueError(
+                    f"activities[{index}].strava_id must be a (int, bool) tuple"
                 )
+            parsed_id, flip = activity_ref
+            self._activities.append(
+                StravaActivity(
+                    parsed_id,
+                    flip=flip,
+                    force_update=force_update,
+                    verbose=verbose,
+                )
+            )
+        self._recompute_totals()
         print()
+        return self._activities
+
+    def _recompute_totals(self) -> None:
         self._total_distance = 0.0
         self._total_elevation_gain = 0.0
         self._total_moving_time = 0.0
@@ -246,22 +285,27 @@ class StravaCollection:
             self._total_distance += activity.activity.distance
             self._total_elevation_gain += activity.activity.total_elevation_gain
             self._total_moving_time += activity.activity.moving_time
-            print(
-                f"{activity.activity.name}, distance: {round(activity.activity.distance * 1e-3, 1)} km, elevation gain: {round(activity.activity.total_elevation_gain)} m"
-            )
-        print(f"Total elevation gain: {round(self._total_elevation_gain)} m")
-        print(f"Total distance: {round(self._total_distance * 1e-3, 1)} km")
-        print(f"Total moving time: {round(self._total_moving_time / 3600, 1)} hours")
+            if self._verbose:
+                print(
+                    f"{activity.activity.name}, distance: "
+                    f"{round(activity.activity.distance * 1e-3, 1)} km, "
+                    f"elevation gain: {round(activity.activity.total_elevation_gain)} m"
+                )
+        if self._verbose:
+            print(f"Total elevation gain: {round(self._total_elevation_gain)} m")
+            print(f"Total distance: {round(self._total_distance * 1e-3, 1)} km")
+            print(f"Total moving time: {round(self._total_moving_time / 3600, 1)} hours")
 
     def plot_elevation(
         self,
         filepath=None,
         height=200,
-        config={"staticPlot": True, "displayModeBar": False},
+        config: dict[str, Any] | None = None,
         backend="plotly",
         verbose: bool = False,
     ):
         """Plot elevation profile of all activities with maxplotlib."""
+        config = config or {"staticPlot": True, "displayModeBar": False}
         distance_traveled = 0.0
         traces = []
 
@@ -318,9 +362,9 @@ class StravaCollection:
     def plot_map(
         self,
         filepath: str | None = None,
-        config: dict = {"scrollZoom": True},
+        config: dict[str, Any] | None = None,
         height: int = 300,
-        linewidths: list = [8, 1],
+        linewidths: list[int] | None = None,
         width_to_height=5.0,
         verbose: bool = False,
         places: list[dict] | None = None,
@@ -330,6 +374,10 @@ class StravaCollection:
         Args:
             places: List of dicts with 'name', 'lat', 'lon' keys to mark as red dots.
         """
+        config = config or {"scrollZoom": True}
+        linewidths = linewidths or [8, 1]
+        if len(linewidths) != 2:
+            raise ValueError("linewidths must contain exactly two widths")
         fig = go.Figure()
 
         maxlon, minlon = -9999, 9999
@@ -760,7 +808,7 @@ class StravaCollection:
 
     @property
     def activity_ids(self):
-        return self._activity_ids
+        return [activity.activity_id for activity in self.activities]
 
     @property
     def name(self):

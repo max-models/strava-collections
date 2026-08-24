@@ -10,6 +10,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import polyline
 import requests
+from requests import RequestException
 from stravalib import Client
 from stravalib.model import DetailedActivity
 
@@ -23,6 +24,10 @@ from strava_collections.utils import (
 CACHE_PATH = os.getenv("STRAVA_CACHE_DIR", "cache")
 _AUTHENTICATED_CLIENT: Client | None = None
 _ROTATED_REFRESH_TOKEN: str | None = None
+
+
+class StravaAPIError(RuntimeError):
+    """Raised when Strava cannot fulfil an API request."""
 
 
 def _reset_auth_state_for_testing() -> None:
@@ -119,7 +124,12 @@ def get_icon_link(
     # </a>
 
 
-def get_activity_photos_from_web(activity_id, access_token, size=5000):
+def get_activity_photos_from_web(
+    activity_id: int,
+    access_token: str,
+    size: int = 5000,
+    timeout: float = 15.0,
+) -> list[dict]:
     # https://communityhub.strava.com/t5/developer-discussions/download-all-photos-of-my-own-activities/m-p/11262
     # Construct the URL manually
     url = f"https://www.strava.com/api/v3/activities/{activity_id}/photos?size={size}"
@@ -127,15 +137,21 @@ def get_activity_photos_from_web(activity_id, access_token, size=5000):
     # Headers including the OAuth token for authentication
     headers = {"Authorization": f"Bearer {access_token}"}
 
-    # Making the GET request to Strava API
-    response = requests.get(url, headers=headers)
+    try:
+        response = requests.get(url, headers=headers, timeout=timeout)
+        response.raise_for_status()
+        photos = response.json()
+    except (RequestException, ValueError) as exc:
+        raise StravaAPIError(
+            f"Could not download photos for Strava activity {activity_id}: {exc}"
+        ) from exc
 
-    # Check if the request was successful
-    if response.status_code == 200:
-        photos = response.json()  # The photos data in JSON format
-        return photos
-    else:
-        print("Error:", response.status_code, response.text)
+    if not isinstance(photos, list):
+        raise StravaAPIError(
+            f"Unexpected photo response for Strava activity {activity_id}: "
+            f"expected a list, got {type(photos).__name__}"
+        )
+    return photos
 
 
 def format_pace_min_per_km(speed_mps: float | None) -> str | None:

@@ -39,25 +39,64 @@ def resolve_input_paths(input_patterns: list[str]) -> list[str]:
     return resolved_paths
 
 
-def parse_single_strava_id(activity_id: str) -> tuple[int, bool]:
-    normalized = activity_id.replace("https://www.strava.com/activities/", "")
+class InputValidationError(ValueError):
+    """Raised when a collection input cannot be converted to a valid reference."""
+
+
+def parse_single_strava_id(activity_id: str | int) -> tuple[int, bool]:
+    if isinstance(activity_id, bool) or not isinstance(activity_id, (str, int)):
+        raise InputValidationError("Activity ID must be an integer or string")
+    normalized = str(activity_id).strip()
+    normalized = normalized.replace("https://www.strava.com/activities/", "")
+    normalized = normalized.rstrip("/")
+    if not normalized:
+        raise InputValidationError("Activity ID cannot be empty")
 
     if normalized.lower().endswith("f"):
-        return (int(normalized[:-1]), True)
-    return (int(normalized), False)
+        normalized = normalized[:-1]
+        flip = True
+    else:
+        flip = False
+    try:
+        parsed = int(normalized)
+    except ValueError as exc:
+        raise InputValidationError(f"Invalid Strava activity ID: {activity_id!r}") from exc
+    if parsed <= 0:
+        raise InputValidationError(f"Strava activity ID must be positive: {parsed}")
+    return (parsed, flip)
 
 
-def parse_activity_inputs(activities: list[str | dict]) -> list[dict]:
+def parse_activity_inputs(activities: list[str | int | dict]) -> list[dict]:
+    if not isinstance(activities, list):
+        raise InputValidationError("activities must be a list")
     parsed = []
-    for item in activities:
-        if isinstance(item, str):
+    for index, item in enumerate(activities):
+        if isinstance(item, (str, int)) and not isinstance(item, bool):
             parsed.append({"strava_id": parse_single_strava_id(item)})
         elif isinstance(item, dict):
-            # Map various ID keys to our internal strava_id
-            sid = item.get("stravaActivityId") or item.get("id")
-            if sid:
-                item["strava_id"] = parse_single_strava_id(str(sid))
-            parsed.append(item)
+            normalized = dict(item)
+            sid = normalized.get("stravaActivityId")
+            if sid is None:
+                sid = normalized.get("id")
+            if sid is None:
+                sid = normalized.get("strava_id")
+            if isinstance(sid, tuple) and len(sid) == 2:
+                if not isinstance(sid[0], int) or not isinstance(sid[1], bool):
+                    raise InputValidationError(
+                        f"activities[{index}].strava_id must be (int, bool)"
+                    )
+                normalized["strava_id"] = sid
+            elif sid is not None:
+                normalized["strava_id"] = parse_single_strava_id(sid)
+            else:
+                raise InputValidationError(
+                    f"activities[{index}] must contain an activity ID"
+                )
+            parsed.append(normalized)
+        else:
+            raise InputValidationError(
+                f"activities[{index}] must be a string, integer, or mapping"
+            )
     return parsed
 
 
@@ -119,6 +158,10 @@ def generate_collection(
         garmin_livetrack_url=garmin_livetrack_url,
         places=places,
     )
+    # Keep network/cache access explicit at the library boundary while the
+    # build command retains its existing behavior.
+    if hasattr(collection, "load_activities"):
+        collection.load_activities()
 
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -481,14 +524,17 @@ def main():
         for input_path in input_paths:
             with open(input_path, "r", encoding="utf-8") as f:
                 data = yaml.safe_load(f)
-            StravaCollection(
+            collection = StravaCollection(
                 name=data["collection_name"],
-                activities=data.get("activities") or data.get("activity_ids", []),
+                activities=parse_activity_inputs(
+                    data.get("activities") or data.get("activity_ids", [])
+                ),
                 force_update=args.force_update,
                 verbose=args.verbose,
                 description=data.get("description"),
                 places=data.get("places"),
             )
+            collection.load_activities()
         return
 
     if getattr(args, "command", None) == "site":
